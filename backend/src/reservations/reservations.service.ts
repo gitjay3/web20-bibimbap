@@ -52,6 +52,8 @@ export class ReservationsService {
         reservationEndDate: '2025-12-31T23:59:59Z',
       },
       createdAt: new Date(),
+    });
+
     MOCK_EVENTS.forEach((event) => {
       this.events.set(event.id, event);
     });
