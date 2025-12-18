@@ -30,8 +30,8 @@ export class ReservationsService {
 
   constructor() {
     // 테스트용 Mock
-    this.events.set('event-1', {
-      id: 'event-1',
+    this.events.set('1', {
+      id: '1',
       title: '시니어 리뷰 세션',
       author: '운영진',
       description: '시니어 개발자와의 1:1 리뷰',
@@ -46,8 +46,8 @@ export class ReservationsService {
       createdAt: new Date(),
     });
 
-    this.events.set('event-2', {
-      id: 'event-2',
+    this.events.set('2', {
+      id: '2',
       title: '오프라인 네트워킹',
       author: '운영진',
       description: '캠퍼들과의 오프라인 모임',
