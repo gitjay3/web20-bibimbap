@@ -1,10 +1,15 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "./PageHeader";
 import { ReservationLayout } from "./ReservationLayout";
 import { SessionInfoCard } from "./SessionInfoCard";
 import { SlotSection, SlotList } from "./SlotSection";
 import { SlotCard } from "./SlotCard";
 import { ReservationFooter } from "./ReservationFooter";
+import { useSSE } from "../../../hooks/useSSE";
+import { reservationApi } from "../api/reservationApi";
+import { toast } from "sonner";
+import type { CapacityUpdateEvent, SlotInfo } from "../types";
+import { getClientId } from "../../../utils/clientId";
 
 type SlotItem = {
   id: number;
@@ -18,52 +23,106 @@ type SlotItem = {
 export default function ReservationPage() {
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [reservedSlotId, setReservedSlotId] = useState<number | null>(null);
+  const [hasSnapshot, setHasSnapshot] = useState(false);
+  const [slotBaseInfo, setSlotBaseInfo] = useState<Omit<SlotItem, "rightLabel" | "status">[]>([]);
+  const [clientId] = useState(() => getClientId());
 
-  const slots: SlotItem[] = useMemo(
-    () => [
-      {
-        id: 1,
-        dateLabel: "2024-12-20",
-        timeLabel: "14:00 - 15:00",
-        reviewer: "김멘토",
-        rightLabel: "0/1",
-        status: "available",
-      },
-      {
-        id: 2,
-        dateLabel: "2024-12-20",
-        timeLabel: "15:00 - 16:00",
-        reviewer: "이멘토",
-        rightLabel: "마감",
-        status: "disabled",
-      },
-      {
-        id: 3,
-        dateLabel: "2024-12-21",
-        timeLabel: "14:00 - 15:00",
-        reviewer: "박멘토",
-        rightLabel: "0/1",
-        status: "available",
-      },
-      {
-        id: 4,
-        dateLabel: "2024-12-21",
-        timeLabel: "15:00 - 16:00",
-        reviewer: "최멘토",
-        rightLabel: "0/1",
-        status: "available",
-      },
-      {
-        id: 5,
-        dateLabel: "2024-12-22",
-        timeLabel: "14:00 - 15:00",
-        reviewer: "강멘토",
-        rightLabel: "0/1",
-        status: "available",
-      },
-    ],
-    []
-  );
+  // 슬롯별 정원 정보를 실시간으로 관리
+  const [slotCapacities, setSlotCapacities] = useState<
+    Map<number, { currentCount: number; maxCapacity: number }>
+  >(new Map());
+
+  const handleSSEMessage = useCallback((event: CapacityUpdateEvent) => {
+    // eslint-disable-next-line no-console
+    console.log("[SSE] Received capacity snapshot", event);
+    setSlotCapacities(() => {
+      const snapshotMap = new Map<
+        number,
+        { currentCount: number; maxCapacity: number }
+      >();
+
+      event.snapshot.forEach((slot) => {
+        snapshotMap.set(slot.slotId, {
+          currentCount: slot.currentCount,
+          maxCapacity: slot.maxCapacity,
+        });
+      });
+
+      return snapshotMap;
+    });
+    setHasSnapshot(true);
+  }, []);
+
+  // SSE 연결 및 실시간 정원 업데이트 수신
+  useSSE<CapacityUpdateEvent>({
+    url: "/api/reservations/capacity-updates",
+    onMessage: handleSSEMessage,
+    onError: (error) => {
+      console.error("SSE connection error:", error);
+    },
+  });
+
+  // 초기 슬롯 정보 및 정원 상태를 서버에서 가져오기
+  useEffect(() => {
+    const loadSlots = async () => {
+      try {
+        const slots = await reservationApi.getSlots();
+        const baseInfo: Omit<SlotItem, "rightLabel" | "status">[] = slots.map(
+          ({ id, dateLabel, timeLabel, reviewer }) => ({
+            id,
+            dateLabel,
+            timeLabel,
+            reviewer,
+          })
+        );
+        setSlotBaseInfo(baseInfo);
+
+        const initialMap = new Map<
+          number,
+          { currentCount: number; maxCapacity: number }
+        >();
+        slots.forEach((slot: SlotInfo) => {
+          initialMap.set(slot.id, {
+            currentCount: slot.currentCount,
+            maxCapacity: slot.maxCapacity,
+          });
+        });
+        setSlotCapacities(initialMap);
+        setHasSnapshot(true);
+      } catch (error) {
+        console.error("슬롯 정보를 불러오지 못했습니다.", error);
+        toast.error("슬롯 정보를 불러오지 못했습니다.");
+      }
+    };
+
+    void loadSlots();
+  }, []);
+
+  // 정원 정보를 포함한 슬롯 목록 생성
+  const slots: SlotItem[] = useMemo(() => {
+    return slotBaseInfo.map((base) => {
+      const capacity = slotCapacities.get(base.id);
+      const hasCapacity = Boolean(capacity);
+
+      if (!hasSnapshot || !hasCapacity) {
+        return {
+          ...base,
+          rightLabel: "정원 확인 중",
+          status: "disabled",
+        };
+      }
+
+      const currentCount = capacity.currentCount;
+      const maxCapacity = capacity.maxCapacity;
+      const isFull = currentCount >= maxCapacity;
+
+      return {
+        ...base,
+        rightLabel: isFull ? "마감" : `${currentCount}/${maxCapacity}`,
+        status: isFull ? "disabled" : "available",
+      };
+    });
+  }, [hasSnapshot, slotBaseInfo, slotCapacities]);
 
   const handleSlotClick = (slot: SlotItem) => {
     const isReserved = slot.id === reservedSlotId;
@@ -72,10 +131,27 @@ export default function ReservationPage() {
     setSelectedSlotId(slot.id);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedSlotId) return;
-    setReservedSlotId(selectedSlotId);
-    setSelectedSlotId(null);
+
+    try {
+      const response = await reservationApi.createReservation({
+        eventId: "event-1", // 실제로는 동적으로 가져와야 함
+        userId: clientId,
+        slotId: selectedSlotId,
+      });
+
+      if (response.success) {
+        toast.success(response.message);
+        setReservedSlotId(selectedSlotId);
+        setSelectedSlotId(null);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      console.error("예약 실패:", error);
+      toast.error("예약 처리 중 오류가 발생했습니다.");
+    }
   };
 
   return (

@@ -1,4 +1,5 @@
 import type { ReservationRequest, ReservationResponse } from "../types";
+import type { SlotInfo } from "../types";
 
 const baseURL = "/api";
 
@@ -16,6 +17,14 @@ export const reservationApi = {
       throw new Error("Network response was not ok");
     }
 
+    return response.json();
+  },
+
+  getSlots: async (): Promise<SlotInfo[]> => {
+    const response = await fetch(`${baseURL}/reservations/slots`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch slots");
+    }
     return response.json();
   },
 };
