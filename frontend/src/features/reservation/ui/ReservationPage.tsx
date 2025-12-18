@@ -62,8 +62,9 @@ export default function ReservationPage() {
   }, []);
 
   // SSE 연결 및 실시간 정원 업데이트 수신
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
   useSSE<CapacityUpdateEvent>({
-    url: "/api/reservations/capacity-updates",
+    url: `${BACKEND_URL}/api/reservations/capacity-updates`,
     onMessage: handleSSEMessage,
     onError: (error) => {
       console.error("SSE connection error:", error);
