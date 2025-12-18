@@ -16,8 +16,8 @@ export function useSSE<TData = unknown>({
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Event | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const messageHandlerRef = useRef<typeof onMessage>();
-  const errorHandlerRef = useRef<typeof onError>();
+  const messageHandlerRef = useRef<typeof onMessage>(onMessage);
+  const errorHandlerRef = useRef<typeof onError>(onError);
 
   useEffect(() => {
     messageHandlerRef.current = onMessage;
