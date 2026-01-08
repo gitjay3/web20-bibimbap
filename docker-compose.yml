@@ -103,6 +103,8 @@ services:
     image: redis:8.4.0-alpine3.22
     container_name: bookstcamp-redis
     restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
     command: >
       redis-server
       --appendonly yes

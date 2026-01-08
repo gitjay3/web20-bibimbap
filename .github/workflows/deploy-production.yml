@@ -122,14 +122,14 @@ jobs:
 
           # deploy.env 생성
           cat > /tmp/deploy.env << EOF
-          ENVIRONMENT=production
-          NCP_REGISTRY_URL=${{ secrets.NCP_REGISTRY_URL }}
-          NCP_REGISTRY_USERNAME=${{ secrets.NCP_REGISTRY_USERNAME }}
-          NCP_REGISTRY_PASSWORD=${{ secrets.NCP_REGISTRY_PASSWORD }}
-          IMAGE_TAG=${{ env.IMAGE_TAG }}
-          DOTENV_PRIVATE_KEY_PRODUCTION=${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
-          DATABASE_URL=${DATABASE_URL}
-          EOF
+ENVIRONMENT=production
+NCP_REGISTRY_URL=${{ secrets.NCP_REGISTRY_URL }}
+NCP_REGISTRY_USERNAME=${{ secrets.NCP_REGISTRY_USERNAME }}
+NCP_REGISTRY_PASSWORD=${{ secrets.NCP_REGISTRY_PASSWORD }}
+IMAGE_TAG=${{ env.IMAGE_TAG }}
+DOTENV_PRIVATE_KEY_PRODUCTION=${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
+DATABASE_URL=${DATABASE_URL}
+EOF
           chmod 600 /tmp/deploy.env
 
       - name: Copy deployment files to server
