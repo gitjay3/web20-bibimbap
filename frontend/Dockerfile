@@ -54,9 +54,6 @@ RUN cd frontend && pnpm run build
 # ========================================
 FROM nginx:1.28.1-alpine3.23 AS production
 
-# wget 설치 (healthcheck용)
-RUN apk add --no-cache wget
-
 # 보안을 위해 non-root 사용자 생성
 RUN addgroup -g 1001 -S nginx-app && \
     adduser -S nginx-app -u 1001 -G nginx-app
@@ -79,10 +76,6 @@ USER nginx-app
 
 # 포트 노출 (non-root 사용자는 8080 사용)
 EXPOSE 8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Nginx 실행 (daemon off로 포그라운드 실행)
 CMD ["nginx", "-g", "daemon off;"]
