@@ -90,13 +90,15 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          # printf를 사용해서 개행 문자 보존
+          printf '%s\n' "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER_HOST }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Backup current deployment
         run: |
-          ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
             set -e
             cd ~/bookstcamp
 
@@ -123,15 +125,15 @@ jobs:
 
       - name: Copy deployment files to server
         run: |
-          scp -r scripts/ ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/
-          scp docker-compose.yml ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/docker-compose.yml
-          scp .env.production ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.env.production
-          scp /tmp/deploy.env ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.deploy.env
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r scripts/ ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/docker-compose.yml
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no .env.production ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.env.production
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no /tmp/deploy.env ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.deploy.env
           rm /tmp/deploy.env
 
       - name: Deploy on production server
         run: |
-          ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
             set -e
             cd ~/bookstcamp
 
@@ -150,7 +152,7 @@ jobs:
 
       - name: Verify deployment (strict)
         run: |
-          ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
             cd ~/bookstcamp
 
             # Production은 더 엄격하게 검증 (10회 재시도)
@@ -165,7 +167,7 @@ jobs:
 
       - name: Post-deployment monitoring
         run: |
-          ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
             cd ~/bookstcamp
 
             echo "=== Deployment Summary ==="
@@ -197,13 +199,15 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          # printf를 사용해서 개행 문자 보존
+          printf '%s\n' "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.PRODUCTION_SERVER_HOST }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Execute rollback
         run: |
-          ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
             set -e
             cd ~/bookstcamp
 
@@ -221,4 +225,4 @@ jobs:
         run: |
           echo "⚠️ Production deployment failed and was rolled back"
           echo "Please check the logs and fix the issue before redeploying"
-          echo "🔍 Investigate: ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} 'cd ~/bookstcamp && docker compose -f docker-compose.yml logs'"
+          echo "🔍 Investigate: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} 'cd ~/bookstcamp && docker compose -f docker-compose.yml logs'"
