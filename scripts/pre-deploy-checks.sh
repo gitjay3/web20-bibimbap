@@ -25,7 +25,14 @@ ENVIRONMENT=${1:-prod}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
-ENV_FILE="$PROJECT_ROOT/.env.$ENVIRONMENT"
+
+# 환경 이름 매핑 (prod -> production)
+if [ "$ENVIRONMENT" = "prod" ]; then
+    ENV_NAME="production"
+else
+    ENV_NAME="$ENVIRONMENT"
+fi
+ENV_FILE="$PROJECT_ROOT/.env.$ENV_NAME"
 
 CHECKS_PASSED=0
 CHECKS_WARNING=0
