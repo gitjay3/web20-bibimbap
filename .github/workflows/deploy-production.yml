@@ -41,9 +41,9 @@ jobs:
       - name: Log in to NCP Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}
-          username: ${{ secrets.NCP_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.NCP_CONTAINER_REGISTRY_PASSWORD }}
+          registry: ${{ secrets.NCP_REGISTRY_URL }}
+          username: ${{ secrets.NCP_REGISTRY_USERNAME }}
+          password: ${{ secrets.NCP_REGISTRY_PASSWORD }}
 
       - name: Extract version from package.json
         id: version
@@ -58,9 +58,9 @@ jobs:
           file: ./${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ env.IMAGE_TAG }}
-            ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:production-latest
-            ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ steps.version.outputs.version }}
+            ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ env.IMAGE_TAG }}
+            ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:production-latest
+            ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -113,9 +113,9 @@ jobs:
         run: |
           cat > /tmp/deploy.env << 'EOF'
           ENVIRONMENT=production
-          NCP_REGISTRY_URL=${{ secrets.NCP_CONTAINER_REGISTRY_URL }}
-          NCP_REGISTRY_USERNAME=${{ secrets.NCP_CONTAINER_REGISTRY_USERNAME }}
-          NCP_REGISTRY_PASSWORD=${{ secrets.NCP_CONTAINER_REGISTRY_PASSWORD }}
+          NCP_REGISTRY_URL=${{ secrets.NCP_REGISTRY_URL }}
+          NCP_REGISTRY_USERNAME=${{ secrets.NCP_REGISTRY_USERNAME }}
+          NCP_REGISTRY_PASSWORD=${{ secrets.NCP_REGISTRY_PASSWORD }}
           IMAGE_TAG=${{ env.IMAGE_TAG }}
           DOTENVX_PRIVATE_KEY=${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
           EOF
