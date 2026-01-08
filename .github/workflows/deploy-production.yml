@@ -109,15 +109,26 @@ jobs:
             echo "Backup completed: ${TIMESTAMP}"
           EOF
 
-      - name: Create temporary env file
+      - name: Setup dotenvx
         run: |
-          cat > /tmp/deploy.env << 'EOF'
+          npm install -g @dotenvx/dotenvx
+
+      - name: Create temporary env file with decrypted DATABASE_URL
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
+        run: |
+          # DATABASE_URL 복호화
+          DATABASE_URL=$(dotenvx get DATABASE_URL -f .env.production)
+
+          # deploy.env 생성
+          cat > /tmp/deploy.env << EOF
           ENVIRONMENT=production
           NCP_REGISTRY_URL=${{ secrets.NCP_REGISTRY_URL }}
           NCP_REGISTRY_USERNAME=${{ secrets.NCP_REGISTRY_USERNAME }}
           NCP_REGISTRY_PASSWORD=${{ secrets.NCP_REGISTRY_PASSWORD }}
           IMAGE_TAG=${{ env.IMAGE_TAG }}
           DOTENV_PRIVATE_KEY_PRODUCTION=${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
+          DATABASE_URL=${DATABASE_URL}
           EOF
           chmod 600 /tmp/deploy.env
 

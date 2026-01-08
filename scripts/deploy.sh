@@ -144,18 +144,25 @@ run_with_env docker compose -f "$COMPOSE_FILE" pull
 # 6. Database 마이그레이션
 log_info "Step 6: Database 마이그레이션 실행"
 
-# 환경변수 파일에서 DATABASE_URL 추출
-if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
-    log_info "dotenvx로 DATABASE_URL 복호화"
-    DATABASE_URL=$(dotenvx get DATABASE_URL -f "$ENV_FILE" 2>/dev/null || echo "")
-else
-    log_info ".env 파일에서 DATABASE_URL 읽기"
-    DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2- || echo "")
-fi
+# DATABASE_URL 확인 (환경변수가 이미 있으면 사용, 없으면 복호화)
+if [ -z "${DATABASE_URL:-}" ]; then
+    log_info "DATABASE_URL 환경변수가 없습니다. 복호화 시도..."
 
-if [ -z "$DATABASE_URL" ]; then
-    log_error "DATABASE_URL을 찾을 수 없습니다"
-    exit 1
+    # 환경변수 파일에서 DATABASE_URL 추출
+    if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
+        log_info "dotenvx로 DATABASE_URL 복호화"
+        DATABASE_URL=$(dotenvx get DATABASE_URL -f "$ENV_FILE" 2>/dev/null || echo "")
+    else
+        log_info ".env 파일에서 DATABASE_URL 읽기"
+        DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2- || echo "")
+    fi
+
+    if [ -z "$DATABASE_URL" ]; then
+        log_error "DATABASE_URL을 찾을 수 없습니다"
+        exit 1
+    fi
+else
+    log_info "기존 DATABASE_URL 환경변수 사용"
 fi
 
 # Backend 컨테이너가 실행 중인지 확인
