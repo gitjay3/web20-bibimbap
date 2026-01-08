@@ -142,52 +142,15 @@ log_info "Step 5: 최신 Docker 이미지 Pull"
 run_with_env docker compose -f "$COMPOSE_FILE" pull
 
 # 6. Database 마이그레이션
-log_info "Step 6: Database 마이그레이션 실행"
+log_info "Step 6: Database 마이그레이션 건너뛰기 (수동 실행 필요)"
+log_warn "마이그레이션은 수동으로 실행하세요:"
+log_warn "  docker compose -f $COMPOSE_FILE exec backend npx prisma migrate deploy"
 
-# DATABASE_URL 확인 (환경변수가 이미 있으면 사용, 없으면 복호화)
-if [ -z "${DATABASE_URL:-}" ]; then
-    log_info "DATABASE_URL 환경변수가 없습니다. 복호화 시도..."
-
-    # 환경변수 파일에서 DATABASE_URL 추출
-    if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
-        log_info "dotenvx로 DATABASE_URL 복호화"
-        DATABASE_URL=$(dotenvx get DATABASE_URL -f "$ENV_FILE" 2>/dev/null || echo "")
-    else
-        log_info ".env 파일에서 DATABASE_URL 읽기"
-        DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2- || echo "")
-    fi
-
-    if [ -z "$DATABASE_URL" ]; then
-        log_error "DATABASE_URL을 찾을 수 없습니다"
-        exit 1
-    fi
-fi
-
-# DATABASE_URL을 export (쉘 환경변수로 전달)
-export DATABASE_URL
-
-log_info "기존 DATABASE_URL 환경변수 사용"
-
-# DATABASE_URL 길이 확인 (디버깅)
-DB_URL_LENGTH=${#DATABASE_URL}
-log_info "DATABASE_URL 길이: $DB_URL_LENGTH characters"
-
-# Backend 컨테이너가 실행 중인지 확인
-if docker compose -f "$COMPOSE_FILE" ps backend | grep -q "Up"; then
-    log_info "기존 backend 컨테이너에서 마이그레이션 실행"
-    docker compose -f "$COMPOSE_FILE" exec -T backend npx prisma migrate deploy
-else
-    log_warn "실행 중인 backend 컨테이너가 없습니다. 새 컨테이너로 마이그레이션 실행"
-    # DATABASE_URL을 쉘 환경변수에서 가져와서 전달 (특수 문자 이스케이프 문제 방지)
-    docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL backend npx prisma migrate deploy
-fi
-
-if [ $? -ne 0 ]; then
-    log_error "Database 마이그레이션 실패"
-    log_info "롤백 실행..."
-    bash "$SCRIPT_DIR/rollback.sh" "$ENV_DISPLAY"
-    exit 1
-fi
+# TODO: 마이그레이션 자동화 구현
+# 현재는 docker compose run으로 DATABASE_URL 전달이 안 되는 문제가 있어서 주석 처리
+# 해결 방법:
+# 1. Backend 컨테이너 entrypoint에서 자동 실행
+# 2. 환경변수 전달 방식 재검토
 
 # 7. 컨테이너 재시작 (down -> up)
 log_info "Step 7: 컨테이너 재시작"
