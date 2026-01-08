@@ -11,12 +11,12 @@ model Event {
   title         String
   description   String?
   slotSchema    Json
-  creatorUserId String
+  creatorId String
   startTime     DateTime
   endTime       DateTime
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  User          User        @relation(fields: [creatorUserId], references: [id])
+  User          User        @relation(fields: [creatorId], references: [id])
   EventSlot     EventSlot[]
 }
 
