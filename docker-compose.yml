@@ -1,88 +1,151 @@
+name: bookstcamp-${ENVIRONMENT:-development}
+
 services:
+  # PostgreSQL (로컬 개발 전용)
   postgres:
-    image: postgres:18-alpine
-    container_name: postgres
+    image: postgres:14.18-alpine
+    container_name: bookstcamp-postgres
     restart: unless-stopped
+    profiles:
+      - local
     environment:
-      POSTGRES_DB: bibimbap
-      POSTGRES_USER: bibimbap_user
-      POSTGRES_PASSWORD: your_secure_password_here
-      PGDATA: /var/lib/postgresql/data/pgdata
+      - POSTGRES_DB=${POSTGRES_DB:-bookstcamp_dev}
+      - POSTGRES_USER=${POSTGRES_USER:-dev}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dev123}
+      - POSTGRES_INITDB_ARGS=${POSTGRES_INITDB_ARGS:---encoding=UTF-8 --locale=C}
+      - TZ=${TZ:-Asia/Seoul}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bookstcamp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bibimbap_user -d bibimbap"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-bookstcamp_dev}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '${POSTGRES_CPU_LIMIT:-0.5}'
+          memory: ${POSTGRES_MEMORY_LIMIT:-512M}
+        reservations:
+          cpus: '${POSTGRES_CPU_RESERVATION:-0.25}'
+          memory: ${POSTGRES_MEMORY_RESERVATION:-256M}
+
+  backend:
+    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: bookstcamp-backend
+    restart: unless-stopped
+    env_file:
+      - path: .env.${ENVIRONMENT:-development}
+        required: false
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3001
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      - redis
     networks:
-      - app-network
+      - bookstcamp-network
+    deploy:
+      resources:
+        limits:
+          cpus: '${BACKEND_CPU_LIMIT:-1.0}'
+          memory: ${BACKEND_MEMORY_LIMIT:-1G}
+        reservations:
+          cpus: '${BACKEND_CPU_RESERVATION:-0.5}'
+          memory: ${BACKEND_MEMORY_RESERVATION:-512M}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
+  frontend:
+    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: bookstcamp-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      - backend
+    networks:
+      - bookstcamp-network
+    deploy:
+      resources:
+        limits:
+          cpus: '${FRONTEND_CPU_LIMIT:-0.5}'
+          memory: ${FRONTEND_MEMORY_LIMIT:-256M}
+        reservations:
+          cpus: '${FRONTEND_CPU_RESERVATION:-0.25}'
+          memory: ${FRONTEND_MEMORY_RESERVATION:-128M}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
 
   redis:
-    image: redis:8-alpine
-    container_name: redis
+    image: redis:8.4.0-alpine3.22
+    container_name: bookstcamp-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
-    ports:
-      - "6379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy ${REDIS_EVICTION_POLICY:-allkeys-lru}
+      --requirepass ${REDIS_PASSWORD:-redis123}
+    env_file:
+      - path: .env.${ENVIRONMENT:-development}
+        required: false
     volumes:
-      - redis_data:/data
+      - redis-data:/data
+    networks:
+      - bookstcamp-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"]
       interval: 10s
       timeout: 3s
-      retries: 5
-    networks:
-      - app-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    restart: unless-stopped
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    networks:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_INSTALL_PLUGINS: ''
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - monitoring
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '${REDIS_CPU_LIMIT:-0.5}'
+          memory: ${REDIS_MEMORY_LIMIT:-512M}
+        reservations:
+          cpus: '${REDIS_CPU_RESERVATION:-0.25}'
+          memory: ${REDIS_MEMORY_RESERVATION:-256M}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
 
 networks:
-  app-network:
+  bookstcamp-network:
+    name: bookstcamp-${ENVIRONMENT:-development}-network
     driver: bridge
-  monitoring:
-    driver: bridge
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.20.0.0/16}
 
 volumes:
-  postgres_data:
+  postgres-data:
+    name: bookstcamp-postgres-${ENVIRONMENT:-development}-data
     driver: local
-  redis_data:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
+
+  redis-data:
+    name: bookstcamp-redis-${ENVIRONMENT:-development}-data
     driver: local
