@@ -159,10 +159,23 @@ fi
 # 7. 컨테이너 재시작
 log_info "Step 7: 컨테이너 재시작"
 
-# 환경변수 로드
+# 환경변수 로드 (.deploy.env 우선, 그 다음 .env.production)
 set -a
+if [ -f "$PROJECT_ROOT/.deploy.env" ]; then
+    log_info "GitHub Actions 환경변수 로드: .deploy.env"
+    source "$PROJECT_ROOT/.deploy.env"
+fi
 source "$ENV_FILE"
 set +a
+
+# IMAGE_TAG 검증
+if [ -z "${IMAGE_TAG:-}" ]; then
+    log_error "IMAGE_TAG 환경변수가 설정되지 않았습니다"
+    log_error ".deploy.env 파일을 확인하거나 IMAGE_TAG를 export하세요"
+    exit 1
+fi
+
+log_info "배포 이미지 태그: $IMAGE_TAG"
 
 docker compose -f "$COMPOSE_FILE" down
 docker compose -f "$COMPOSE_FILE" up -d
