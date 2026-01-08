@@ -144,13 +144,27 @@ run_with_env docker compose -f "$COMPOSE_FILE" pull
 # 6. Database 마이그레이션
 log_info "Step 6: Database 마이그레이션 실행"
 
+# 환경변수 파일에서 DATABASE_URL 추출
+if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
+    log_info "dotenvx로 DATABASE_URL 복호화"
+    DATABASE_URL=$(dotenvx get DATABASE_URL -f "$ENV_FILE" 2>/dev/null || echo "")
+else
+    log_info ".env 파일에서 DATABASE_URL 읽기"
+    DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2- || echo "")
+fi
+
+if [ -z "$DATABASE_URL" ]; then
+    log_error "DATABASE_URL을 찾을 수 없습니다"
+    exit 1
+fi
+
 # Backend 컨테이너가 실행 중인지 확인
 if docker compose -f "$COMPOSE_FILE" ps backend | grep -q "Up"; then
     log_info "기존 backend 컨테이너에서 마이그레이션 실행"
     docker compose -f "$COMPOSE_FILE" exec -T backend npx prisma migrate deploy
 else
     log_warn "실행 중인 backend 컨테이너가 없습니다. 새 컨테이너로 마이그레이션 실행"
-    run_with_env docker compose -f "$COMPOSE_FILE" run --rm backend npx prisma migrate deploy
+    docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL="$DATABASE_URL" backend npx prisma migrate deploy
 fi
 
 if [ $? -ne 0 ]; then
