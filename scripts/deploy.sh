@@ -159,6 +159,11 @@ fi
 # 7. 컨테이너 재시작
 log_info "Step 7: 컨테이너 재시작"
 
+# 환경변수 로드
+set -a
+source "$ENV_FILE"
+set +a
+
 docker compose -f "$COMPOSE_FILE" down
 docker compose -f "$COMPOSE_FILE" up -d
 
