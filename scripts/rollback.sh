@@ -20,6 +20,15 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# dotenvx 실행 헬퍼 함수
+run_with_env() {
+    if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
+        dotenvx run -f "$ENV_FILE" -- "$@"
+    else
+        "$@"
+    fi
+}
+
 # 사용법
 usage() {
     cat << EOF
@@ -137,45 +146,26 @@ fi
 
 # 1. 현재 컨테이너 중지
 log_info "Step 1: 현재 실행 중인 컨테이너 중지"
-if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
-    dotenvx run -f "$ENV_FILE" -- docker compose -f "$COMPOSE_FILE" down
-else
-    docker compose -f "$COMPOSE_FILE" down
+
+# .deploy.env 로드 (DOTENV_PRIVATE_KEY_PRODUCTION 환경변수 설정용)
+if [ -f "$PROJECT_ROOT/.deploy.env" ]; then
+    log_info "GitHub Actions 환경변수 로드: .deploy.env"
+    set -a
+    source "$PROJECT_ROOT/.deploy.env"
+    set +a
 fi
+
+run_with_env docker compose -f "$COMPOSE_FILE" down
 
 # 2. 백업된 이미지 정보 읽기 및 복원
 log_info "Step 2: 백업된 이미지로 복원"
 
-log_warn "자동 이미지 복원은 구현되지 않았습니다."
-log_warn "수동으로 이전 이미지 태그를 사용하여 배포해야 합니다."
-echo ""
-log_info "예시:"
-log_info "  1. GitHub에서 이전 성공한 워크플로우의 이미지 태그 확인"
-log_info "  2. .env.$ENV_NAME 파일에서 IMAGE_TAG 변경"
-log_info "  3. deploy.sh 다시 실행"
+log_info "현재 설정으로 production-latest 태그 이미지를 사용하여 복원합니다."
 
 # 3. 이전 설정으로 컨테이너 재시작 시도
 log_info "Step 3: 이전 설정으로 컨테이너 재시작"
 
-# IMAGE_TAG를 이전 버전으로 변경하라는 안내
-log_warn "롤백을 완료하려면:"
-log_warn "  1. IMAGE_TAG 환경변수를 이전 버전으로 설정"
-log_warn "  2. 아래 명령어 실행:"
-echo ""
-if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
-    echo "     dotenvx run -f $ENV_FILE -- docker compose -f $COMPOSE_FILE up -d"
-else
-    echo "     docker compose -f $COMPOSE_FILE up -d"
-fi
-echo ""
-
-# 간단한 자동 복원 시도 (현재 설정 그대로)
-log_info "현재 설정으로 서비스 재시작 시도..."
-if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
-    dotenvx run -f "$ENV_FILE" -- docker compose -f "$COMPOSE_FILE" up -d
-else
-    docker compose -f "$COMPOSE_FILE" up -d
-fi
+run_with_env docker compose -f "$COMPOSE_FILE" up -d
 
 # 4. 상태 확인
 log_info "Step 4: 서비스 상태 확인"
@@ -185,9 +175,6 @@ docker compose -f "$COMPOSE_FILE" ps
 
 # 5. 완료
 log_info "=== 롤백 프로세스 완료 ==="
-log_warn "주의: 완전한 롤백을 위해서는 IMAGE_TAG를 이전 버전으로 수동 변경 후"
-log_warn "       컨테이너를 다시 시작해야 할 수 있습니다."
-echo ""
 log_info "서비스 로그 확인: docker compose -f $COMPOSE_FILE logs -f"
 
 exit 0

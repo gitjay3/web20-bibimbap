@@ -141,44 +141,19 @@ docker compose -f "$COMPOSE_FILE" images > "$BACKUP_DIR/images_${ENV_DISPLAY}_${
 log_info "Step 5: 최신 Docker 이미지 Pull"
 run_with_env docker compose -f "$COMPOSE_FILE" pull
 
-# 6. 환경변수 파일 복호화
-log_info "Step 6: 환경변수 파일 복호화"
-if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ] && [ -n "${DOTENV_PRIVATE_KEY_PRODUCTION:-}" ]; then
-    cp "$ENV_FILE" "${ENV_FILE}.encrypted.backup"
+# 6. 컨테이너 재시작
+log_info "Step 6: 컨테이너 재시작"
 
-    if dotenvx decrypt --stdout -f "$ENV_FILE" > "${ENV_FILE}.decrypted"; then
-        mv "${ENV_FILE}.decrypted" "$ENV_FILE"
-        log_info "복호화 완료"
-    else
-        log_error "복호화 실패"
-        mv "${ENV_FILE}.encrypted.backup" "$ENV_FILE"
-        exit 1
-    fi
-fi
-
-# 7. 컨테이너 재시작
-log_info "Step 7: 컨테이너 재시작"
-
-# 환경변수 로드 (.deploy.env 우선, 그 다음 .env.production)
-set -a
+# .deploy.env 로드 (DOTENV_PRIVATE_KEY_PRODUCTION 환경변수 설정용)
 if [ -f "$PROJECT_ROOT/.deploy.env" ]; then
     log_info "GitHub Actions 환경변수 로드: .deploy.env"
+    set -a
     source "$PROJECT_ROOT/.deploy.env"
-fi
-source "$ENV_FILE"
-set +a
-
-# IMAGE_TAG 검증
-if [ -z "${IMAGE_TAG:-}" ]; then
-    log_error "IMAGE_TAG 환경변수가 설정되지 않았습니다"
-    log_error ".deploy.env 파일을 확인하거나 IMAGE_TAG를 export하세요"
-    exit 1
+    set +a
 fi
 
-log_info "배포 이미지 태그: $IMAGE_TAG"
-
-docker compose -f "$COMPOSE_FILE" down
-docker compose -f "$COMPOSE_FILE" up -d
+run_with_env docker compose -f "$COMPOSE_FILE" down
+run_with_env docker compose -f "$COMPOSE_FILE" up -d
 
 if [ $? -ne 0 ]; then
     log_error "컨테이너 시작 실패"
@@ -186,12 +161,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 8. 컨테이너 시작 대기
-log_info "Step 8: 컨테이너 시작 대기 (10초)"
+# 7. 컨테이너 시작 대기
+log_info "Step 7: 컨테이너 시작 대기 (10초)"
 sleep 10
 
-# 9. 배포 검증
-log_info "Step 9: 배포 검증"
+# 8. 배포 검증
+log_info "Step 8: 배포 검증"
 
 if command -v jq &> /dev/null; then
     FAILED_SERVICES=$(docker compose -f "$COMPOSE_FILE" ps --format json | jq -r 'select(.State != "running") | .Service' 2>/dev/null || echo "")
@@ -211,7 +186,7 @@ if [ -n "$FAILED_SERVICES" ]; then
     exit 1
 fi
 
-# 10. 완료
+# 9. 완료
 log_info "=== 배포 완료 ==="
 docker compose -f "$COMPOSE_FILE" ps
 
