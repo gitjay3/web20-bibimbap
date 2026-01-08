@@ -16,10 +16,6 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-env:
-  REGISTRY: ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}
-  IMAGE_TAG: ${{ inputs.image_tag || format('production-{0}', github.sha) }}
-
 jobs:
   # Docker 이미지 빌드 및 푸시
   build-and-push:
@@ -27,7 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production-build
-      url: ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}
+
+    env:
+      IMAGE_TAG: ${{ inputs.image_tag || format('production-{0}', github.sha) }}
 
     strategy:
       matrix:
@@ -62,9 +60,9 @@ jobs:
           file: ./${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/bookstcamp-${{ matrix.service }}:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/bookstcamp-${{ matrix.service }}:production-latest
-            ${{ env.REGISTRY }}/bookstcamp-${{ matrix.service }}:${{ steps.version.outputs.version }}
+            ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ env.IMAGE_TAG }}
+            ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:production-latest
+            ${{ secrets.NCP_CONTAINER_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -85,7 +83,9 @@ jobs:
     needs: build-and-push
     environment:
       name: production
-      url: http://${{ secrets.PRODUCTION_SERVER_HOST }}
+
+    env:
+      IMAGE_TAG: ${{ inputs.image_tag || format('production-{0}', github.sha) }}
 
     steps:
       - name: Checkout code
