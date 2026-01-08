@@ -162,8 +162,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # 7. 컨테이너 시작 대기
-log_info "Step 7: 컨테이너 시작 대기 (10초)"
-sleep 10
+log_info "Step 7: 컨테이너 시작 대기 (5초)"
+sleep 5
 
 # 8. 배포 검증
 log_info "Step 8: 배포 검증"
