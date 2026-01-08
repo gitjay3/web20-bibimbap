@@ -129,6 +129,19 @@ jobs:
           scp /tmp/deploy.env ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.deploy.env
           rm /tmp/deploy.env
 
+      - name: Clean up old containers and networks
+        run: |
+          ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
+            cd ~/bookstcamp
+
+            # 기존 컨테이너와 네트워크 정리
+            docker compose -f docker-compose.yml down --remove-orphans 2>/dev/null || true
+
+            # 이름이 다른 기존 네트워크 정리 (prod vs production)
+            docker network rm bookstcamp-prod-network 2>/dev/null || true
+            docker network rm bookstcamp-production-network 2>/dev/null || true
+          EOF
+
       - name: Deploy on production server
         run: |
           ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} << 'EOF'
