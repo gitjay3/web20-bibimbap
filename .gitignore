@@ -3,10 +3,6 @@ node_modules/
 .pnp.*
 .yarn/*
 
-# pnpm
-.pnpm-debug.log*
-.pnpm-store/
-
 # Logs
 logs
 *.log
@@ -29,11 +25,8 @@ pids
 dist/
 dist-ssr/
 build/
-.next/
 out/
-.nuxt/
 .cache/
-.parcel-cache/
 .vite/
 
 # Coverage
@@ -43,25 +36,14 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
 
 # Environment variables
 .env
 .env*.local
-.env.production
-.env.development
+.deploy.env
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-.idea/
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# dotenvx
+.env.keys
 
 # OS
 .DS_Store
@@ -72,15 +54,14 @@ Thumbs.db
 .swc/
 
 # Docker
-docker-compose.override.yml
-.dockerignore
+docker-compose*.override.yml
 
-# Optional npm cache directory
+# Deployment backups
+backups/
+
+# Optional cache
 .npm
-
-# Optional eslint cache
 .eslintcache
-.stylelintcache
 
 # Optional REPL history
 .node_repl_history
@@ -94,7 +75,6 @@ temp/
 
 # Local development
 .local
-*.local
 
 # IDE - VSCode
 .vscode/*
@@ -111,5 +91,3 @@ temp/
 
 # Misc
 .turbo
-.firebase/
-.terraform/
