@@ -42,12 +42,16 @@ services:
       dockerfile: backend/Dockerfile
     container_name: bookstcamp-backend
     restart: unless-stopped
-    env_file:
-      - path: .env.${ENVIRONMENT:-development}
-        required: false
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
@@ -106,9 +110,6 @@ services:
       --maxmemory ${REDIS_MAX_MEMORY:-256mb}
       --maxmemory-policy ${REDIS_EVICTION_POLICY:-allkeys-lru}
       --requirepass ${REDIS_PASSWORD:-redis123}
-    env_file:
-      - path: .env.${ENVIRONMENT:-development}
-        required: false
     volumes:
       - redis-data:/data
     networks:
