@@ -7,17 +7,17 @@ datasource db {
 }
 
 model Event {
-  id            Int         @id @default(autoincrement())
-  title         String
-  description   String?
-  slotSchema    Json
-  creatorUserId String
-  startTime     DateTime
-  endTime       DateTime
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  User          User        @relation(fields: [creatorUserId], references: [id])
-  EventSlot     EventSlot[]
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String?
+  slotSchema  Json
+  creatorId   String
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  User        User        @relation(fields: [creatorId], references: [id])
+  EventSlot   EventSlot[]
 }
 
 model EventSlot {
