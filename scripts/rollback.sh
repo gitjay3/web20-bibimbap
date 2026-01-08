@@ -46,6 +46,7 @@ if [ $# -lt 1 ]; then
 fi
 
 ENVIRONMENT=$1
+ENV_DISPLAY="$ENVIRONMENT"  # 로그 표시용
 BACKUP_TIMESTAMP=${2:-}
 
 if [[ "$ENVIRONMENT" != "prod" ]]; then
@@ -66,9 +67,12 @@ else
 fi
 ENV_FILE="$PROJECT_ROOT/.env.$ENV_NAME"
 
+# docker-compose.yml에서 사용할 ENVIRONMENT 환경변수 설정
+export ENVIRONMENT="$ENV_NAME"
+
 BACKUP_DIR="$PROJECT_ROOT/backups"
 
-log_info "=== 롤백 시작: $ENVIRONMENT 환경 ==="
+log_info "=== 롤백 시작: $ENV_DISPLAY 환경 ==="
 
 # 백업 디렉토리 확인
 if [ ! -d "$BACKUP_DIR" ]; then
@@ -82,7 +86,7 @@ if [ -z "$BACKUP_TIMESTAMP" ]; then
     log_info "최신 백업 검색 중..."
 
     # 가장 최근 백업 파일 찾기
-    LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/images_${ENVIRONMENT}_*.txt 2>/dev/null | head -n 1 || echo "")
+    LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/images_${ENV_DISPLAY}_*.txt 2>/dev/null | head -n 1 || echo "")
 
     if [ -z "$LATEST_BACKUP" ]; then
         log_error "백업 파일을 찾을 수 없습니다"
@@ -91,15 +95,15 @@ if [ -z "$BACKUP_TIMESTAMP" ]; then
     fi
 
     # 타임스탬프 추출
-    BACKUP_TIMESTAMP=$(basename "$LATEST_BACKUP" | sed "s/images_${ENVIRONMENT}_//" | sed 's/.txt//')
+    BACKUP_TIMESTAMP=$(basename "$LATEST_BACKUP" | sed "s/images_${ENV_DISPLAY}_//" | sed 's/.txt//')
     log_info "최신 백업 발견: $BACKUP_TIMESTAMP"
 else
     log_info "지정된 백업 사용: $BACKUP_TIMESTAMP"
 fi
 
 # 백업 파일 경로
-IMAGES_BACKUP="$BACKUP_DIR/images_${ENVIRONMENT}_${BACKUP_TIMESTAMP}.txt"
-CONTAINERS_BACKUP="$BACKUP_DIR/containers_${ENVIRONMENT}_${BACKUP_TIMESTAMP}.txt"
+IMAGES_BACKUP="$BACKUP_DIR/images_${ENV_DISPLAY}_${BACKUP_TIMESTAMP}.txt"
+CONTAINERS_BACKUP="$BACKUP_DIR/containers_${ENV_DISPLAY}_${BACKUP_TIMESTAMP}.txt"
 
 # 백업 파일 존재 확인
 if [ ! -f "$IMAGES_BACKUP" ]; then
@@ -147,7 +151,7 @@ log_warn "수동으로 이전 이미지 태그를 사용하여 배포해야 합�
 echo ""
 log_info "예시:"
 log_info "  1. GitHub에서 이전 성공한 워크플로우의 이미지 태그 확인"
-log_info "  2. .env.$ENVIRONMENT 파일에서 IMAGE_TAG 변경"
+log_info "  2. .env.$ENV_NAME 파일에서 IMAGE_TAG 변경"
 log_info "  3. deploy.sh 다시 실행"
 
 # 3. 이전 설정으로 컨테이너 재시작 시도

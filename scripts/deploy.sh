@@ -57,6 +57,7 @@ if [ $# -ne 1 ]; then
 fi
 
 ENVIRONMENT=$1
+ENV_DISPLAY="$ENVIRONMENT"  # 로그 표시용
 
 if [[ "$ENVIRONMENT" != "prod" ]]; then
     log_error "Invalid environment: $ENVIRONMENT (only 'prod' is supported)"
@@ -76,10 +77,13 @@ else
 fi
 ENV_FILE="$PROJECT_ROOT/.env.$ENV_NAME"
 
+# docker-compose.yml에서 사용할 ENVIRONMENT 환경변수 설정
+export ENVIRONMENT="$ENV_NAME"
+
 BACKUP_DIR="$PROJECT_ROOT/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-log_info "=== 배포 시작: $ENVIRONMENT 환경 ==="
+log_info "=== 배포 시작: $ENV_DISPLAY 환경 ==="
 log_info "프로젝트 루트: $PROJECT_ROOT"
 log_info "Compose 파일: $COMPOSE_FILE"
 log_info "환경 변수 파일: $ENV_FILE"
@@ -130,8 +134,8 @@ fi
 # 4. 기존 컨테이너 상태 백업 (롤백용)
 log_info "Step 4: 현재 실행 중인 컨테이너 정보 백업"
 mkdir -p "$BACKUP_DIR"
-docker compose -f "$COMPOSE_FILE" ps > "$BACKUP_DIR/containers_${ENVIRONMENT}_${TIMESTAMP}.txt" || true
-docker compose -f "$COMPOSE_FILE" images > "$BACKUP_DIR/images_${ENVIRONMENT}_${TIMESTAMP}.txt" || true
+docker compose -f "$COMPOSE_FILE" ps > "$BACKUP_DIR/containers_${ENV_DISPLAY}_${TIMESTAMP}.txt" || true
+docker compose -f "$COMPOSE_FILE" images > "$BACKUP_DIR/images_${ENV_DISPLAY}_${TIMESTAMP}.txt" || true
 
 # 5. 최신 이미지 Pull
 log_info "Step 5: 최신 Docker 이미지 Pull"
@@ -152,7 +156,7 @@ fi
 if [ $? -ne 0 ]; then
     log_error "Database 마이그레이션 실패"
     log_info "롤백 실행..."
-    bash "$SCRIPT_DIR/rollback.sh" "$ENVIRONMENT"
+    bash "$SCRIPT_DIR/rollback.sh" "$ENV_DISPLAY"
     exit 1
 fi
 
@@ -170,7 +174,7 @@ run_with_env docker compose -f "$COMPOSE_FILE" up -d
 if [ $? -ne 0 ]; then
     log_error "컨테이너 시작 실패"
     log_info "롤백 실행..."
-    bash "$SCRIPT_DIR/rollback.sh" "$ENVIRONMENT"
+    bash "$SCRIPT_DIR/rollback.sh" "$ENV_DISPLAY"
     exit 1
 fi
 
@@ -201,12 +205,12 @@ if [ -n "$FAILED_SERVICES" ]; then
     log_error "다음 서비스가 실행되지 않았습니다:"
     echo "$FAILED_SERVICES"
     log_info "롤백 실행..."
-    bash "$SCRIPT_DIR/rollback.sh" "$ENVIRONMENT"
+    bash "$SCRIPT_DIR/rollback.sh" "$ENV_DISPLAY"
     exit 1
 fi
 
 # 10. 성공 로그
-log_info "=== 배포 완료: $ENVIRONMENT 환경 ==="
+log_info "=== 배포 완료: $ENV_DISPLAY 환경 ==="
 log_info "배포 시간: $TIMESTAMP"
 log_info ""
 log_info "실행 중인 서비스:"
@@ -215,8 +219,8 @@ docker compose -f "$COMPOSE_FILE" ps
 # 11. 정리
 log_info ""
 log_info "배포 백업 파일:"
-log_info "  - $BACKUP_DIR/containers_${ENVIRONMENT}_${TIMESTAMP}.txt"
-log_info "  - $BACKUP_DIR/images_${ENVIRONMENT}_${TIMESTAMP}.txt"
+log_info "  - $BACKUP_DIR/containers_${ENV_DISPLAY}_${TIMESTAMP}.txt"
+log_info "  - $BACKUP_DIR/images_${ENV_DISPLAY}_${TIMESTAMP}.txt"
 log_info ""
 log_info "로그 확인: docker compose -f $COMPOSE_FILE logs -f"
 

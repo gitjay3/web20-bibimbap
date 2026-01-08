@@ -22,6 +22,7 @@ log_error() {
 
 # 환경 파라미터
 ENVIRONMENT=${1:-prod}
+ENV_DISPLAY="$ENVIRONMENT"  # 로그 표시용
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
@@ -34,11 +35,14 @@ else
 fi
 ENV_FILE="$PROJECT_ROOT/.env.$ENV_NAME"
 
+# docker-compose.yml에서 사용할 ENVIRONMENT 환경변수 설정
+export ENVIRONMENT="$ENV_NAME"
+
 CHECKS_PASSED=0
 CHECKS_WARNING=0
 CHECKS_FAILED=0
 
-log_info "=== 배포 전 검사 시작: $ENVIRONMENT ==="
+log_info "=== 배포 전 검사 시작: $ENV_DISPLAY ==="
 echo ""
 
 # 1. Docker 설치 확인
