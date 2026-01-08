@@ -116,20 +116,24 @@ jobs:
       - name: Create temporary env file with decrypted DATABASE_URL
         env:
           DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
+          NCP_REGISTRY_URL: ${{ secrets.NCP_REGISTRY_URL }}
+          NCP_REGISTRY_USERNAME: ${{ secrets.NCP_REGISTRY_USERNAME }}
+          NCP_REGISTRY_PASSWORD: ${{ secrets.NCP_REGISTRY_PASSWORD }}
+          DEPLOY_IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           # DATABASE_URL 복호화
           DATABASE_URL=$(dotenvx get DATABASE_URL -f .env.production)
 
           # deploy.env 생성
-          cat > /tmp/deploy.env << EOF
-ENVIRONMENT=production
-NCP_REGISTRY_URL=${{ secrets.NCP_REGISTRY_URL }}
-NCP_REGISTRY_USERNAME=${{ secrets.NCP_REGISTRY_USERNAME }}
-NCP_REGISTRY_PASSWORD=${{ secrets.NCP_REGISTRY_PASSWORD }}
-IMAGE_TAG=${{ env.IMAGE_TAG }}
-DOTENV_PRIVATE_KEY_PRODUCTION=${{ secrets.DOTENVX_PRIVATE_KEY_PRODUCTION }}
-DATABASE_URL=${DATABASE_URL}
-EOF
+          {
+            echo "ENVIRONMENT=production"
+            echo "NCP_REGISTRY_URL=${NCP_REGISTRY_URL}"
+            echo "NCP_REGISTRY_USERNAME=${NCP_REGISTRY_USERNAME}"
+            echo "NCP_REGISTRY_PASSWORD=${NCP_REGISTRY_PASSWORD}"
+            echo "IMAGE_TAG=${DEPLOY_IMAGE_TAG}"
+            echo "DOTENV_PRIVATE_KEY_PRODUCTION=${DOTENV_PRIVATE_KEY_PRODUCTION}"
+            echo "DATABASE_URL=${DATABASE_URL}"
+          } > /tmp/deploy.env
           chmod 600 /tmp/deploy.env
 
       - name: Copy deployment files to server
