@@ -1,68 +1,84 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
+@font-face {
+  font-family: 'NanumSquare';
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  src:
+    url('assets/fonts/NanumSquareR.ttf') format('truetype');
 }
-a:hover {
-  color: #535bf2;
+
+@font-face {
+  font-family: 'NanumSquare';
+  font-weight: 700;
+  src:
+    url('assets/fonts/NanumSquareB.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'NanumSquare';
+  font-weight: 800;
+  src:
+    url('assets/fonts/NanumSquareEB.ttf') format('truetype');
+}
+
+@theme {
+  /* 색상 초기화 */
+  --color-*: initial;
+
+  /* Brand (Primitve) */
+  --color-brand-50: #f0f4fa;
+  --color-brand-100: #e4effe;
+  --color-brand-200: #a3c8ff;
+  --color-brand-400: #3490ff;
+  --color-brand-500: #005cfd;
+  --color-brand-900: #0026b1;
+
+  /* Neutral (Primitve) */
+  --color-white: #ffffff;
+  --color-gray-50: #f5f5f5;
+  --color-gray-100: #f0f0f0;
+  --color-gray-200: #e4e4e7;
+  --color-gray-300: #d4d4d8;
+  --color-gray-500: #71717a;
+  --color-gray-700: #444444;
+  --color-gray-900: #111111;
+  --color-black: #000000;
+
+  /* Brand (Semantic) */
+  --color-brand-text-primary: var(--color-brand-500);
+  --color-brand-border-default: var(--color-brand-500);
+  --color-brand-surface-default: var(--color-brand-500);
+  --color-brand-surface-weak: var(--color-brand-100);
+  --color-brand-surface-disabled: var(--color-brand-200);
+
+  /* Neutral (Semantic) */
+  --color-neutral-text-primary: var(--color-gray-900);
+  --color-neutral-text-secondary: var(--color-gray-700);
+  --color-neutral-text-tertiary: var(--color-gray-500);
+  --color-neutral-surface-default: var(--color-gray-50);
+  --color-neutral-border-default: var(--color-gray-200);
+
+
+  /* 폰트 */
+  --font-nanumsquare: 'NanumSquare';
+
+  --text-12: 0.75rem;
+  --text-12--line-height: 1rem;
+
+  --text-16: 1rem;
+  --text-16--line-height: 1.5rem;
+
+  --text-20: 1.25rem;
+  --text-20--line-height: 2rem;
+
+  --text-24: 1.5rem;
+  --text-24--line-height: 2rem;
+
+  --text-36: 2.25rem;
+  --text-36--line-height: 3rem;
+
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  @apply font-nanumsquare text-neutral-text-primary
 }
