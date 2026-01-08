@@ -9,7 +9,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
-import { CreateReservationDto } from './dto/create-reservation.dto';
+import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
 
 @Controller('reservations')
@@ -17,13 +17,13 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
-  async apply(@Body() createReservationDto: CreateReservationDto) {
+  async apply(@Body() applyReservationDto: ApplyReservationDto) {
     // TODO: 인증 구현 후 실제 userId 가져오기
     const tempUserId = 'test-user-123';
 
-    const reservation = await this.reservationsService.create(
+    const reservation = await this.reservationsService.apply(
       tempUserId,
-      createReservationDto,
+      applyReservationDto,
     );
 
     return new ReservationResponseDto(reservation);
