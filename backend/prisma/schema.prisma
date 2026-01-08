@@ -12,3 +12,28 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Event {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String
+  startTime   DateTime
+  endTime     DateTime
+  slotSchema  Json
+  creatorId   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  slots       EventSlot[]
+}
+
+model EventSlot {
+  id           Int   @id @default(autoincrement())
+  eventId      Int
+  event        Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  maxCapacity  Int
+  currentCount Int   @default(0)
+  extraInfo    Json
+  version      Int   @default(0)
+
+  @@index([eventId])
+}
