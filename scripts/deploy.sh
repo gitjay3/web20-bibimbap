@@ -141,31 +141,29 @@ docker compose -f "$COMPOSE_FILE" images > "$BACKUP_DIR/images_${ENV_DISPLAY}_${
 log_info "Step 5: 최신 Docker 이미지 Pull"
 run_with_env docker compose -f "$COMPOSE_FILE" pull
 
-# 6. Database 마이그레이션
-log_info "Step 6: Database 마이그레이션 건너뛰기 (수동 실행 필요)"
-log_warn "마이그레이션은 수동으로 실행하세요:"
-log_warn "  docker compose -f $COMPOSE_FILE exec backend npx prisma migrate deploy"
+# 6. 환경변수 파일 복호화
+log_info "Step 6: 환경변수 파일 복호화"
+if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ] && [ -n "${DOTENV_PRIVATE_KEY_PRODUCTION:-}" ]; then
+    cp "$ENV_FILE" "${ENV_FILE}.encrypted.backup"
 
-# TODO: 마이그레이션 자동화 구현
-# 현재는 docker compose run으로 DATABASE_URL 전달이 안 되는 문제가 있어서 주석 처리
-# 해결 방법:
-# 1. Backend 컨테이너 entrypoint에서 자동 실행
-# 2. 환경변수 전달 방식 재검토
+    if dotenvx decrypt --stdout -f "$ENV_FILE" > "${ENV_FILE}.decrypted"; then
+        mv "${ENV_FILE}.decrypted" "$ENV_FILE"
+        log_info "복호화 완료"
+    else
+        log_error "복호화 실패"
+        mv "${ENV_FILE}.encrypted.backup" "$ENV_FILE"
+        exit 1
+    fi
+fi
 
-# 7. 컨테이너 재시작 (down -> up)
+# 7. 컨테이너 재시작
 log_info "Step 7: 컨테이너 재시작"
 
-# 기존 컨테이너 중지 (볼륨은 유지)
-log_info "기존 컨테이너 중지"
-run_with_env docker compose -f "$COMPOSE_FILE" down
-
-# 새 컨테이너 시작
-log_info "새 컨테이너 시작"
-run_with_env docker compose -f "$COMPOSE_FILE" up -d
+docker compose -f "$COMPOSE_FILE" down
+docker compose -f "$COMPOSE_FILE" up -d
 
 if [ $? -ne 0 ]; then
     log_error "컨테이너 시작 실패"
-    log_info "롤백 실행..."
     bash "$SCRIPT_DIR/rollback.sh" "$ENV_DISPLAY"
     exit 1
 fi
@@ -174,18 +172,14 @@ fi
 log_info "Step 8: 컨테이너 시작 대기 (10초)"
 sleep 10
 
-# 9. 배포 검증 (컨테이너 상태 확인)
+# 9. 배포 검증
 log_info "Step 9: 배포 검증"
 
-# 모든 서비스가 실행 중인지 확인
 if command -v jq &> /dev/null; then
     FAILED_SERVICES=$(docker compose -f "$COMPOSE_FILE" ps --format json | jq -r 'select(.State != "running") | .Service' 2>/dev/null || echo "")
 else
-    # jq가 없으면 간단한 grep 사용
-    log_warn "jq가 설치되지 않았습니다. 간단한 검증만 수행합니다."
     RUNNING_COUNT=$(docker compose -f "$COMPOSE_FILE" ps | grep -c "Up" || echo "0")
     EXPECTED_COUNT=$(docker compose -f "$COMPOSE_FILE" config --services | wc -l)
-
     if [ "$RUNNING_COUNT" -ne "$EXPECTED_COUNT" ]; then
         FAILED_SERVICES="일부 서비스"
     else
@@ -194,26 +188,13 @@ else
 fi
 
 if [ -n "$FAILED_SERVICES" ]; then
-    log_error "다음 서비스가 실행되지 않았습니다:"
-    echo "$FAILED_SERVICES"
-    log_info "롤백 실행..."
+    log_error "서비스 실행 실패: $FAILED_SERVICES"
     bash "$SCRIPT_DIR/rollback.sh" "$ENV_DISPLAY"
     exit 1
 fi
 
-# 10. 성공 로그
-log_info "=== 배포 완료: $ENV_DISPLAY 환경 ==="
-log_info "배포 시간: $TIMESTAMP"
-log_info ""
-log_info "실행 중인 서비스:"
+# 10. 완료
+log_info "=== 배포 완료 ==="
 docker compose -f "$COMPOSE_FILE" ps
-
-# 11. 정리
-log_info ""
-log_info "배포 백업 파일:"
-log_info "  - $BACKUP_DIR/containers_${ENV_DISPLAY}_${TIMESTAMP}.txt"
-log_info "  - $BACKUP_DIR/images_${ENV_DISPLAY}_${TIMESTAMP}.txt"
-log_info ""
-log_info "로그 확인: docker compose -f $COMPOSE_FILE logs -f"
 
 exit 0
