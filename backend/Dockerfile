@@ -44,10 +44,16 @@ RUN cd backend && pnpm exec prisma generate
 # TypeScript 컴파일
 RUN cd backend && pnpm run build
 
+# pnpm deploy로 프로덕션 의존성만 추출 (symlink 없이 실제 파일로)
+RUN pnpm --filter backend deploy --prod --legacy /prod/backend
+
 # ========================================
 # Stage 3: Production
 # ========================================
 FROM node:20.19.6-alpine3.23 AS production
+
+# Prisma에 필요한 openssl 설치
+RUN apk add --no-cache openssl
 
 # 보안을 위해 non-root 사용자 생성
 RUN addgroup -g 1001 -S nodejs && \
@@ -55,33 +61,21 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /app
 
-# 프로덕션 의존성만 설치하기 위한 준비
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
-
-# 루트 package.json 복사
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY backend/package.json ./backend/
-
-# 프로덕션 의존성만 설치 (prepare 스크립트 무시 - husky는 Docker에서 불필요)
-# BuildKit cache mount로 pnpm store 재사용
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --prod --frozen-lockfile --ignore-scripts
+# pnpm deploy로 추출된 프로덕션 파일 복사 (symlink 없이 실제 파일)
+COPY --from=builder /prod/backend ./
 
 # 빌드된 파일 복사
-COPY --from=builder /app/backend/dist ./backend/dist
+COPY --from=builder /app/backend/dist ./dist
 
-# Prisma 스키마 복사 및 클라이언트 생성
-COPY --from=builder /app/backend/prisma ./backend/prisma
-RUN cd backend && pnpm exec prisma generate
+# Prisma 스키마 복사 및 클라이언트 재생성 (config 파일 제거 후 생성)
+COPY --from=builder /app/backend/prisma ./prisma
+RUN rm -f prisma.config.ts && npx prisma generate --schema=./prisma/schema.prisma
 
 # 소유권 변경
 RUN chown -R nestjs:nodejs /app
 
 # non-root 사용자로 전환
 USER nestjs
-
-# 백엔드 디렉토리로 이동
-WORKDIR /app/backend
 
 # 포트 노출
 EXPOSE 3001
