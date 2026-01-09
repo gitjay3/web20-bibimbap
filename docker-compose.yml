@@ -133,6 +133,52 @@ services:
         max-size: "${LOG_MAX_SIZE:-10m}"
         max-file: "${LOG_MAX_FILE:-3}"
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bookstcamp-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - bookstcamp-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bookstcamp-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: ""
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - bookstcamp-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
 networks:
   bookstcamp-network:
     name: bookstcamp-${ENVIRONMENT:-development}-network
@@ -145,4 +191,12 @@ volumes:
 
   redis-data:
     name: bookstcamp-redis-${ENVIRONMENT:-development}-data
+    driver: local
+
+  prometheus-data:
+    name: bookstcamp-prometheus-${ENVIRONMENT:-development}-data
+    driver: local
+
+  grafana-data:
+    name: bookstcamp-grafana-${ENVIRONMENT:-development}-data
     driver: local
