@@ -12,7 +12,7 @@ export class EventsService {
 
     const { title, description, startTime, endTime, slotSchema, slots } = dto;
 
-    return this.prisma.event.create({
+    return await this.prisma.event.create({
       data: {
         title,
         description,

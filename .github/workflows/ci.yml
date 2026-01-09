@@ -39,6 +39,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client (backend only)
+        if: matrix.workspace == 'backend'
+        working-directory: backend
+        run: pnpm exec prisma generate
+
       - name: Run lint (${{ matrix.workspace }})
         working-directory: ${{ matrix.workspace }}
         run: pnpm lint
