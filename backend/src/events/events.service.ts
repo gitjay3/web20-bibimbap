@@ -25,8 +25,6 @@ export class EventsService {
           create: slots.map((slot) => ({
             maxCapacity: slot.maxCapacity,
             extraInfo: slot.extraInfo,
-            slotStartTime: slot.slotStartTime,
-            slotEndTime: slot.slotEndTime,
           })),
         },
       },

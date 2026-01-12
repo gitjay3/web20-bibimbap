@@ -18,16 +18,6 @@ class CreateEventSlotDto {
 
   @IsObject()
   extraInfo: Record<string, any>;
-
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  slotStartTime?: Date;
-
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  slotEndTime?: Date;
 }
 
 export class CreateEventDto {
