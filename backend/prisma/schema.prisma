@@ -27,8 +27,6 @@ model EventSlot {
   currentCount  Int           @default(0)
   extraInfo     Json
   version       Int           @default(0)
-  slotStartTime DateTime?
-  slotEndTime   DateTime?
   Event         Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   Reservation   Reservation[]
 

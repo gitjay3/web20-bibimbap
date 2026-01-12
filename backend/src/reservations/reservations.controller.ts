@@ -7,29 +7,44 @@ import {
   Delete,
   ParseIntPipe,
   NotFoundException,
-  BadRequestException,
-  Sse,
-  MessageEvent,
-  Query,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+} from '@nestjs/swagger';
 import { ReservationsService } from './reservations.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
-import { Observable, fromEvent } from 'rxjs';
-import { map, filter } from 'rxjs/operators';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ReservationStatusEvent } from './events/reservation-status.event';
+import { ErrorResponseDto } from './dto/error-response.dto';
 
+@ApiTags('reservations')
 @Controller('reservations')
 export class ReservationsController {
-  constructor(
-    private readonly reservationsService: ReservationsService,
-    private readonly eventEmitter: EventEmitter2,
-  ) {}
+  constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
+  @ApiOperation({
+    summary: '예약 신청',
+    description: '이벤트 슬롯에 예약을 신청합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '예약 신청 성공',
+    type: ReservationResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: '정원 마감 또는 중복 예약',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: '슬롯을 찾을 수 없음',
+    type: ErrorResponseDto,
+  })
   async apply(@Body() applyReservationDto: ApplyReservationDto) {
-    // TODO: 인증 구현 후 실제 userId 가져오기
     const tempUserId = 'test-user-123';
 
     const reservation = await this.reservationsService.apply(
@@ -41,8 +56,16 @@ export class ReservationsController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: '내 예약 목록 조회',
+    description: '현재 사용자의 모든 예약을 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '예약 목록 조회 성공',
+    type: [ReservationResponseDto],
+  })
   async findAll() {
-    // TODO: 인증 구현 후 실제 userId 가져오기
     const tempUserId = 'test-user-123';
 
     const reservations =
@@ -50,27 +73,25 @@ export class ReservationsController {
     return reservations.map((r) => new ReservationResponseDto(r));
   }
 
-  @Sse('sse')
-  sse(@Query('userId') userId?: string): Observable<MessageEvent> {
-    if (!userId) {
-      throw new BadRequestException('userId is required');
-    }
-
-    return fromEvent(this.eventEmitter, 'reservation.status').pipe(
-      map((event: ReservationStatusEvent) => ({
-        data: {
-          userId: event.userId,
-          reservationId: event.reservationId,
-          status: event.status,
-          message: event.message,
-          timestamp: event.timestamp,
-        },
-      })),
-      filter((messageEvent) => messageEvent.data.userId === userId),
-    );
-  }
-
   @Get(':id')
+  @ApiOperation({
+    summary: '예약 상세 조회',
+    description: 'ID로 특정 예약을 조회합니다.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: '예약 ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '예약 조회 성공',
+    type: ReservationResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: '예약을 찾을 수 없음',
+    type: ErrorResponseDto,
+  })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const reservation = await this.reservationsService.findOne(id);
 
@@ -82,11 +103,30 @@ export class ReservationsController {
   }
 
   @Delete(':id')
+  @ApiOperation({
+    summary: '예약 취소',
+    description: '예약을 취소합니다.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: '취소할 예약 ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '예약 취소 성공',
+    type: ReservationResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: '이미 취소된 예약',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: '예약을 찾을 수 없음',
+    type: ErrorResponseDto,
+  })
   async cancel(@Param('id', ParseIntPipe) id: number) {
-    // TODO: 인증 구현 후 실제 userId 가져오기
-    const tempUserId = 'test-user-123';
-
-    const reservation = await this.reservationsService.cancel(id, tempUserId);
+    const reservation = await this.reservationsService.cancel(id);
     return new ReservationResponseDto(reservation);
   }
 }
