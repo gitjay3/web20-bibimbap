@@ -14,7 +14,7 @@ function Header({ navItems }: HeaderProps) {
         </div>
         <nav className="text-12 flex gap-4">
           {navItems.map((item) => (
-            <div className="text-neutral-text-secondary">{item.label}</div>
+            <div key={item.to} className="text-neutral-text-secondary">{item.label}</div>
           ))}
         </nav>
       </div>
