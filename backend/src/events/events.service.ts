@@ -12,12 +12,14 @@ export class EventsService {
     // TODO: 인증 로직 수정
     const TEMP_USER_ID = 'system-admin';
 
-    const { title, description, startTime, endTime, slotSchema, slots } = dto;
+    const { title, description, track, startTime, endTime, slotSchema, slots } =
+      dto;
 
     return await this.prisma.event.create({
       data: {
         title,
         description,
+        track,
         startTime,
         endTime,
         slotSchema,
