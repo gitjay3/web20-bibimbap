@@ -6,6 +6,7 @@ import EventCard from './components/EventCard';
 
 const mockEventCards: Event[] = [
   {
+    id: '1',
     category: 'WEB',
     status: 'ONGOING',
     title: '1주차: 웹 풀스택 과정 멘토링',
@@ -15,6 +16,7 @@ const mockEventCards: Event[] = [
     endAt: new Date('2026-01-15T18:00:00'),
   },
   {
+    id: '2',
     category: 'ANDROID',
     status: 'ONGOING',
     title: '1주차: Android 코틀린 심화',
@@ -24,6 +26,7 @@ const mockEventCards: Event[] = [
     endAt: new Date('2026-01-22T12:00:00'),
   },
   {
+    id: '3',
     category: 'IOS',
     status: 'ONGOING',
     title: '1주차: iOS 오토레이아웃 마스터',
@@ -33,6 +36,7 @@ const mockEventCards: Event[] = [
     endAt: new Date('2026-01-28T16:00:00'),
   },
   {
+    id: '4',
     category: 'ANDROID',
     status: 'UPCOMING',
     title: '2주차: Android 아키텍처 패턴',
@@ -41,6 +45,7 @@ const mockEventCards: Event[] = [
     endAt: new Date('2026-02-05T12:00:00'),
   },
   {
+    id: '5',
     category: 'ANDROID',
     status: 'ENDED',
     title: '0주차: Android 개발 환경 세팅',
@@ -83,6 +88,8 @@ function Main() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredEvents.map((item) => (
           <EventCard
+            key={item.id}
+            id={item.id}
             category={item.category}
             status={item.status}
             title={item.title}
