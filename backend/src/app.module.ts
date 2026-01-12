@@ -5,17 +5,17 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { EventsModule } from './events/events.module';
 import { ConfigModule } from '@nestjs/config';
 import { ReservationsModule } from './reservations/reservations.module';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+import { EventSlotsModule } from './event-slots/event-slots.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    EventEmitterModule.forRoot(),
     PrismaModule,
     EventsModule,
     ReservationsModule,
+    EventSlotsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
