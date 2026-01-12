@@ -98,16 +98,31 @@ docker compose -f "$COMPOSE_FILE" images > "$BACKUP_DIR/images_${ENVIRONMENT}_${
 log_info "Step 5: Docker 리소스 정리"
 log_info "정리 전 디스크 사용량:"
 df -h / | tail -1
-docker image prune -a -f --filter "until=24h" || true
+
+# 1. 중지된 컨테이너 정리
+log_info "중지된 컨테이너 정리..."
 docker container prune -f || true
+
+# 2. dangling 이미지 정리 (태그 없는 이미지만)
+log_info "dangling 이미지 정리..."
+docker image prune -f || true
+
+# 3. 사용하지 않는 볼륨 정리
+log_info "미사용 볼륨 정리..."
+docker volume prune -f || true
+
+# 4. 빌드 캐시 정리
+log_info "빌드 캐시 정리..."
+docker builder prune -f || true
+
 log_info "정리 후 디스크 사용량:"
 df -h / | tail -1
 
-# 6. 최신 이미지 Pull
+# 5. 최신 이미지 Pull
 log_info "Step 6: 최신 Docker 이미지 Pull"
 run_with_env docker compose -f "$COMPOSE_FILE" pull
 
-# 7. 컨테이너 재시작
+# 6. 컨테이너 재시작
 log_info "Step 7: 컨테이너 재시작"
 
 # .deploy.env가 있으면 DOTENV_PRIVATE_KEY_PRODUCTION 로드
@@ -126,11 +141,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 8. 컨테이너 시작 대기
-log_info "Step 8: 컨테이너 시작 대기 (5초)"
+# 7. 컨테이너 시작 대기
+log_info "Step 7: 컨테이너 시작 대기 (5초)"
 sleep 5
 
-# 9. 완료
+# 8. 완료
 log_info "=== 배포 완료 ==="
 docker compose -f "$COMPOSE_FILE" ps
 
