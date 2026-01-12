@@ -6,7 +6,7 @@ import SessionList from './components/SessionList';
 import ReservationButton from './components/ReservationButton';
 
 const mockEventDetail: EventDetailType = {
-  id: '1',
+  id: 1,
   category: 'WEB',
   status: 'ONGOING',
   title: '1주차: 웹 풀스택 과정 멘토링',
@@ -14,6 +14,7 @@ const mockEventDetail: EventDetailType = {
     'React와 Node.js를 활용한 웹 풀스택 개발 기초를 다지는 시간입니다. 멘토님과 함께 코드 리뷰 및 아키텍처 설계를 진행합니다.',
   startAt: new Date('2026-01-15T14:00:00'),
   endAt: new Date('2026-01-15T18:00:00'),
+  applicationUnit: 'INDIVIDUAL',
   sessions: [
     {
       id: 'session-1',
