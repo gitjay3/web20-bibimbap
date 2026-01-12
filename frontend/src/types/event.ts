@@ -12,3 +12,18 @@ export interface Event {
   endAt: Date;
   applicationUnit: ApplicationUnit;
 }
+
+export interface EventSession {
+  id: string;
+  content: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  currentCount: number;
+  maxCount: number;
+  isClosed: boolean;
+}
+
+export interface EventDetail extends Event {
+  sessions: EventSession[];
+}

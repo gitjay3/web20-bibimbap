@@ -1,10 +1,7 @@
-
 import PageHeader from '@/components/PageHeader';
 import EventList from './components/EventList';
 
 function Main() {
-  
-
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
