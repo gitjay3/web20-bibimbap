@@ -1,25 +1,35 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `creatorId` on the `Event` table. All the data in the column will be lost.
-  - Added the required column `creatorUserId` to the `Event` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateEnum
 CREATE TYPE "ReservationStatus" AS ENUM ('PENDING', 'CONFIRMED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
--- AlterTable
-ALTER TABLE "Event" DROP COLUMN "creatorId",
-ADD COLUMN     "creatorUserId" TEXT NOT NULL,
-ALTER COLUMN "description" DROP NOT NULL;
+-- CreateTable
+CREATE TABLE "Event" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "slotSchema" JSONB NOT NULL,
+    "creatorId" TEXT NOT NULL,
+    "startTime" TIMESTAMP(3) NOT NULL,
+    "endTime" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
--- AlterTable
-ALTER TABLE "EventSlot" ADD COLUMN     "slotEndTime" TIMESTAMP(3),
-ADD COLUMN     "slotStartTime" TIMESTAMP(3),
-ALTER COLUMN "maxCapacity" SET DEFAULT 1;
+    CONSTRAINT "Event_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EventSlot" (
+    "id" SERIAL NOT NULL,
+    "eventId" INTEGER NOT NULL,
+    "maxCapacity" INTEGER NOT NULL DEFAULT 1,
+    "currentCount" INTEGER NOT NULL DEFAULT 0,
+    "extraInfo" JSONB NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "EventSlot_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Reservation" (
@@ -58,13 +68,19 @@ CREATE TABLE "User" (
 );
 
 -- CreateIndex
+CREATE INDEX "EventSlot_eventId_idx" ON "EventSlot"("eventId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ReservationOutbox_reservationId_key" ON "ReservationOutbox"("reservationId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_githubId_key" ON "User"("githubId");
 
 -- AddForeignKey
-ALTER TABLE "Event" ADD CONSTRAINT "Event_creatorUserId_fkey" FOREIGN KEY ("creatorUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Event" ADD CONSTRAINT "Event_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EventSlot" ADD CONSTRAINT "EventSlot_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "EventSlot"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

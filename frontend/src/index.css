@@ -1,24 +1,21 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @font-face {
   font-family: 'NanumSquare';
   font-weight: 500;
-  src:
-    url('assets/fonts/NanumSquareR.ttf') format('truetype');
+  src: url('assets/fonts/NanumSquareR.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'NanumSquare';
   font-weight: 700;
-  src:
-    url('assets/fonts/NanumSquareB.ttf') format('truetype');
+  src: url('assets/fonts/NanumSquareB.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'NanumSquare';
   font-weight: 800;
-  src:
-    url('assets/fonts/NanumSquareEB.ttf') format('truetype');
+  src: url('assets/fonts/NanumSquareEB.ttf') format('truetype');
 }
 
 @theme {
@@ -58,6 +55,12 @@
   --color-neutral-surface-default: var(--color-gray-50);
   --color-neutral-border-default: var(--color-gray-200);
 
+  /* Error (Primitive) */
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+
+  /* Error (Semantic) */
+  --color-error-text-primary: var(--color-error-600);
 
   /* 폰트 */
   --font-nanumsquare: 'NanumSquare';
@@ -76,9 +79,8 @@
 
   --text-36: 2.25rem;
   --text-36--line-height: 3rem;
-
 }
 
 body {
-  @apply font-nanumsquare text-neutral-text-primary
+  @apply font-nanumsquare text-neutral-text-primary;
 }

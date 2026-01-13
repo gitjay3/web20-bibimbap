@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { Reservation, Prisma } from '@prisma/client';
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
