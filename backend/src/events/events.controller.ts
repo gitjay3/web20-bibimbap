@@ -1,8 +1,17 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { EventSlotsService } from '../event-slots/event-slots.service';
 import { EventSlotsResponseDto } from 'src/event-slots/dto/slot-availability-response.dto';
 import { EventsService } from './events.service';
+import { CreateEventDto } from './dto/create-event.dto';
 
 @ApiTags('events')
 @Controller('events')
@@ -11,6 +20,11 @@ export class EventsController {
     private readonly eventSlotsService: EventSlotsService,
     private readonly eventsService: EventsService,
   ) {}
+
+  @Post()
+  create(@Body() dto: CreateEventDto) {
+    return this.eventsService.create(dto);
+  }
 
   @Get(':id/slots')
   @ApiOperation({
