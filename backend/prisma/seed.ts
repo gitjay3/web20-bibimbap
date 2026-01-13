@@ -1,24 +1,263 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Track } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const pool = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter: pool });
 
 async function main() {
-  if (process.env.NODE_ENV !== 'production') {
-    // NOTE: 개발/테스트 환경용 시스템 관리자 계정
-    await prisma.user.upsert({
-      where: { id: 'system-admin' },
-      update: {},
-      create: {
-        id: 'system-admin',
-        githubId: 'system-admin',
-        githubLogin: 'system',
-        name: '시스템 관리자',
-        role: 'ADMIN',
+  console.log('🌱 Seeding database...');
+
+  // 1. 시스템 관리자 생성
+  const admin = await prisma.user.upsert({
+    where: { id: 'system-admin' },
+    update: {},
+    create: {
+      id: 'system-admin',
+      githubId: 'system-admin',
+      githubLogin: 'system',
+      name: '시스템 관리자',
+      role: 'ADMIN',
+    },
+  });
+  console.log('✓ 관리자 계정 생성:', admin.id);
+
+  // 2. 테스트 사용자 생성 (예약 테스트용)
+  const testUser = await prisma.user.upsert({
+    where: { id: 'test-user-123' },
+    update: {},
+    create: {
+      id: 'test-user-123',
+      githubId: 'test-github-123',
+      githubLogin: 'testuser',
+      name: '테스트 사용자',
+      role: 'USER',
+    },
+  });
+  console.log('✓ 테스트 사용자 생성:', testUser.id);
+
+  // 3. 이벤트 생성
+  const event1 = await prisma.event.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      title: '1주차: 웹 풀스택 과정 멘토링',
+      description:
+        'React와 Node.js를 활용한 웹 풀스택 개발 기초를 다지는 시간입니다. 멘토님과 함께 코드 리뷰 및 아키텍처 설계를 진행합니다.',
+      track: Track.WEB,
+      creatorId: 'system-admin',
+      startTime: new Date('2026-01-15T14:00:00+09:00'),
+      endTime: new Date('2026-01-15T18:00:00+09:00'),
+      slotSchema: {
+        fields: ['content', 'startTime', 'endTime', 'location'],
+        description: '멘토링 세션 정보',
       },
-    });
-  }
+    },
+  });
+  console.log('✓ 이벤트 1 생성:', event1.title);
+
+  const event2 = await prisma.event.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      id: 2,
+      title: '1주차: Android 코틀린 심화',
+      description:
+        '코틀린 코루틴과 비동기 처리에 대해 심도 있게 학습합니다. 실무에서 자주 발생하는 이슈를 중심으로 다룹니다.',
+      track: Track.ANDROID,
+      creatorId: 'system-admin',
+      startTime: new Date('2026-01-22T10:00:00+09:00'),
+      endTime: new Date('2026-01-22T12:00:00+09:00'),
+      slotSchema: {
+        fields: ['content', 'startTime', 'endTime', 'location'],
+        description: '안드로이드 세션 정보',
+      },
+    },
+  });
+  console.log('✓ 이벤트 2 생성:', event2.title);
+
+  const event3 = await prisma.event.upsert({
+    where: { id: 3 },
+    update: {},
+    create: {
+      id: 3,
+      title: '1주차: iOS 오토레이아웃 마스터',
+      description:
+        '복잡한 UI도 쉽게 구현할 수 있는 오토레이아웃 비법을 전수합니다. 다양한 해상도 대응 전략을 다룹니다.',
+      track: Track.IOS,
+      creatorId: 'system-admin',
+      startTime: new Date('2026-01-28T13:00:00+09:00'),
+      endTime: new Date('2026-01-28T16:00:00+09:00'),
+      slotSchema: {
+        fields: ['content', 'startTime', 'endTime', 'location'],
+        description: 'iOS 세션 정보',
+      },
+    },
+  });
+  console.log('✓ 이벤트 3 생성:', event3.title);
+
+  // 4. 이벤트 슬롯 생성 (Event 1: 웹 멘토링)
+  const slot1_1 = await prisma.eventSlot.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      eventId: 1,
+      maxCapacity: 5,
+      currentCount: 5, // 마감
+      extraInfo: {
+        content: 'A팀 멘토링',
+        startTime: '14:00',
+        endTime: '15:00',
+        location: 'Zoom',
+      },
+    },
+  });
+  console.log('✓ 슬롯 1-1 생성 (마감)');
+
+  const slot1_2 = await prisma.eventSlot.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      id: 2,
+      eventId: 1,
+      maxCapacity: 5,
+      currentCount: 3,
+      extraInfo: {
+        content: 'B팀 멘토링',
+        startTime: '15:00',
+        endTime: '16:00',
+        location: 'Zoom',
+      },
+    },
+  });
+  console.log('✓ 슬롯 1-2 생성 (3/5)');
+
+  const slot1_3 = await prisma.eventSlot.upsert({
+    where: { id: 3 },
+    update: {},
+    create: {
+      id: 3,
+      eventId: 1,
+      maxCapacity: 5,
+      currentCount: 1,
+      extraInfo: {
+        content: 'C팀 멘토링',
+        startTime: '16:00',
+        endTime: '17:00',
+        location: 'Zoom',
+      },
+    },
+  });
+  console.log('✓ 슬롯 1-3 생성 (1/5)');
+
+  const slot1_4 = await prisma.eventSlot.upsert({
+    where: { id: 4 },
+    update: {},
+    create: {
+      id: 4,
+      eventId: 1,
+      maxCapacity: 5,
+      currentCount: 2,
+      extraInfo: {
+        content: 'D팀 멘토링',
+        startTime: '17:00',
+        endTime: '18:00',
+        location: 'Zoom',
+      },
+    },
+  });
+  console.log('✓ 슬롯 1-4 생성 (2/5)');
+
+  // 5. 이벤트 슬롯 생성 (Event 2: Android)
+  await prisma.eventSlot.createMany({
+    data: [
+      {
+        id: 5,
+        eventId: 2,
+        maxCapacity: 6,
+        currentCount: 4,
+        extraInfo: {
+          content: '코루틴 기초',
+          startTime: '10:00',
+          endTime: '10:30',
+          location: '강남 캠퍼스 301호',
+        },
+      },
+      {
+        id: 6,
+        eventId: 2,
+        maxCapacity: 6,
+        currentCount: 6, // 마감
+        extraInfo: {
+          content: '비동기 처리 실습',
+          startTime: '10:30',
+          endTime: '11:00',
+          location: '강남 캠퍼스 301호',
+        },
+      },
+      {
+        id: 7,
+        eventId: 2,
+        maxCapacity: 6,
+        currentCount: 2,
+        extraInfo: {
+          content: 'Q&A 세션',
+          startTime: '11:00',
+          endTime: '12:00',
+          location: '강남 캠퍼스 301호',
+        },
+      },
+    ],
+    skipDuplicates: true,
+  });
+  console.log('✓ Android 이벤트 슬롯 생성');
+
+  // 6. 이벤트 슬롯 생성 (Event 3: iOS)
+  await prisma.eventSlot.createMany({
+    data: [
+      {
+        id: 8,
+        eventId: 3,
+        maxCapacity: 4,
+        currentCount: 3,
+        extraInfo: {
+          content: '오토레이아웃 기초',
+          startTime: '13:00',
+          endTime: '14:00',
+          location: 'Zoom',
+        },
+      },
+      {
+        id: 9,
+        eventId: 3,
+        maxCapacity: 4,
+        currentCount: 4, // 마감
+        extraInfo: {
+          content: '스택뷰 활용',
+          startTime: '14:00',
+          endTime: '15:00',
+          location: 'Zoom',
+        },
+      },
+      {
+        id: 10,
+        eventId: 3,
+        maxCapacity: 4,
+        currentCount: 1,
+        extraInfo: {
+          content: '다양한 해상도 대응',
+          startTime: '15:00',
+          endTime: '16:00',
+          location: 'Zoom',
+        },
+      },
+    ],
+    skipDuplicates: true,
+  });
+  console.log('✓ iOS 이벤트 슬롯 생성');
+
+  console.log('🎉 Seed 완료!');
 }
 
 main()
@@ -26,7 +265,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    console.error('❌ Seed 실패:', e);
     await prisma.$disconnect();
     process.exit(1);
   });
