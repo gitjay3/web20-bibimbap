@@ -6,11 +6,9 @@ function formatKoreanDateTime(date: Date): string {
     weekday: 'short',
   });
 
-  const time = date.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const time = `${hours}:${minutes}`;
 
   return `${month}. ${day}. (${weekday}) ${time}`;
 }
