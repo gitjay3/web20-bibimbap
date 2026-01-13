@@ -39,7 +39,6 @@ coverage/
 
 # Environment variables
 .env
-.env*.local
 .deploy.env
 
 # dotenvx

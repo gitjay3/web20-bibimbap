@@ -1,7 +1,9 @@
+import { Track } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -18,16 +20,6 @@ class CreateEventSlotDto {
 
   @IsObject()
   extraInfo: Record<string, any>;
-
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  slotStartTime?: Date;
-
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  slotEndTime?: Date;
 }
 
 export class CreateEventDto {
@@ -38,6 +30,10 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsEnum(Track)
+  track?: Track;
 
   @Type(() => Date)
   @IsDate()

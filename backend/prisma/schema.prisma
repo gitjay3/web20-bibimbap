@@ -6,10 +6,18 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Track {
+  ANDROID
+  IOS
+  WEB
+  ALL
+}
+
 model Event {
   id          Int         @id @default(autoincrement())
   title       String
   description String?
+  track       Track       @default(ALL)
   slotSchema  Json
   creatorId   String
   startTime   DateTime
@@ -21,14 +29,14 @@ model Event {
 }
 
 model EventSlot {
-  id            Int           @id @default(autoincrement())
-  eventId       Int
-  maxCapacity   Int           @default(1)
-  currentCount  Int           @default(0)
-  extraInfo     Json
-  version       Int           @default(0)
-  Event         Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  Reservation   Reservation[]
+  id           Int           @id @default(autoincrement())
+  eventId      Int
+  maxCapacity  Int           @default(1)
+  currentCount Int           @default(0)
+  extraInfo    Json
+  version      Int           @default(0)
+  Event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  Reservation  Reservation[]
 
   @@index([eventId])
 }

@@ -1,5 +1,5 @@
-import type { EventStatus } from "@/types/event";
-
+import type { EventStatus } from '@/types/event';
+import cn from '@/utils/cn';
 
 interface EventStatusLabelProps {
   status: EventStatus;
@@ -14,12 +14,12 @@ const STATUS_LABEL_TEXT: Record<EventStatus, string> = {
 function EventStatusLabel({ status }: EventStatusLabelProps) {
   return (
     <span
-      className={[
+      className={cn(
         'text-12 flex h-5 items-center rounded-sm px-2 font-bold',
         status === 'ONGOING'
           ? 'bg-brand-surface-default text-white'
-          : 'bg-neutral-surface-default text-neutral-text-secondary border-neutral-border-default border',
-      ].join(' ')}
+          : 'bg-neutral-surface-default text-neutral-text-secondary border-neutral-border-default border'
+      )}
     >
       {STATUS_LABEL_TEXT[status]}
     </span>
