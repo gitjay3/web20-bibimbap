@@ -21,8 +21,8 @@
     "docker:local:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local down",
     "docker:local:logs": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local logs -f",
     "docker:local:clean": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local down -v",
-    "db:migrate:local": "dotenvx run -f .env.local -- pnpm --filter backend prisma migrate dev",
-    "db:generate:local": "dotenvx run -f .env.local -- pnpm --filter backend prisma generate"
+    "db:migrate:local": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL pnpm --filter backend prisma migrate dev'",
+    "db:generate:local": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL pnpm --filter backend prisma generate'"
   },
   "keywords": [],
   "author": "",
