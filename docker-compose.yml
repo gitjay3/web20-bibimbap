@@ -21,7 +21,11 @@ services:
     networks:
       - bookstcamp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-bookstcamp_dev}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-bookstcamp_dev}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,10 +33,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${POSTGRES_CPU_LIMIT:-0.5}'
+          cpus: "${POSTGRES_CPU_LIMIT:-0.5}"
           memory: ${POSTGRES_MEMORY_LIMIT:-512M}
         reservations:
-          cpus: '${POSTGRES_CPU_RESERVATION:-0.25}'
+          cpus: "${POSTGRES_CPU_RESERVATION:-0.25}"
           memory: ${POSTGRES_MEMORY_RESERVATION:-256M}
 
   # Nginx 리버스 프록시
@@ -50,7 +54,7 @@ services:
     networks:
       - bookstcamp-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -58,7 +62,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
     logging:
       driver: "json-file"
@@ -91,10 +95,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${BACKEND_CPU_LIMIT:-1.0}'
+          cpus: "${BACKEND_CPU_LIMIT:-1.0}"
           memory: ${BACKEND_MEMORY_LIMIT:-1G}
         reservations:
-          cpus: '${BACKEND_CPU_RESERVATION:-0.5}'
+          cpus: "${BACKEND_CPU_RESERVATION:-0.5}"
           memory: ${BACKEND_MEMORY_RESERVATION:-512M}
     logging:
       driver: "json-file"
@@ -116,10 +120,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${FRONTEND_CPU_LIMIT:-0.5}'
+          cpus: "${FRONTEND_CPU_LIMIT:-0.5}"
           memory: ${FRONTEND_MEMORY_LIMIT:-256M}
         reservations:
-          cpus: '${FRONTEND_CPU_RESERVATION:-0.25}'
+          cpus: "${FRONTEND_CPU_RESERVATION:-0.25}"
           memory: ${FRONTEND_MEMORY_RESERVATION:-128M}
     logging:
       driver: "json-file"
@@ -153,10 +157,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${REDIS_CPU_LIMIT:-0.5}'
+          cpus: "${REDIS_CPU_LIMIT:-0.5}"
           memory: ${REDIS_MEMORY_LIMIT:-512M}
         reservations:
-          cpus: '${REDIS_CPU_RESERVATION:-0.25}'
+          cpus: "${REDIS_CPU_RESERVATION:-0.25}"
           memory: ${REDIS_MEMORY_RESERVATION:-256M}
     logging:
       driver: "json-file"

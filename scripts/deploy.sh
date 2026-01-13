@@ -122,15 +122,24 @@ df -h / | tail -1
 log_info "Step 6: 최신 Docker 이미지 Pull"
 run_with_env docker compose -f "$COMPOSE_FILE" pull
 
-# 6. 컨테이너 재시작
-log_info "Step 7: 컨테이너 재시작"
-
-# .deploy.env가 있으면 DOTENV_PRIVATE_KEY_PRODUCTION 로드
+# .deploy.env가 있으면 DATABASE_URL 등 환경변수 로드
 if [ -f "$PROJECT_ROOT/.deploy.env" ]; then
     set -a
     source "$PROJECT_ROOT/.deploy.env"
     set +a
 fi
+
+# 6. Prisma 마이그레이션 실행
+log_info "Step 7: Prisma 마이그레이션 실행"
+if docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL="$DATABASE_URL" backend npx prisma migrate deploy; then
+    log_info "마이그레이션 성공"
+else
+    log_error "마이그레이션 실패"
+    exit 1
+fi
+
+# 7. 컨테이너 재시작
+log_info "Step 8: 컨테이너 재시작"
 
 run_with_env docker compose -f "$COMPOSE_FILE" down
 run_with_env docker compose -f "$COMPOSE_FILE" up -d
@@ -141,11 +150,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 7. 컨테이너 시작 대기
-log_info "Step 7: 컨테이너 시작 대기 (5초)"
+# 8. 컨테이너 시작 대기
+log_info "Step 9: 컨테이너 시작 대기 (5초)"
 sleep 5
 
-# 8. 완료
+# 9. 완료
 log_info "=== 배포 완료 ==="
 docker compose -f "$COMPOSE_FILE" ps
 

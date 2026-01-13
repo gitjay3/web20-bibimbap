@@ -18,7 +18,7 @@ services:
     build:
       context: .
       target: deps
-    command: pnpm --filter frontend dev -- --host 0.0.0.0 --port 5173
+    command: pnpm --filter frontend exec vite --host 0.0.0.0 --port 8080
     environment:
       - CHOKIDAR_USEPOLLING=true
     volumes:
@@ -28,7 +28,7 @@ services:
       - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
       - frontend-node-modules:/app/frontend/node_modules
     ports:
-      - 5174:5173
+      - 8080:8080
 
 volumes:
   backend-node-modules:
