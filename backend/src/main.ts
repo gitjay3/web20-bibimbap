@@ -23,6 +23,7 @@ async function bootstrap() {
     .setTitle('Bookstcamp API')
     .setDescription('북스트캠프 API 명세')
     .setVersion('1.0')
+    .addTag('auth', '인증 관련 API')
     .addTag('reservations', '예약 관련 API')
     .addTag('events', '이벤트 관련 API')
     .addTag('event-slots', '슬롯 정원 조회 API')
@@ -34,6 +35,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+  document.security = [{ access_token: [] }];
   SwaggerModule.setup('api-docs', app, document, {
     useGlobalPrefix: true,
   });

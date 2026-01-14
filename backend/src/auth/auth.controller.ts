@@ -8,7 +8,9 @@ import ms, { StringValue } from 'ms';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Public()
 @Controller('auth')
 export class AuthController {
@@ -18,6 +20,15 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @ApiOperation({
+    summary: '내부 계정 로그인',
+    description: '아이디/비밀번호로 로그인하고 쿠키에 토큰을 저장합니다.',
+  })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 201,
+    description: '로그인 성공',
+  })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -36,10 +47,26 @@ export class AuthController {
 
   @Get('github')
   @UseGuards(GithubAuthGuard)
+  @ApiOperation({
+    summary: 'GitHub 로그인 시작',
+    description: 'GitHub OAuth 인증 페이지로 리다이렉트합니다.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'GitHub OAuth 리다이렉트',
+  })
   githubLogin() {}
 
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
+  @ApiOperation({
+    summary: 'GitHub 로그인 콜백',
+    description: 'GitHub OAuth 콜백 처리 후 프론트로 리다이렉트합니다.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: '로그인 완료 후 프론트 리다이렉트',
+  })
   githubCallback(
     @CurrentUser() user: User,
     @Res({ passthrough: true }) res: Response,
@@ -56,6 +83,14 @@ export class AuthController {
   }
 
   @Get('logout')
+  @ApiOperation({
+    summary: '로그아웃',
+    description: '토큰 쿠키를 제거하고 프론트로 리다이렉트합니다.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: '로그아웃 후 프론트 리다이렉트',
+  })
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', this.getCookieOptions());
 
