@@ -13,10 +13,17 @@ async function main() {
     update: {},
     create: {
       id: 'system-admin',
-      githubId: 'system-admin',
-      githubLogin: 'system',
       name: '시스템 관리자',
       role: 'ADMIN',
+    },
+  });
+  await prisma.authAccount.upsert({
+    where: { provider_providerId: { provider: 'GITHUB', providerId: 'system-admin' } },
+    update: {},
+    create: {
+      provider: 'GITHUB',
+      providerId: 'system-admin',
+      userId: admin.id,
     },
   });
   console.log('✓ 관리자 계정 생성:', admin.id);
@@ -27,10 +34,17 @@ async function main() {
     update: {},
     create: {
       id: 'test-user-123',
-      githubId: 'test-github-123',
-      githubLogin: 'testuser',
       name: '테스트 사용자',
       role: 'USER',
+    },
+  });
+  await prisma.authAccount.upsert({
+    where: { provider_providerId: { provider: 'GITHUB', providerId: 'test-github-123' } },
+    update: {},
+    create: {
+      provider: 'GITHUB',
+      providerId: 'test-github-123',
+      userId: testUser.id,
     },
   });
   console.log('✓ 테스트 사용자 생성:', testUser.id);
