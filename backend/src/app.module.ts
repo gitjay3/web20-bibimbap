@@ -6,6 +6,7 @@ import { EventsModule } from './events/events.module';
 import { ConfigModule } from '@nestjs/config';
 import { ReservationsModule } from './reservations/reservations.module';
 import { EventSlotsModule } from './event-slots/event-slots.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { EventSlotsModule } from './event-slots/event-slots.module';
     EventsModule,
     ReservationsModule,
     EventSlotsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
