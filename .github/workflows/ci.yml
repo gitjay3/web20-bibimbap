@@ -52,9 +52,8 @@ jobs:
         working-directory: ${{ matrix.workspace }}
         run: npx tsc --noEmit
 
-      - name: Run tests (backend only)
-        if: matrix.workspace == 'backend'
-        working-directory: backend
+      - name: Run tests (${{ matrix.workspace }})
+        working-directory: ${{ matrix.workspace }}
         run: pnpm test
 
       - name: Run build (${{ matrix.workspace }})
