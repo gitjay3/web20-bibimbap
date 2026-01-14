@@ -1,24 +1,13 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
 import { GithubAuthGuard } from './guards/github-auth.guard';
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
 import { Public } from 'src/common/decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
-
-interface AuthenticatedRequest extends Request {
-  user: User;
-}
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Public()
 @Controller('auth')
@@ -52,11 +41,9 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
   githubCallback(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = req.user;
-
     const accessToken = this.auth.generateAccessToken({
       id: user.id,
       role: user.role,
