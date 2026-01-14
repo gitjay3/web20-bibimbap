@@ -1,10 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User as PrismaUser } from '@prisma/client';
+import { JwtUser } from 'src/auth/types/jwt-user.type';
 
 export const CurrentUser = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext): PrismaUser | undefined => {
-    const request = ctx.switchToHttp().getRequest<{ user?: PrismaUser }>();
-
-    return request.user;
+  (key: keyof JwtUser | undefined, ctx: ExecutionContext) => {
+    const req = ctx.switchToHttp().getRequest<{ user?: JwtUser }>();
+    const user = req.user;
+    return key ? user?.[key] : user;
   },
 );
