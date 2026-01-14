@@ -9,7 +9,7 @@ export class EventSlotsService {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        EventSlot: {
+        slots: {
           orderBy: { id: 'asc' },
         },
       },
@@ -19,7 +19,7 @@ export class EventSlotsService {
       throw new NotFoundException('일정을 찾을 수 없습니다');
     }
 
-    const slots = event.EventSlot.map((slot) => ({
+    const slots = event.slots.map((slot) => ({
       id: slot.id,
       maxCapacity: slot.maxCapacity,
       currentCount: slot.currentCount,

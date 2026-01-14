@@ -1,4 +1,4 @@
-import { Track } from '@prisma/client';
+import { ApplicationUnit, Track } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -34,6 +34,10 @@ export class CreateEventDto {
   @IsOptional()
   @IsEnum(Track)
   track?: Track;
+
+  @IsOptional()
+  @IsEnum(ApplicationUnit)
+  applicationUnit?: ApplicationUnit;
 
   @Type(() => Date)
   @IsDate()

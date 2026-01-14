@@ -14,7 +14,6 @@ export async function getEvents(): Promise<Event[]> {
       startTime: new Date(startTime),
       endTime: new Date(endTime),
       stauts: calcStatus(startTime, endTime),
-      applicationUnit: 'INDIVIDUAL', // TODO: Event 테이블 스키마 변경 시 제거
     };
   });
 }
@@ -30,6 +29,5 @@ export async function getEvent(id: number): Promise<EventDetail> {
     startTime,
     endTime,
     stauts: calcStatus(startTime, endTime),
-    applicationUnit: 'INDIVIDUAL', // TODO: Event 테이블 스키마 변경 시 제거
   };
 }

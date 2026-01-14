@@ -18,21 +18,21 @@ export interface EventDetailApiResponse {
   id: number;
   title: string;
   description: string | null;
-  track: 'WEB' | 'ANDROID' | 'IOS' | 'ALL';
+  track: 'WEB' | 'ANDROID' | 'IOS' | 'COMMON';
   startTime: string; // ISO 8601 날짜 문자열
   endTime: string;
   creatorId: string;
   slotSchema: Record<string, unknown>; // JSON 타입
   createdAt: string;
   updatedAt: string;
-  EventSlot: EventSlotApiResponse[];
+  slots: EventSlotApiResponse[];
 }
 
 export interface EventListItemApiResponse {
   id: number;
   title: string;
   description: string | null;
-  track: 'WEB' | 'ANDROID' | 'IOS' | 'ALL';
+  track: 'WEB' | 'ANDROID' | 'IOS' | 'COMMON';
   creatorId: string;
   startTime: string;
   endTime: string;

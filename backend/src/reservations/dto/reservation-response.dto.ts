@@ -3,9 +3,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
   include: {
-    EventSlot: {
+    slot: {
       include: {
-        Event: true;
+        event: true;
       };
     };
   };
@@ -72,10 +72,10 @@ export class ReservationResponseDto {
     this.reservedAt = reservation.reservedAt;
 
     // 관계 데이터
-    if ('EventSlot' in reservation && reservation.EventSlot) {
-      this.eventTitle = reservation.EventSlot.Event.title;
-      this.eventStartTime = reservation.EventSlot.Event.startTime;
-      this.eventEndTime = reservation.EventSlot.Event.endTime;
+    if ('slot' in reservation && reservation.slot) {
+      this.eventTitle = reservation.slot.event.title;
+      this.eventStartTime = reservation.slot.event.startTime;
+      this.eventEndTime = reservation.slot.event.endTime;
     }
   }
 }
