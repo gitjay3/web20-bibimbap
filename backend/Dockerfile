@@ -67,10 +67,18 @@ COPY --from=builder /prod/backend ./
 # 빌드된 파일 복사
 COPY --from=builder /app/backend/dist ./dist
 
-# Prisma 스키마 및 컴파일된 config 복사
+# Prisma 스키마 복사 및 클라이언트 생성
 COPY --from=builder /app/backend/prisma ./prisma
-COPY --from=builder /app/backend/dist/prisma.config.js ./prisma.config.js
-RUN npx prisma generate
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# migrate deploy용 ESM config 생성
+RUN printf '%s\n' \
+    "import { defineConfig } from 'prisma/config';" \
+    "export default defineConfig({" \
+    "  schema: 'prisma/schema.prisma'," \
+    "  migrations: { path: 'prisma/migrations' }," \
+    "  datasource: { url: process.env.DATABASE_URL }" \
+    "});" > prisma.config.mjs
 
 # 소유권 변경
 RUN chown -R nestjs:nodejs /app
