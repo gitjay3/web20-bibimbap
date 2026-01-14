@@ -67,9 +67,10 @@ COPY --from=builder /prod/backend ./
 # 빌드된 파일 복사
 COPY --from=builder /app/backend/dist ./dist
 
-# Prisma 스키마 복사 및 클라이언트 재생성 (config 파일 제거 후 생성)
+# Prisma 스키마 및 컴파일된 config 복사
 COPY --from=builder /app/backend/prisma ./prisma
-RUN rm -f prisma.config.ts && npx prisma generate --schema=./prisma/schema.prisma
+COPY --from=builder /app/backend/dist/prisma.config.js ./prisma.config.js
+RUN npx prisma generate
 
 # 소유권 변경
 RUN chown -R nestjs:nodejs /app
