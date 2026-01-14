@@ -10,7 +10,24 @@ export class EventsService {
 
   async create(dto: CreateEventDto) {
     // TODO: 인증 로직 수정
-    const TEMP_USER_ID = 'system-admin';
+    // 임시: seed로 만든 INTERNAL admin user 조회
+    const adminAuthAccount = await this.prisma.authAccount.findUnique({
+      where: {
+        provider_providerId: {
+          provider: 'INTERNAL',
+          providerId: 'admin',
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!adminAuthAccount?.user) {
+      throw new Error('ADMIN 계정이 존재하지 않습니다. seed를 확인하세요.');
+    }
+
+    const adminUserId = adminAuthAccount.user.id;
 
     const { title, description, track, startTime, endTime, slotSchema, slots } =
       dto;
@@ -23,7 +40,7 @@ export class EventsService {
         startTime,
         endTime,
         slotSchema,
-        creatorId: TEMP_USER_ID,
+        creatorId: adminUserId,
 
         EventSlot: {
           create: slots.map((slot) => ({

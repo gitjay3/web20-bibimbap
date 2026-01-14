@@ -19,7 +19,7 @@ model Event {
   description String?
   track       Track       @default(ALL)
   slotSchema  Json
-  creatorId   String
+  creatorId   String      @db.Uuid()
   startTime   DateTime
   endTime     DateTime
   createdAt   DateTime    @default(now())
@@ -43,7 +43,7 @@ model EventSlot {
 
 model Reservation {
   id                Int                @id @default(autoincrement())
-  userId            String
+  userId            String             @db.Uuid()
   slotId            Int
   status            ReservationStatus  @default(PENDING)
   reservedAt        DateTime           @default(now())
@@ -62,16 +62,26 @@ model ReservationOutbox {
 }
 
 model User {
-  id          String        @id
-  githubId    String        @unique
-  githubLogin String
-  name        String
-  role        Role          @default(USER)
-  accessToken String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  Event       Event[]
-  Reservation Reservation[]
+  id           String        @id @default(uuid()) @db.Uuid()
+  name         String
+  role         Role          @default(USER)
+  accessToken  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  Event        Event[]
+  Reservation  Reservation[]
+  authAccounts AuthAccount[]
+}
+
+model AuthAccount {
+  id           String       @id @default(uuid()) @db.Uuid()
+  provider     AuthProvider
+  providerId   String
+  passwordHash String?
+  userId       String       @db.Uuid()
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerId])
 }
 
 enum ReservationStatus {
@@ -83,4 +93,9 @@ enum ReservationStatus {
 enum Role {
   USER
   ADMIN
+}
+
+enum AuthProvider {
+  GITHUB
+  INTERNAL
 }
