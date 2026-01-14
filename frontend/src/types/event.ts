@@ -1,29 +1,30 @@
-export type EventCategory = 'WEB' | 'ANDROID' | 'IOS' | 'COMMON';
-export type EventStatus = 'ONGOING' | 'UPCOMING' | 'ENDED';
+export type Track = 'COMMON' | 'WEB' | 'IOS' | 'ANDROID';
+export type Status = 'ONGOING' | 'UPCOMING' | 'ENDED';
 export type ApplicationUnit = 'INDIVIDUAL' | 'TEAM';
 
 export interface Event {
   id: number;
-  category: EventCategory;
-  status: EventStatus;
   title: string;
   description: string;
-  startAt: Date;
-  endAt: Date;
+  track: Track;
+  startTime: Date;
+  endTime: Date;
+  stauts: Status;
   applicationUnit: ApplicationUnit;
 }
 
-export interface EventSession {
-  id: string;
-  content: string;
-  startTime: string;
-  endTime: string;
-  location: string;
+export interface EventSlot {
+  id: number;
+  eventId: number;
+  maxCapacity: number;
   currentCount: number;
-  maxCount: number;
-  isClosed: boolean;
+  version: number;
+  extraInfo: Record<string, string>;
 }
 
+export type SlotSchema = Record<string, { type: 'string' | 'number' | 'boolean'; label: string }>;
+
 export interface EventDetail extends Event {
-  sessions: EventSession[];
+  slotSchema: SlotSchema;
+  EventSlot: EventSlot[]; // TODO: slot으로 수정되면 좋을듯 ..
 }
