@@ -5,11 +5,13 @@ import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
+import { Public } from 'src/common/decorators/public.decorator';
 
 interface AuthenticatedRequest extends Request {
   user: User;
 }
 
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
