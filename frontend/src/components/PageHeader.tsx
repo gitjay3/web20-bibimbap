@@ -9,7 +9,7 @@ interface PageHeaderProps {
 
 function PageHeader({ title, description, meta, action }: PageHeaderProps) {
   return (
-    <div className="flex w-full justify-between">
+    <div className="flex w-full items-center justify-between">
       <div className="flex flex-col gap-2">
         <div>
           <h1 className="text-36 font-extrabold">{title}</h1>
