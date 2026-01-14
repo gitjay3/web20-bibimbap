@@ -10,7 +10,7 @@ services:
     build:
       context: .
       target: deps
-    command: sh -c "pnpm --filter backend prisma generate && pnpm --filter backend start:dev"
+    command: sh -c "pnpm --filter backend prisma migrate deploy && pnpm --filter backend prisma generate && pnpm --filter backend start:dev"
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
