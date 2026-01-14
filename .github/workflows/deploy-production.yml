@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - deploy/116-J116-duckdns-letsencrypt  # 테스트용 (나중에 제거)
   workflow_dispatch:
 
 # Production 배포는 한 번에 하나씩만
@@ -105,6 +106,7 @@ jobs:
       - name: Copy deployment files to server
         run: |
           scp -r scripts/ ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/
+          scp -r nginx/ ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/
           scp docker-compose.yml ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/docker-compose.yml
           scp .env.production ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.env.production
           scp /tmp/deploy.env ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.deploy.env
