@@ -39,8 +39,7 @@ export class AuthController {
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      // TODO: https 설정 후 수정
-      // secure: this.config.get('NODE_ENV') === 'production',
+      secure: this.config.get('NODE_ENV') === 'production',
       sameSite: 'lax',
       maxAge,
     });
@@ -53,8 +52,7 @@ export class AuthController {
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', {
       httpOnly: true,
-      // TODO: https 설정 후 수정
-      // secure: this.config.get('NODE_ENV') === 'production',
+      secure: this.config.get('NODE_ENV') === 'production',
       sameSite: 'lax',
     });
 
