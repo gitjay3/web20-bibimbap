@@ -11,7 +11,13 @@ interface EventDetailHeaderProps {
   applicationUnit: ApplicationUnit;
 }
 
-function EventDetailHeader({ category, status, title, description, applicationUnit }: EventDetailHeaderProps) {
+function EventDetailHeader({
+  category,
+  status,
+  title,
+  description,
+  applicationUnit,
+}: EventDetailHeaderProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">

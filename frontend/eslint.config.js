@@ -74,6 +74,14 @@ export default [
       // Allow dangling underscores for __dirname, __filename
       'no-underscore-dangle': ['error', { allow: ['__dirname', '__filename'] }],
       'react/require-default-props': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_', // 함수 인자
+          varsIgnorePattern: '^_', // 일반 변수
+          destructuredArrayIgnorePattern: '^_', // 배열 구조분해
+        },
+      ],
     },
   },
   prettier,
