@@ -12,9 +12,6 @@ export const createPrismaMock = () => ({
     update: jest.fn(),
     delete: jest.fn(),
   },
-  authAccount: {
-    findUnique: jest.fn(),
-  },
   eventSlot: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
