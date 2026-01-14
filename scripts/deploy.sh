@@ -148,20 +148,15 @@ fi
 log_info "DATABASE_URL 길이: ${#MIGRATION_DATABASE_URL}"
 log_info "DATABASE_URL 시작: ${MIGRATION_DATABASE_URL:0:15}..."
 
-# 임시 env 파일로 DATABASE_URL 전달 (특수문자 이스케이프 문제 방지)
-MIGRATION_ENV_FILE="/tmp/migration_$$.env"
-printf 'DATABASE_URL=%s\n' "$MIGRATION_DATABASE_URL" > "$MIGRATION_ENV_FILE"
-log_info "env 파일 생성: $MIGRATION_ENV_FILE"
-log_info "env 파일 내용 길이: $(wc -c < "$MIGRATION_ENV_FILE") bytes"
+# DATABASE_URL을 export하고 -e 플래그로 쉘 환경변수 참조
+export DATABASE_URL="$MIGRATION_DATABASE_URL"
 
-if docker compose -f "$COMPOSE_FILE" run --rm --env-file "$MIGRATION_ENV_FILE" backend npx prisma migrate deploy; then
+if docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL backend npx prisma migrate deploy; then
     log_info "마이그레이션 성공"
 else
-    rm -f "$MIGRATION_ENV_FILE"
     log_error "마이그레이션 실패"
     exit 1
 fi
-rm -f "$MIGRATION_ENV_FILE"
 
 # 7. 컨테이너 재시작
 log_info "Step 8: 컨테이너 재시작"
