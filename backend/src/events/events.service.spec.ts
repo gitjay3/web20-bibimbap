@@ -64,7 +64,7 @@ describe('EventsService', () => {
       });
     });
 
-    it('track이 ALL이면 모든 이벤트를 반환한다', async () => {
+    it('track이 COMMON이면 모든 이벤트를 반환한다', async () => {
       const mockEvents = [
         { id: 1, title: 'Event 1', track: Track.WEB },
         { id: 2, title: 'Event 2', track: Track.ANDROID },
@@ -72,7 +72,7 @@ describe('EventsService', () => {
 
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
 
-      const result = await service.findAll('ALL');
+      const result = await service.findAll('COMMON');
 
       expect(result).toEqual(mockEvents);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
@@ -119,7 +119,7 @@ describe('EventsService', () => {
       const mockEvent = {
         id: 1,
         title: 'Test Event',
-        EventSlot: [{ id: 1, maxCapacity: 10 }],
+        slots: [{ id: 1, maxCapacity: 10 }],
       };
 
       prismaMock.event.findUnique.mockResolvedValue(mockEvent);
@@ -129,7 +129,7 @@ describe('EventsService', () => {
       expect(result).toEqual(mockEvent);
       expect(prismaMock.event.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
-        include: { EventSlot: true },
+        include: { slots: true },
       });
     });
 
@@ -170,7 +170,7 @@ describe('EventsService', () => {
         id: 1,
         ...createDto,
         creatorId: mockAdminUserId,
-        EventSlot: [{ id: 1, maxCapacity: 10, extraInfo: {} }],
+        slots: [{ id: 1, maxCapacity: 10, extraInfo: {} }],
       };
 
       prismaMock.event.create.mockResolvedValue(mockCreatedEvent);
@@ -196,14 +196,14 @@ describe('EventsService', () => {
           endTime: createDto.endTime,
           slotSchema: createDto.slotSchema,
           creatorId: mockAdminUserId,
-          EventSlot: {
+          slots: {
             create: createDto.slots.map((slot) => ({
               maxCapacity: slot.maxCapacity,
               extraInfo: slot.extraInfo,
             })),
           },
         },
-        include: { EventSlot: true },
+        include: { slots: true },
       });
     });
 

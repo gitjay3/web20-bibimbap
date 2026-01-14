@@ -6,11 +6,12 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { Reservation, Prisma } from '@prisma/client';
+
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
   include: {
-    EventSlot: {
+    slot: {
       include: {
-        Event: true;
+        event: true;
       };
     };
   };
@@ -72,9 +73,9 @@ export class ReservationsService {
     return this.prisma.reservation.findMany({
       where: { userId },
       include: {
-        EventSlot: {
+        slot: {
           include: {
-            Event: true,
+            event: true,
           },
         },
       },
@@ -88,9 +89,9 @@ export class ReservationsService {
     return this.prisma.reservation.findUnique({
       where: { id },
       include: {
-        EventSlot: {
+        slot: {
           include: {
-            Event: true,
+            event: true,
           },
         },
       },

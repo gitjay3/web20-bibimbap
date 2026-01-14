@@ -7,10 +7,10 @@ export interface Event {
   title: string;
   description: string;
   track: Track;
+  applicationUnit: ApplicationUnit;
   startTime: Date;
   endTime: Date;
   stauts: Status;
-  applicationUnit: ApplicationUnit;
 }
 
 export interface EventSlot {
@@ -26,5 +26,5 @@ export type SlotSchema = Record<string, { type: 'string' | 'number' | 'boolean';
 
 export interface EventDetail extends Event {
   slotSchema: SlotSchema;
-  EventSlot: EventSlot[]; // TODO: slot으로 수정되면 좋을듯 ..
+  slots: EventSlot[];
 }

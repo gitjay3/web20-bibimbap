@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
-import { Track } from '@prisma/client';
+import { AuthProvider, Track } from '@prisma/client';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class EventsService {
     const adminAuthAccount = await this.prisma.authAccount.findUnique({
       where: {
         provider_providerId: {
-          provider: 'INTERNAL',
+          provider: AuthProvider.INTERNAL,
           providerId: 'admin',
         },
       },
@@ -29,20 +29,29 @@ export class EventsService {
 
     const adminUserId = adminAuthAccount.user.id;
 
-    const { title, description, track, startTime, endTime, slotSchema, slots } =
-      dto;
+    const {
+      title,
+      description,
+      track,
+      applicationUnit,
+      startTime,
+      endTime,
+      slotSchema,
+      slots,
+    } = dto;
 
     return await this.prisma.event.create({
       data: {
         title,
         description,
         track,
+        applicationUnit,
         startTime,
         endTime,
         slotSchema,
         creatorId: adminUserId,
 
-        EventSlot: {
+        slots: {
           create: slots.map((slot) => ({
             maxCapacity: slot.maxCapacity,
             extraInfo: slot.extraInfo,
@@ -50,7 +59,7 @@ export class EventsService {
         },
       },
       include: {
-        EventSlot: true,
+        slots: true,
       },
     });
   }
@@ -60,7 +69,7 @@ export class EventsService {
 
     return this.prisma.event.findMany({
       where:
-        parsedTrack && parsedTrack !== Track.ALL
+        parsedTrack && parsedTrack !== Track.COMMON
           ? { track: parsedTrack }
           : undefined,
       orderBy: { startTime: 'asc' },
@@ -69,11 +78,9 @@ export class EventsService {
         title: true,
         description: true,
         track: true,
-        creatorId: true,
+        applicationUnit: true,
         startTime: true,
         endTime: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
   }
@@ -82,7 +89,7 @@ export class EventsService {
     const event = await this.prisma.event.findUnique({
       where: { id },
       include: {
-        EventSlot: true,
+        slots: true,
       },
     });
 

@@ -30,7 +30,7 @@ describe('EventSlotsService', () => {
       const mockEvent = {
         id: 1,
         title: 'Test Event',
-        EventSlot: [
+        slots: [
           { id: 1, maxCapacity: 10, currentCount: 5, extraInfo: {} },
           { id: 2, maxCapacity: 20, currentCount: 20, extraInfo: {} },
         ],
@@ -79,9 +79,7 @@ describe('EventSlotsService', () => {
       const mockEvent = {
         id: 1,
         title: 'Test Event',
-        EventSlot: [
-          { id: 1, maxCapacity: 10, currentCount: 15, extraInfo: {} },
-        ],
+        slots: [{ id: 1, maxCapacity: 10, currentCount: 15, extraInfo: {} }],
       };
 
       prismaMock.event.findUnique.mockResolvedValue(mockEvent);

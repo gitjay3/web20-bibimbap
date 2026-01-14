@@ -232,7 +232,7 @@ describe('ReservationsService', () => {
           userId,
           slotId: 1,
           status: 'CONFIRMED',
-          EventSlot: {
+          slot: {
             id: 1,
             Event: { id: 1, title: 'Test Event' },
           },
@@ -247,9 +247,9 @@ describe('ReservationsService', () => {
       expect(prismaMock.reservation.findMany).toHaveBeenCalledWith({
         where: { userId },
         include: {
-          EventSlot: {
+          slot: {
             include: {
-              Event: true,
+              event: true,
             },
           },
         },

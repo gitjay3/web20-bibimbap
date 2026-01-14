@@ -26,6 +26,11 @@ export class EventsController {
     return this.eventsService.create(dto);
   }
 
+  @Get()
+  findAll(@Query('track') track?: string) {
+    return this.eventsService.findAll(track);
+  }
+
   @Get(':id/slots')
   @ApiOperation({
     summary: '이벤트 슬롯 목록 조회 (초기 로드용)',
@@ -44,11 +49,6 @@ export class EventsController {
   })
   async getSlotsWithAvailability(@Param('id', ParseIntPipe) id: number) {
     return this.eventSlotsService.findByEventWithAvailability(id);
-  }
-
-  @Get()
-  findAll(@Query('track') track?: string) {
-    return this.eventsService.findAll(track);
   }
 
   @Get(':id')

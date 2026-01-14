@@ -44,7 +44,7 @@ function EventDetail() {
 
         return {
           ...prevEvent,
-          EventSlot: prevEvent.EventSlot.map((slot) => {
+          slots: prevEvent.slots.map((slot) => {
             const updatedSlot = availabilityData.slots.find((s) => s.slotId === slot.id);
 
             if (updatedSlot) {
@@ -125,7 +125,7 @@ function EventDetail() {
           <SlotList
             status={event.stauts}
             slotSchema={event.slotSchema}
-            slots={event.EventSlot}
+            slots={event.slots}
             selectedSlotId={selectedSlotId}
             setSelectedSlotId={setSelectedSlotId}
           />
