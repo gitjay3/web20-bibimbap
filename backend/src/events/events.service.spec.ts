@@ -3,7 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/mocks/prisma.mock';
-import { Track } from '@prisma/client';
+import { ApplicationUnit, Track } from '@prisma/client';
 
 describe('EventsService', () => {
   let service: EventsService;
@@ -146,20 +146,12 @@ describe('EventsService', () => {
   describe('create', () => {
     const mockAdminUserId = 'admin-user-uuid';
 
-    beforeEach(() => {
-      prismaMock.authAccount.findUnique.mockResolvedValue({
-        id: 1,
-        provider: 'INTERNAL',
-        providerId: 'admin',
-        user: { id: mockAdminUserId, name: 'Admin' },
-      });
-    });
-
     it('슬롯과 함께 이벤트를 생성한다', async () => {
       const createDto = {
         title: 'New Event',
         description: 'Event description',
         track: Track.WEB,
+        applicationUnit: ApplicationUnit.INDIVIDUAL,
         startTime: new Date(),
         endTime: new Date(),
         slotSchema: {},
@@ -175,23 +167,15 @@ describe('EventsService', () => {
 
       prismaMock.event.create.mockResolvedValue(mockCreatedEvent);
 
-      const result = await service.create(createDto);
+      const result = await service.create(createDto, mockAdminUserId);
 
       expect(result).toEqual(mockCreatedEvent);
-      expect(prismaMock.authAccount.findUnique).toHaveBeenCalledWith({
-        where: {
-          provider_providerId: {
-            provider: 'INTERNAL',
-            providerId: 'admin',
-          },
-        },
-        include: { user: true },
-      });
       expect(prismaMock.event.create).toHaveBeenCalledWith({
         data: {
           title: createDto.title,
           description: createDto.description,
           track: createDto.track,
+          applicationUnit: createDto.applicationUnit,
           startTime: createDto.startTime,
           endTime: createDto.endTime,
           slotSchema: createDto.slotSchema,
@@ -205,24 +189,6 @@ describe('EventsService', () => {
         },
         include: { slots: true },
       });
-    });
-
-    it('ADMIN 계정이 없으면 에러를 던진다', async () => {
-      prismaMock.authAccount.findUnique.mockResolvedValue(null);
-
-      const createDto = {
-        title: 'New Event',
-        description: 'Event description',
-        track: Track.WEB,
-        startTime: new Date(),
-        endTime: new Date(),
-        slotSchema: {},
-        slots: [{ maxCapacity: 10, extraInfo: {} }],
-      };
-
-      await expect(service.create(createDto)).rejects.toThrow(
-        'ADMIN 계정이 존재하지 않습니다. seed를 확인하세요.',
-      );
     });
   });
 });
