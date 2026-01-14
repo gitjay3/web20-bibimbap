@@ -25,6 +25,16 @@ export const createPrismaMock = () => ({
     create: jest.fn(),
     update: jest.fn(),
   },
+  authAccount: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+  },
+  user: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+  },
   $transaction: jest.fn(),
   $connect: jest.fn(),
   $disconnect: jest.fn(),
