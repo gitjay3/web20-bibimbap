@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import Layout from './Layout';
 import Main from './pages/main/Main';
 import EventDetail from './pages/event-detail/EventDetail';
+import ManageTemplate from './pages/manage-template/ManageTemplate';
 
 const router = createBrowserRouter([
   {
@@ -10,6 +11,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Main /> },
       { path: '/events/:id', element: <EventDetail /> },
+      { path: '/templates', element: <ManageTemplate />}
     ],
   },
 ]);
