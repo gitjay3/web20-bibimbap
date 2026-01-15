@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import EventCategoryLabel from '@/components/EventCategoryLabel';
 import ApplicationUnitLabel from '@/components/ApplicationUnitLabel';
 import cn from '@/utils/cn';
 import type { Track, ApplicationUnit } from '@/types/event';
+import { getMyReservations } from '@/api/reservation';
+import type { ReservationApiResponse } from '@/types/BEapi';
 
 type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 type ViewMode = 'grid' | 'ticket';
 
 interface SlotExtraInfo {
-  mentor?: string;
+  content?: string;
+  startTime?: string;
+  endTime?: string;
   location?: string;
+  mentor?: string;
   [key: string]: unknown;
 }
 
@@ -34,9 +39,38 @@ const RESERVATION_STATUS_TEXT: Record<ReservationStatus | 'ENDED', string> = {
   ENDED: '종료',
 };
 
-// TODO: 백엔드 API 연동
-// GET /reservations API 응답에 eventTrack, applicationUnit, extraInfo 필드 추가 필요
-const MOCK_RESERVATIONS: MyReservation[] = [];
+const EXTRA_INFO_LABELS: Record<string, string> = {
+  content: '내용',
+  startTime: '시작',
+  endTime: '종료',
+  location: '장소',
+  mentor: '멘토',
+};
+
+const EXTRA_INFO_ORDER = ['content', 'startTime', 'endTime', 'location', 'mentor'];
+
+function getOrderedExtraInfo(extraInfo?: SlotExtraInfo): [string, unknown][] {
+  if (!extraInfo) return [];
+  return EXTRA_INFO_ORDER
+    .filter((key) => key in extraInfo)
+    .map((key) => [key, extraInfo[key]]);
+}
+
+function mapApiResponseToMyReservation(res: ReservationApiResponse): MyReservation {
+  return {
+    id: res.id,
+    userId: res.userId,
+    slotId: res.slotId,
+    status: res.status,
+    reservedAt: res.reservedAt,
+    eventTitle: res.eventTitle ?? '',
+    eventStartTime: res.eventStartTime ?? '',
+    eventEndTime: res.eventEndTime ?? '',
+    eventTrack: (res.eventTrack ?? 'COMMON') as Track,
+    applicationUnit: (res.applicationUnit ?? 'INDIVIDUAL') as ApplicationUnit,
+    extraInfo: res.extraInfo,
+  };
+}
 
 function formatDateWithDay(dateStr: string): string {
   const date = new Date(dateStr);
@@ -44,13 +78,6 @@ function formatDateWithDay(dateStr: string): string {
   const dayNum = date.getDate();
   const weekday = date.toLocaleDateString('ko-KR', { weekday: 'short' });
   return `${month}.${dayNum}. (${weekday})`;
-}
-
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 function calcDDay(dateStr: string): string {
@@ -151,8 +178,7 @@ function FeaturedTicket({ reservation }: FeaturedTicketProps) {
     extraInfo,
   } = reservation;
   const isEnded = isEventEnded(eventEndTime);
-  const mentor = extraInfo?.mentor;
-  const location = extraInfo?.location;
+  const extraInfoEntries = getOrderedExtraInfo(extraInfo);
 
   return (
     <div className="group flex cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -181,26 +207,19 @@ function FeaturedTicket({ reservation }: FeaturedTicketProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-y-2 border-t border-gray-100 bg-[#F8FAFC] px-6 py-3">
-          {mentor && (
-            <div className="flex items-center text-14">
-              <span className="mr-2 font-bold text-brand-500">멘토</span>
-              <span className="text-gray-700">{mentor}</span>
+          {extraInfoEntries.map(([key, value], idx) => (
+            <div key={key} className="flex items-center">
+              <div className="flex items-center text-14">
+                <span className="mr-2 font-bold text-brand-500">
+                  {EXTRA_INFO_LABELS[key] ?? key}
+                </span>
+                <span className="max-w-40 truncate text-gray-700">{String(value)}</span>
+              </div>
+              {idx < extraInfoEntries.length - 1 && (
+                <div className="mx-3 hidden h-3 w-px bg-gray-200 sm:block" />
+              )}
             </div>
-          )}
-          {mentor && <div className="mx-3 hidden h-3 w-px bg-gray-200 sm:block" />}
-          <div className="flex items-center text-14">
-            <span className="mr-2 font-bold text-brand-500">시간</span>
-            <span className="text-gray-700">
-              {formatTime(eventStartTime)} ~ {formatTime(eventEndTime)}
-            </span>
-          </div>
-          <div className="mx-3 hidden h-3 w-px bg-gray-200 sm:block" />
-          {location && (
-            <div className="flex items-center text-14">
-              <span className="mr-2 font-bold text-brand-500">장소</span>
-              <span className="max-w-40 truncate text-gray-700">{location}</span>
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
@@ -223,8 +242,7 @@ function ReservationTicket({ reservation }: ReservationTicketProps) {
   } = reservation;
   const isEnded = isEventEnded(eventEndTime);
   const isActive = status === 'CONFIRMED' && !isEnded;
-  const mentor = extraInfo?.mentor;
-  const location = extraInfo?.location;
+  const extraInfoEntries = getOrderedExtraInfo(extraInfo);
 
   return (
     <div className="group flex cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-brand-500 hover:shadow-sm">
@@ -253,24 +271,14 @@ function ReservationTicket({ reservation }: ReservationTicketProps) {
         </div>
 
         <div className="flex items-center gap-6 border-t border-gray-100 bg-[#F8FAFC] px-5 py-2.5">
-          {mentor && (
-            <div className="flex items-center text-12 text-gray-700">
-              <span className="mr-2 font-bold text-brand-500">멘토</span>
-              <span>{mentor}</span>
+          {extraInfoEntries.map(([key, value]) => (
+            <div key={key} className="flex items-center text-12 text-gray-700">
+              <span className="mr-2 font-bold text-brand-500">
+                {EXTRA_INFO_LABELS[key] ?? key}
+              </span>
+              <span>{String(value)}</span>
             </div>
-          )}
-          <div className="flex items-center text-12 text-gray-700">
-            <span className="mr-2 font-bold text-brand-500">시간</span>
-            <span>
-              {formatTime(eventStartTime)} ~ {formatTime(eventEndTime)}
-            </span>
-          </div>
-          {location && (
-            <div className="flex items-center text-12 text-gray-700">
-              <span className="mr-2 font-bold text-brand-500">장소</span>
-              <span>{location}</span>
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
@@ -279,13 +287,56 @@ function ReservationTicket({ reservation }: ReservationTicketProps) {
 
 function CamperMyPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('ticket');
-  const sortedReservations = sortReservations(MOCK_RESERVATIONS);
+  const [reservations, setReservations] = useState<MyReservation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchReservations() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await getMyReservations();
+        setReservations(data.map(mapApiResponseToMyReservation));
+      } catch (err) {
+        setError('예약 목록을 불러오는데 실패했습니다.');
+        console.error('Failed to fetch reservations:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchReservations();
+  }, []);
+
+  const sortedReservations = sortReservations(reservations);
   const upcomingReservation = sortedReservations.find(
     (r) => r.status === 'CONFIRMED' && !isEventEnded(r.eventEndTime),
   );
   const listReservations = upcomingReservation
     ? sortedReservations.filter((r) => r.id !== upcomingReservation.id)
     : sortedReservations;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-4">
+          <h1 className="text-36 font-extrabold text-gray-900">마이페이지</h1>
+          <p className="text-16 text-gray-500">예약 목록을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-4">
+          <h1 className="text-36 font-extrabold text-gray-900">마이페이지</h1>
+          <p className="text-16 text-error-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -314,11 +365,15 @@ function CamperMyPage() {
 
           <section>
             <h2 className="mb-5 text-20 font-bold text-gray-700">전체 예약 내역</h2>
-            <div className="flex flex-col gap-3">
-              {listReservations.map((reservation) => (
-                <ReservationTicket key={reservation.id} reservation={reservation} />
-              ))}
-            </div>
+            {listReservations.length === 0 && !upcomingReservation ? (
+              <p className="text-16 text-gray-400">아직 예약한 이벤트가 없습니다.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {listReservations.map((reservation) => (
+                  <ReservationTicket key={reservation.id} reservation={reservation} />
+                ))}
+              </div>
+            )}
           </section>
         </div>
       )}
@@ -326,6 +381,9 @@ function CamperMyPage() {
       {viewMode === 'grid' && (
         <section>
           <h2 className="mb-5 text-24 font-extrabold text-gray-900">나의 예약 현황</h2>
+          {sortedReservations.length === 0 ? (
+            <p className="text-16 text-gray-400">아직 예약한 이벤트가 없습니다.</p>
+          ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedReservations.map((reservation) => {
               const isEnded = isEventEnded(reservation.eventEndTime);
@@ -344,30 +402,21 @@ function CamperMyPage() {
                       {reservation.eventTitle}
                     </h3>
                   </div>
-                  <div className="mt-auto flex flex-col gap-2 border-t border-gray-100 bg-brand-50 px-5 py-4">
-                    {reservation.extraInfo?.mentor && (
-                      <div className="flex items-center text-12 text-gray-700">
-                        <span className="w-8 shrink-0 font-bold text-brand-500">멘토</span>
-                        <span className="truncate">{reservation.extraInfo.mentor}</span>
+                  <div className="mt-auto flex min-h-[120px] flex-col gap-2 border-t border-gray-100 bg-brand-50 px-5 py-4">
+                    {getOrderedExtraInfo(reservation.extraInfo).map(([key, value]) => (
+                      <div key={key} className="flex items-center text-12 text-gray-700">
+                        <span className="w-12 shrink-0 font-bold text-brand-500">
+                          {EXTRA_INFO_LABELS[key] ?? key}
+                        </span>
+                        <span className="truncate">{String(value)}</span>
                       </div>
-                    )}
-                    <div className="flex items-center text-12 text-gray-700">
-                      <span className="w-8 shrink-0 font-bold text-brand-500">시간</span>
-                      <span className="truncate">
-                        {formatDateWithDay(reservation.eventStartTime)}
-                      </span>
-                    </div>
-                    {reservation.extraInfo?.location && (
-                      <div className="flex items-center text-12 text-gray-700">
-                        <span className="w-8 shrink-0 font-bold text-brand-500">장소</span>
-                        <span className="truncate">{reservation.extraInfo.location}</span>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               );
             })}
           </div>
+          )}
         </section>
       )}
     </div>
