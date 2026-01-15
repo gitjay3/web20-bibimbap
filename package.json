@@ -32,6 +32,14 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
+  "lint-staged": {
+    "frontend/src/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "backend/src/**/*.ts": [
+      "eslint --fix"
+    ]
+  },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.4",
     "husky": "^9.1.7",
