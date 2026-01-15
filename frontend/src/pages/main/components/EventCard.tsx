@@ -12,7 +12,7 @@ interface EventCardProps {
 }
 
 function EventCard({ event }: EventCardProps) {
-  const { id, track, stauts, title, description, startTime, endTime, applicationUnit } = event;
+  const { id, track, status, title, description, startTime, endTime, applicationUnit } = event;
 
   return (
     <Card>
@@ -21,7 +21,7 @@ function EventCard({ event }: EventCardProps) {
           <div className="flex gap-2">
             <ApplicationUnitLabel applicationUnit={applicationUnit} />
             <EventCategoryLabel category={track} />
-            <EventStatusLabel status={stauts} />
+            <EventStatusLabel status={status} />
           </div>
           <div className="text-20 font-extrabold">{title}</div>
           <div className="text-12 text-neutral-text-secondary">{description}</div>

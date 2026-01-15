@@ -1,13 +1,13 @@
 import ApplicationUnitLabel from '@/components/ApplicationUnitLabel';
 import EventCategoryLabel from '@/components/EventCategoryLabel';
 import EventStatusLabel from '@/components/EventStatusLabel';
-import type { ApplicationUnit, EventCategory, EventStatus } from '@/types/event';
+import type { ApplicationUnit, Track, Status } from '@/types/event';
 
 interface EventDetailHeaderProps {
-  category: EventCategory;
-  status: EventStatus;
+  category: Track;
+  status: Status;
   title: string;
-  description: string;
+  description: string | null;
   applicationUnit: ApplicationUnit;
 }
 

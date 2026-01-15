@@ -1,4 +1,4 @@
-import { Reservation, Prisma } from '@prisma/client';
+import { Reservation, Prisma, Track, ApplicationUnit } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
@@ -64,6 +64,29 @@ export class ReservationResponseDto {
   })
   eventEndTime?: Date;
 
+  @ApiProperty({
+    description: '이벤트 트랙',
+    example: 'WEB',
+    enum: ['ANDROID', 'IOS', 'WEB', 'COMMON'],
+    required: false,
+  })
+  eventTrack?: Track;
+
+  @ApiProperty({
+    description: '신청 단위',
+    example: 'INDIVIDUAL',
+    enum: ['INDIVIDUAL', 'TEAM'],
+    required: false,
+  })
+  applicationUnit?: ApplicationUnit;
+
+  @ApiProperty({
+    description: '슬롯 추가 정보 (멘토, 장소 등)',
+    example: { mentor: '홍길동', location: 'Zoom' },
+    required: false,
+  })
+  extraInfo?: Record<string, unknown>;
+
   constructor(reservation: Reservation | ReservationWithRelations) {
     this.id = reservation.id;
     this.userId = reservation.userId;
@@ -76,6 +99,9 @@ export class ReservationResponseDto {
       this.eventTitle = reservation.slot.event.title;
       this.eventStartTime = reservation.slot.event.startTime;
       this.eventEndTime = reservation.slot.event.endTime;
+      this.eventTrack = reservation.slot.event.track;
+      this.applicationUnit = reservation.slot.event.applicationUnit;
+      this.extraInfo = reservation.slot.extraInfo as Record<string, unknown>;
     }
   }
 }

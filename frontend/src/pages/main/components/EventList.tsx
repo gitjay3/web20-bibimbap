@@ -6,7 +6,7 @@ import CategoryTabs from './CategoryTabs';
 import EventCard from './EventCard';
 
 type EventTrackFilter = 'ALL' | Event['track'];
-type EventStatusFilter = 'ALL' | Event['stauts'];
+type EventStatusFilter = 'ALL' | Event['status'];
 
 const categoryTabsItems = [
   { key: 'ALL', label: '전체' },
@@ -40,7 +40,7 @@ function EventList() {
     () =>
       events.filter((event) => {
         const categoryOk = selectedCategoryTab === 'ALL' || event.track === selectedCategoryTab;
-        const statusOk = selectedStatus === 'ALL' || event.stauts === selectedStatus;
+        const statusOk = selectedStatus === 'ALL' || event.status === selectedStatus;
         return categoryOk && statusOk;
       }),
     [events, selectedCategoryTab, selectedStatus],

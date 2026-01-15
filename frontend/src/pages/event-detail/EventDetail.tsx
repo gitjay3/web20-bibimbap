@@ -86,7 +86,7 @@ function EventDetail() {
 
   // 실시간 정원 폴링
   useEffect(() => {
-    if (!event || event.stauts !== 'ONGOING') {
+    if (!event || event.status !== 'ONGOING') {
       return () => {};
     }
     // TODO : 사용자가 다른 탭으로 이동하면 폴링을 일시 중단
@@ -137,14 +137,14 @@ function EventDetail() {
         <div className="flex flex-col gap-6">
           <EventDetailHeader
             category={event.track}
-            status={event.stauts}
+            status={event.status}
             title={event.title}
             description={event.description}
             applicationUnit={event.applicationUnit}
           />
           <hr className="border-neutral-border-default" />
           <SlotList
-            status={event.stauts}
+            status={event.status}
             slotSchema={event.slotSchema}
             slots={event.slots}
             selectedSlotId={selectedSlotId}
@@ -153,7 +153,7 @@ function EventDetail() {
         </div>
       </div>
       <ReservationButton
-        isReservable={event.stauts === 'ONGOING'}
+        isReservable={event.status === 'ONGOING'}
         selectedSlotId={selectedSlotId}
         myReservation={myReservation}
         onReservationSuccess={handleReservationSuccess}

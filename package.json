@@ -34,10 +34,10 @@
   "packageManager": "pnpm@10.28.0",
   "lint-staged": {
     "frontend/src/**/*.{ts,tsx}": [
-      "eslint --fix"
+      "pnpm --filter frontend eslint --fix"
     ],
     "backend/src/**/*.ts": [
-      "eslint --fix"
+      "pnpm --filter backend eslint --fix"
     ]
   },
   "devDependencies": {

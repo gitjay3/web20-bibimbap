@@ -3,6 +3,7 @@ export interface EventSlotExtraInfo {
   startTime?: string;
   endTime?: string;
   location?: string;
+  mentor?: string;
 }
 
 export interface EventSlotApiResponse {
@@ -19,6 +20,7 @@ export interface EventDetailApiResponse {
   title: string;
   description: string | null;
   track: 'WEB' | 'ANDROID' | 'IOS' | 'COMMON';
+  applicationUnit: 'INDIVIDUAL' | 'TEAM';
   startTime: string; // ISO 8601 날짜 문자열
   endTime: string;
   creatorId: string;
@@ -33,6 +35,7 @@ export interface EventListItemApiResponse {
   title: string;
   description: string | null;
   track: 'WEB' | 'ANDROID' | 'IOS' | 'COMMON';
+  applicationUnit: 'INDIVIDUAL' | 'TEAM';
   creatorId: string;
   startTime: string;
   endTime: string;
@@ -67,6 +70,16 @@ export interface ReservationApiResponse {
   eventTitle?: string;
   eventStartTime?: string;
   eventEndTime?: string;
+  eventTrack?: 'ANDROID' | 'IOS' | 'WEB' | 'COMMON';
+  applicationUnit?: 'INDIVIDUAL' | 'TEAM';
+  extraInfo?: {
+    mentor?: string;
+    location?: string;
+    content?: string;
+    startTime?: string;
+    endTime?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface ApplyReservationDto {

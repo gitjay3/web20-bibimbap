@@ -13,7 +13,7 @@ export async function getEvents(): Promise<Event[]> {
       ...event,
       startTime: new Date(startTime),
       endTime: new Date(endTime),
-      stauts: calcStatus(startTime, endTime),
+      status: calcStatus(startTime, endTime),
     };
   });
 }
@@ -28,6 +28,6 @@ export async function getEvent(id: number): Promise<EventDetail> {
     ...data,
     startTime,
     endTime,
-    stauts: calcStatus(startTime, endTime),
+    status: calcStatus(startTime, endTime),
   };
 }
