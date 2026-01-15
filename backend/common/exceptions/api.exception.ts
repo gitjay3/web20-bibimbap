@@ -40,3 +40,16 @@ export class AlreadyCancelledException extends ApiException {
     super('이미 취소된 예약입니다', HttpStatus.BAD_REQUEST);
   }
 }
+export class OptimisticLockException extends ApiException {
+  constructor() {
+    super(
+      '다른 요청과 충돌이 발생했습니다. 다시 시도해주세요.',
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+export class SlotNotFoundException extends ApiException {
+  constructor() {
+    super('슬롯을 찾을 수 없습니다', HttpStatus.NOT_FOUND);
+  }
+}

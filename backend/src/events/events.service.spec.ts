@@ -2,20 +2,30 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { createPrismaMock } from '../test/mocks/prisma.mock';
 import { ApplicationUnit, Track } from '@prisma/client';
+
+const createRedisMock = () => ({
+  initStock: jest.fn().mockResolvedValue(undefined),
+  decrementStock: jest.fn().mockResolvedValue(true),
+  incrementStock: jest.fn().mockResolvedValue(undefined),
+});
 
 describe('EventsService', () => {
   let service: EventsService;
   let prismaMock: ReturnType<typeof createPrismaMock>;
+  let redisMock: ReturnType<typeof createRedisMock>;
 
   beforeEach(async () => {
     prismaMock = createPrismaMock();
+    redisMock = createRedisMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: RedisService, useValue: redisMock },
       ],
     }).compile();
 

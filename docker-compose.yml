@@ -147,7 +147,7 @@ services:
       --appendonly yes
       --appendfsync everysec
       --maxmemory ${REDIS_MAX_MEMORY:-256mb}
-      --maxmemory-policy ${REDIS_EVICTION_POLICY:-allkeys-lru}
+      --maxmemory-policy ${REDIS_EVICTION_POLICY:-noeviction}
       --requirepass ${REDIS_PASSWORD:-redis123}
     volumes:
       - redis-data:/data

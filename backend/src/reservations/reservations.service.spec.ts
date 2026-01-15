@@ -1,21 +1,46 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bullmq';
 import { ReservationsService } from './reservations.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { createPrismaMock, createTxMock } from '../test/mocks/prisma.mock';
+import { RESERVATION_QUEUE } from './dto/reservation-job.dto';
+import {
+  SlotNotFoundException,
+  SlotFullException,
+  ReservationNotFoundException,
+  AlreadyCancelledException,
+  UnauthorizedReservationException,
+} from '../../common/exceptions/api.exception';
 import type { ApplyReservationDto } from './dto/apply-reservation.dto';
+
+const createRedisMock = () => ({
+  initStock: jest.fn().mockResolvedValue(undefined),
+  decrementStock: jest.fn().mockResolvedValue(true),
+  incrementStock: jest.fn().mockResolvedValue(undefined),
+});
+
+const createQueueMock = () => ({
+  add: jest.fn().mockResolvedValue({ id: 'job-123' }),
+});
 
 describe('ReservationsService', () => {
   let service: ReservationsService;
   let prismaMock: ReturnType<typeof createPrismaMock>;
+  let redisMock: ReturnType<typeof createRedisMock>;
+  let queueMock: ReturnType<typeof createQueueMock>;
 
   beforeEach(async () => {
     prismaMock = createPrismaMock();
+    redisMock = createRedisMock();
+    queueMock = createQueueMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReservationsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: RedisService, useValue: redisMock },
+        { provide: getQueueToken(RESERVATION_QUEUE), useValue: queueMock },
       ],
     }).compile();
 
@@ -30,135 +55,47 @@ describe('ReservationsService', () => {
     const userId = 'user-123';
     const dto: ApplyReservationDto = { slotId: 1 };
 
-    it('예약을 성공적으로 생성한다', async () => {
-      const txMock = createTxMock();
+    it('예약을 큐에 성공적으로 등록한다', async () => {
       const mockSlot = {
         id: 1,
         currentCount: 5,
         maxCapacity: 10,
       };
-      const mockReservation = {
-        id: 1,
-        userId,
-        slotId: dto.slotId,
-        status: 'CONFIRMED',
-        reservedAt: new Date(),
-      };
 
-      txMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
-      txMock.reservation.findFirst.mockResolvedValue(null);
-      txMock.reservation.create.mockResolvedValue(mockReservation);
-      txMock.eventSlot.update.mockResolvedValue({
-        ...mockSlot,
-        currentCount: 6,
-      });
-
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
-      );
+      prismaMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
+      redisMock.decrementStock.mockResolvedValue(true);
 
       const result = await service.apply(userId, dto);
 
-      expect(result).toEqual(mockReservation);
-      expect(txMock.eventSlot.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.slotId },
+      expect(result).toEqual({
+        status: 'PENDING',
+        message: '예약이 접수되었습니다. 잠시 후 확정됩니다.',
       });
-      expect(txMock.reservation.create).toHaveBeenCalled();
+      expect(redisMock.decrementStock).toHaveBeenCalledWith(dto.slotId);
+      expect(queueMock.add).toHaveBeenCalled();
     });
 
-    it('슬롯이 존재하지 않으면 NotFoundException을 던진다', async () => {
-      const txMock = createTxMock();
-      txMock.eventSlot.findUnique.mockResolvedValue(null);
-
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
-      );
+    it('슬롯이 존재하지 않으면 SlotNotFoundException을 던진다', async () => {
+      prismaMock.eventSlot.findUnique.mockResolvedValue(null);
 
       await expect(service.apply(userId, dto)).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.apply(userId, dto)).rejects.toThrow(
-        '예약을 찾을 수 없습니다',
+        SlotNotFoundException,
       );
     });
 
-    it('정원이 마감되면 BadRequestException을 던진다', async () => {
-      const txMock = createTxMock();
-      const fullSlot = {
+    it('Redis 재고가 없으면 SlotFullException을 던진다', async () => {
+      const mockSlot = {
         id: 1,
         currentCount: 10,
         maxCapacity: 10,
       };
 
-      txMock.eventSlot.findUnique.mockResolvedValue(fullSlot);
-
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
-      );
+      prismaMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
+      redisMock.decrementStock.mockResolvedValue(false);
 
       await expect(service.apply(userId, dto)).rejects.toThrow(
-        BadRequestException,
+        SlotFullException,
       );
-      await expect(service.apply(userId, dto)).rejects.toThrow(
-        '정원이 마감되었습니다',
-      );
-    });
-
-    it('이미 예약이 있으면 BadRequestException을 던진다', async () => {
-      const txMock = createTxMock();
-      const mockSlot = {
-        id: 1,
-        currentCount: 5,
-        maxCapacity: 10,
-      };
-      const existingReservation = {
-        id: 99,
-        userId,
-        slotId: dto.slotId,
-        status: 'CONFIRMED',
-      };
-
-      txMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
-      txMock.reservation.findFirst.mockResolvedValue(existingReservation);
-
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
-      );
-
-      await expect(service.apply(userId, dto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.apply(userId, dto)).rejects.toThrow(
-        '이미 예약한 일정입니다',
-      );
-    });
-
-    it('PENDING과 CONFIRMED 상태의 기존 예약을 확인한다', async () => {
-      const txMock = createTxMock();
-      const mockSlot = {
-        id: 1,
-        currentCount: 5,
-        maxCapacity: 10,
-      };
-
-      txMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
-      txMock.reservation.findFirst.mockResolvedValue(null);
-      txMock.reservation.create.mockResolvedValue({});
-      txMock.eventSlot.update.mockResolvedValue({});
-
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
-      );
-
-      await service.apply(userId, dto);
-
-      expect(txMock.reservation.findFirst).toHaveBeenCalledWith({
-        where: {
-          userId,
-          slotId: dto.slotId,
-          status: { in: ['PENDING', 'CONFIRMED'] },
-        },
-      });
     });
   });
 
@@ -168,68 +105,92 @@ describe('ReservationsService', () => {
     it('예약을 성공적으로 취소한다', async () => {
       const txMock = createTxMock();
       const reservationId = 1;
-      const userId = 'user-123';
+      const mockSlot = { id: 1, maxCapacity: 10, version: 1 };
       const mockReservation = {
         id: reservationId,
         userId,
         slotId: 1,
         status: 'CONFIRMED',
+        slot: mockSlot,
       };
       const updatedReservation = {
-        ...mockReservation,
+        id: reservationId,
+        userId,
+        slotId: 1,
         status: 'CANCELLED',
       };
 
       txMock.reservation.findUnique.mockResolvedValue(mockReservation);
       txMock.reservation.update.mockResolvedValue(updatedReservation);
-      txMock.eventSlot.update.mockResolvedValue({});
+      txMock.eventSlot.updateMany.mockResolvedValue({ count: 1 });
 
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
+      prismaMock.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<unknown>) =>
+          callback(txMock),
       );
 
       const result = await service.cancel(reservationId, userId);
 
-      expect(result).toEqual(updatedReservation);
-      expect(txMock.eventSlot.update).toHaveBeenCalledWith({
-        where: { id: mockReservation.slotId },
-        data: { currentCount: { decrement: 1 } },
-      });
+      expect(result.status).toBe('CANCELLED');
+      expect(redisMock.incrementStock).toHaveBeenCalledWith(
+        mockReservation.slotId,
+        mockSlot.maxCapacity,
+      );
     });
 
-    it('예약이 존재하지 않으면 NotFoundException을 던진다', async () => {
+    it('예약이 존재하지 않으면 ReservationNotFoundException을 던진다', async () => {
       const txMock = createTxMock();
       txMock.reservation.findUnique.mockResolvedValue(null);
 
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
+      prismaMock.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<unknown>) =>
+          callback(txMock),
       );
 
       await expect(service.cancel(999, userId)).rejects.toThrow(
-        NotFoundException,
+        ReservationNotFoundException,
       );
     });
 
-    it('이미 취소된 예약이면 BadRequestException을 던진다', async () => {
+    it('다른 사용자의 예약이면 UnauthorizedReservationException을 던진다', async () => {
       const txMock = createTxMock();
-      const userId = 'user-123';
+      const mockReservation = {
+        id: 1,
+        userId: 'other-user',
+        slotId: 1,
+        status: 'CONFIRMED',
+      };
+
+      txMock.reservation.findUnique.mockResolvedValue(mockReservation);
+
+      prismaMock.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<unknown>) =>
+          callback(txMock),
+      );
+
+      await expect(service.cancel(1, userId)).rejects.toThrow(
+        UnauthorizedReservationException,
+      );
+    });
+
+    it('이미 취소된 예약이면 AlreadyCancelledException을 던진다', async () => {
+      const txMock = createTxMock();
       const cancelledReservation = {
         id: 1,
         userId,
+        slotId: 1,
         status: 'CANCELLED',
       };
 
       txMock.reservation.findUnique.mockResolvedValue(cancelledReservation);
 
-      prismaMock.$transaction.mockImplementation(async (callback) =>
-        callback(txMock),
+      prismaMock.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<unknown>) =>
+          callback(txMock),
       );
 
       await expect(service.cancel(1, userId)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.cancel(1, userId)).rejects.toThrow(
-        '이미 취소된 예약입니다',
+        AlreadyCancelledException,
       );
     });
   });
@@ -245,7 +206,7 @@ describe('ReservationsService', () => {
           status: 'CONFIRMED',
           slot: {
             id: 1,
-            Event: { id: 1, title: 'Test Event' },
+            event: { id: 1, title: 'Test Event' },
           },
         },
       ];
