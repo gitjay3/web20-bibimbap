@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import type { NavItem } from '@/Layout';
 
 interface HeaderProps {
@@ -14,7 +15,9 @@ function Header({ navItems }: HeaderProps) {
         </div>
         <nav className="text-12 flex gap-4">
           {navItems.map((item) => (
-            <div key={item.to} className="text-neutral-text-secondary">{item.label}</div>
+            <Link key={item.to} to={item.to} className="text-neutral-text-secondary hover:text-neutral-text-primary transition-colors">
+              {item.label}
+            </Link>
           ))}
         </nav>
       </div>

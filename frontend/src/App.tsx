@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import Layout from './Layout';
 import Main from './pages/main/Main';
 import EventDetail from './pages/event-detail/EventDetail';
+import CamperMyPage from './pages/camper-mypage/CamperMyPage';
 
 const router = createBrowserRouter([
   {
@@ -10,6 +11,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Main /> },
       { path: '/events/:id', element: <EventDetail /> },
+      { path: '/me', element: <CamperMyPage /> },
     ],
   },
 ]);
