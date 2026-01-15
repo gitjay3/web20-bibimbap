@@ -9,3 +9,7 @@ export const getMe = async (): Promise<User> => {
 export const adminLogin = async (payload: { id: string; password: string }) => {
   await api.post('/auth/login', payload);
 };
+
+export const logout = async () => {
+  await api.get('/auth/logout');
+};

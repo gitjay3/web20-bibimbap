@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { getMe } from '@/api/auth';
+import { getMe, logout as logoutApi } from '@/api/auth';
 import type { User } from '@/types/user';
 import { AuthContext } from './AuthContext';
 
@@ -27,7 +27,19 @@ function AuthProvider({ children }: AuthProviderProps) {
     fetchUser();
   }, []);
 
-  return <AuthContext value={{ user, isLoading }}>{children}</AuthContext>;
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } finally {
+      setUser(null);
+    }
+  };
+
+  return (
+    <AuthContext value={{ user, isLoading, logout }}>
+      {children}
+    </AuthContext>
+  );
 }
 
 export default AuthProvider;
