@@ -18,6 +18,7 @@ function Slot({ isReservable, slot, selectedSlotId, setSelectedSlotId }: SlotPro
       className={cn(
         'border-neutral-border-default flex h-12 w-full cursor-pointer items-center justify-between rounded-md border px-4 transition',
         isSelected && 'border-brand-border-default',
+        (isClosed) && 'bg-neutral-surface-default text-neutral-text-secondary',
         (!isReservable || isClosed) && 'cursor-not-allowed',
       )}
       onClick={() => {
