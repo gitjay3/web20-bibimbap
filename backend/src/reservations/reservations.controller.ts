@@ -19,8 +19,17 @@ import {
 import { ReservationsService } from './reservations.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
-import { ErrorResponseDto } from './dto/error-response.dto';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
+import { UseGuards, Req } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Request } from 'express';
+import { User } from '@prisma/client';
 
+interface AuthenticatedRequest extends Request {
+  user: User;
+}
+
+@UseGuards(JwtAuthGuard)
 @ApiTags('reservations')
 @Controller('reservations')
 export class ReservationsController {
@@ -44,11 +53,14 @@ export class ReservationsController {
     description: '슬롯을 찾을 수 없음',
     type: ErrorResponseDto,
   })
-  async apply(@Body() applyReservationDto: ApplyReservationDto) {
-    const tempUserId = 'test-user-123';
+  async apply(
+    @Req() req: AuthenticatedRequest,
+    @Body() applyReservationDto: ApplyReservationDto,
+  ) {
+    const userId = req.user.id;
 
     const reservation = await this.reservationsService.apply(
-      tempUserId,
+      userId,
       applyReservationDto,
     );
 
@@ -65,12 +77,26 @@ export class ReservationsController {
     description: '예약 목록 조회 성공',
     type: [ReservationResponseDto],
   })
-  async findAll() {
-    const tempUserId = 'test-user-123';
+  async findAll(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.id;
 
-    const reservations =
-      await this.reservationsService.findAllByUser(tempUserId);
+    const reservations = await this.reservationsService.findAllByUser(userId);
     return reservations.map((r) => new ReservationResponseDto(r));
+  }
+
+  @Get('my/:eventId')
+  @ApiOperation({ summary: '특정 이벤트에 대한 내 예약 조회' })
+  @ApiParam({ name: 'eventId', description: '이벤트 ID' })
+  @ApiResponse({ status: 200, type: ReservationResponseDto })
+  async findMyReservationForEvent(
+    @Req() req: AuthenticatedRequest,
+    @Param('eventId', ParseIntPipe) eventId: number,
+  ) {
+    const reservation = await this.reservationsService.findByUserAndEvent(
+      req.user.id,
+      eventId,
+    );
+    return reservation ? new ReservationResponseDto(reservation) : null;
   }
 
   @Get(':id')
@@ -125,8 +151,11 @@ export class ReservationsController {
     description: '예약을 찾을 수 없음',
     type: ErrorResponseDto,
   })
-  async cancel(@Param('id', ParseIntPipe) id: number) {
-    const reservation = await this.reservationsService.cancel(id);
+  async cancel(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const reservation = await this.reservationsService.cancel(id, req.user.id);
     return new ReservationResponseDto(reservation);
   }
 }

@@ -3,6 +3,8 @@ import { useParams } from 'react-router';
 import type { EventDetail, EventDetail as EventDetailType } from '@/types/event';
 import { getEvent } from '@/api/event';
 import { getSlotAvailability } from '@/api/eventSlot';
+import { getMyReservationForEvent } from '@/api/reservation';
+import type { ReservationApiResponse } from '@/types/BEapi';
 import EventDetailHeader from './components/EventDetailHeader';
 import ReservationButton from './components/ReservationButton';
 import SlotList from './components/SlotList';
@@ -11,7 +13,7 @@ const POLLING_INTERVAL = 1000; // 성능 보면서 ms 단위로 바꿔도?
 
 function EventDetail() {
   const { id } = useParams<{ id: string }>();
-
+  const [myReservation, setMyReservation] = useState<ReservationApiResponse | null>(null);
   const [event, setEvent] = useState<EventDetailType | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,6 +29,19 @@ function EventDetail() {
       console.error('이벤트 조회 실패:', error);
     } finally {
       setIsLoading(false);
+    }
+  }, [id]);
+
+  // 이 이벤트가 내 예약인지 조회
+  const fetchMyReservation = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const reservation = await getMyReservationForEvent(Number(id));
+      setMyReservation(reservation);
+    } catch {
+      // 로그인 안 된 경우 등 에러 무시 TODO: 로그인, mypage랑 연계
+      setMyReservation(null);
     }
   }, [id]);
 
@@ -66,7 +81,8 @@ function EventDetail() {
   // 초기 로드
   useEffect(() => {
     fetchEvent();
-  }, [fetchEvent]);
+    fetchMyReservation();
+  }, [fetchEvent, fetchMyReservation]);
 
   // 실시간 정원 폴링
   useEffect(() => {
@@ -89,8 +105,13 @@ function EventDetail() {
 
   const handleReservationSuccess = useCallback(() => {
     setSelectedSlotId(null);
-
     // 예약 성공 시 이벤트 정보 갱신
+    fetchEvent();
+    fetchMyReservation();
+  }, [fetchEvent, fetchMyReservation]);
+
+  const handleCancelSuccess = useCallback(() => {
+    setMyReservation(null);
     fetchEvent();
   }, [fetchEvent]);
 
@@ -134,7 +155,9 @@ function EventDetail() {
       <ReservationButton
         isReservable={event.stauts === 'ONGOING'}
         selectedSlotId={selectedSlotId}
+        myReservation={myReservation}
         onReservationSuccess={handleReservationSuccess}
+        onCancelSuccess={handleCancelSuccess}
       />
     </div>
   );

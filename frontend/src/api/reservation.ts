@@ -20,3 +20,11 @@ export async function cancelReservation(reservationId: number): Promise<Reservat
   const { data } = await api.delete<ReservationApiResponse>(`/reservations/${reservationId}`);
   return data;
 }
+
+// 내 예약
+export async function getMyReservationForEvent(
+  eventId: number,
+): Promise<ReservationApiResponse | null> {
+  const { data } = await api.get<ReservationApiResponse | null>(`/reservations/my/${eventId}`);
+  return data;
+}
