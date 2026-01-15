@@ -49,12 +49,7 @@ export class ReservationsController {
     @CurrentUser('id') userId: string,
     @Body() applyReservationDto: ApplyReservationDto,
   ) {
-    const reservation = await this.reservationsService.apply(
-      userId,
-      applyReservationDto,
-    );
-
-    return new ReservationResponseDto(reservation);
+    return this.reservationsService.apply(userId, applyReservationDto);
   }
 
   @Get()
