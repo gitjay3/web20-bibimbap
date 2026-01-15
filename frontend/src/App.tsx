@@ -5,7 +5,7 @@ import Main from './pages/main/Main';
 import EventDetail from './pages/event-detail/EventDetail';
 import ManageTemplate from './pages/manage-template/ManageTemplate';
 import CamperMyPage from './pages/camper-mypage/CamperMyPage';
-import Login from './pages/login/Login';
+import LoginPage from './pages/auth/LoginPage';
 import RootProviders from './RootProvider';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -13,7 +13,7 @@ const router = createBrowserRouter([
   {
     element: <RootProviders />,
     children: [
-      { path: '/login', element: <Login /> },
+      { path: '/login', element: <LoginPage /> },
       {
         element: <ProtectedRoute />,
         children: [
@@ -25,10 +25,8 @@ const router = createBrowserRouter([
               { path: '/me', element: <CamperMyPage /> },
               {
                 element: <ProtectedRoute allowedRoles={['ADMIN']} />,
-                children: [
-                  { path: '/templates', element: <ManageTemplate /> },
-                ]
-              }
+                children: [{ path: '/templates', element: <ManageTemplate /> }],
+              },
             ],
           },
         ],
