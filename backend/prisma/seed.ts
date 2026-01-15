@@ -86,9 +86,10 @@ async function main() {
       applicationUnit: ApplicationUnit.TEAM,
       creatorId: adminUserId,
       startTime: new Date('2026-01-01T00:00:00+09:00'),
-      endTime: new Date('2026-01-31T23:59:59+09:00'),
+      endTime: new Date('2026-02-28T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
+        eventDate: { label: '행사 날짜', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },
         endTime: { label: '종료 시간', type: 'string' },
         location: { label: '장소', type: 'string' },
@@ -113,6 +114,7 @@ async function main() {
       endTime: new Date('2026-03-31T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
+        eventDate: { label: '행사 날짜', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },
         endTime: { label: '종료 시간', type: 'string' },
         location: { label: '장소', type: 'string' },
@@ -137,6 +139,7 @@ async function main() {
       endTime: new Date('2026-04-30T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
+        eventDate: { label: '행사 날짜', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },
         endTime: { label: '종료 시간', type: 'string' },
         location: { label: '장소', type: 'string' },
@@ -155,6 +158,7 @@ async function main() {
       currentCount: 5,
       extraInfo: {
         content: 'A팀 멘토링',
+        eventDate: '2026-02-15',
         startTime: '14:00',
         endTime: '15:00',
         location: 'Zoom',
@@ -168,6 +172,7 @@ async function main() {
       currentCount: 3,
       extraInfo: {
         content: 'B팀 멘토링',
+        eventDate: '2026-02-15',
         startTime: '15:00',
         endTime: '16:00',
         location: 'Zoom',
@@ -181,6 +186,7 @@ async function main() {
       currentCount: 1,
       extraInfo: {
         content: 'C팀 멘토링',
+        eventDate: '2026-02-15',
         startTime: '16:00',
         endTime: '17:00',
         location: 'Zoom',
@@ -194,6 +200,7 @@ async function main() {
       currentCount: 2,
       extraInfo: {
         content: 'D팀 멘토링',
+        eventDate: '2026-02-15',
         startTime: '17:00',
         endTime: '18:00',
         location: 'Zoom',
@@ -207,6 +214,7 @@ async function main() {
       currentCount: 4,
       extraInfo: {
         content: '코루틴 기초',
+        eventDate: '2026-03-15',
         startTime: '10:00',
         endTime: '10:30',
         location: '강남 캠퍼스 301호',
@@ -220,6 +228,7 @@ async function main() {
       currentCount: 6,
       extraInfo: {
         content: '비동기 처리 실습',
+        eventDate: '2026-03-15',
         startTime: '10:30',
         endTime: '11:00',
         location: '강남 캠퍼스 301호',
@@ -233,6 +242,7 @@ async function main() {
       currentCount: 2,
       extraInfo: {
         content: 'Q&A 세션',
+        eventDate: '2026-03-15',
         startTime: '11:00',
         endTime: '12:00',
         location: '강남 캠퍼스 301호',
@@ -246,6 +256,7 @@ async function main() {
       currentCount: 3,
       extraInfo: {
         content: '오토레이아웃 기초',
+        eventDate: '2026-04-15',
         startTime: '13:00',
         endTime: '14:00',
         location: 'Zoom',
@@ -259,6 +270,7 @@ async function main() {
       currentCount: 4,
       extraInfo: {
         content: '스택뷰 활용',
+        eventDate: '2026-04-15',
         startTime: '14:00',
         endTime: '15:00',
         location: 'Zoom',
@@ -272,6 +284,7 @@ async function main() {
       currentCount: 1,
       extraInfo: {
         content: '다양한 해상도 대응',
+        eventDate: '2026-04-15',
         startTime: '15:00',
         endTime: '16:00',
         location: 'Zoom',
