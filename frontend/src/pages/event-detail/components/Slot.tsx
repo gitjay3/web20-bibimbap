@@ -1,7 +1,7 @@
 import type { EventSlot } from '@/types/event';
 import cn from '@/utils/cn';
 
-const FIELD_ORDER = ['content', 'startTime', 'endTime', 'location', 'mentor'];
+const FIELD_ORDER = ['content', 'eventDate', 'startTime', 'endTime', 'location', 'mentorName'];
 
 function getOrderedEntries(extraInfo: Record<string, string>): { key: string; value: string }[] {
   return FIELD_ORDER

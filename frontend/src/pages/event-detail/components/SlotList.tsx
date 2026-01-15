@@ -1,6 +1,7 @@
 import type { EventSlot, SlotSchema, Status } from '@/types/event';
 import Slot from './Slot';
 
+const FIELD_ORDER = ['content', 'eventDate', 'startTime', 'endTime', 'location', 'mentorName'];
 
 interface SlotListProps {
   status: Status;
@@ -11,14 +12,18 @@ interface SlotListProps {
 }
 
 function SlotList({ status, slotSchema, slots, selectedSlotId, setSelectedSlotId }: SlotListProps) {
+  const orderedSchemaEntries = FIELD_ORDER
+    .filter((key) => key in slotSchema)
+    .map((key) => ({ key, field: slotSchema[key] }));
+
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-20 font-bold">예약 옵션</h3>
       <div className="text-12 flex items-center gap-1">
-        {Object.entries(slotSchema).map(([key, field], idx, arr) => (
+        {orderedSchemaEntries.map(({ key, field }, idx) => (
           <div key={key} className="flex items-center gap-1">
             <div className="text-neutral-text-secondary">{field.label}</div>
-            {idx < arr.length - 1 && (
+            {idx < orderedSchemaEntries.length - 1 && (
               <div className="text-neutral-border-default">|</div>
             )}
           </div>

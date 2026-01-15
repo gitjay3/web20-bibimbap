@@ -11,6 +11,7 @@ type ViewMode = 'grid' | 'ticket';
 
 interface SlotExtraInfo {
   content?: string;
+  eventDate?: string;
   startTime?: string;
   endTime?: string;
   location?: string;
@@ -41,13 +42,14 @@ const RESERVATION_STATUS_TEXT: Record<ReservationStatus | 'ENDED', string> = {
 
 const EXTRA_INFO_LABELS: Record<string, string> = {
   content: '내용',
+  eventDate: '날짜',
   startTime: '시작',
   endTime: '종료',
   location: '장소',
-  mentor: '멘토',
+  mentorName: '멘토',
 };
 
-const EXTRA_INFO_ORDER = ['content', 'startTime', 'endTime', 'location', 'mentor'];
+const EXTRA_INFO_ORDER = ['content', 'eventDate', 'startTime', 'endTime', 'location', 'mentorName'];
 
 function getOrderedExtraInfo(extraInfo?: SlotExtraInfo): [string, unknown][] {
   if (!extraInfo) return [];
@@ -170,7 +172,6 @@ interface FeaturedTicketProps {
 function FeaturedTicket({ reservation }: FeaturedTicketProps) {
   const {
     eventTitle,
-    eventStartTime,
     eventEndTime,
     eventTrack,
     applicationUnit,
@@ -179,16 +180,17 @@ function FeaturedTicket({ reservation }: FeaturedTicketProps) {
   } = reservation;
   const isEnded = isEventEnded(eventEndTime);
   const extraInfoEntries = getOrderedExtraInfo(extraInfo);
+  const eventDate = extraInfo?.eventDate;
 
   return (
     <div className="group flex cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="relative flex w-36 shrink-0 flex-col items-center justify-center overflow-hidden bg-brand-500 py-6 text-white">
         <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white opacity-10" />
         <span className="relative z-10 text-16 font-bold">
-          {formatDateWithDay(eventStartTime)}
+          {eventDate ? formatDateWithDay(eventDate) : '-'}
         </span>
         <span className="relative z-10 text-24 leading-tight font-extrabold">
-          {calcDDay(eventStartTime)}
+          {eventDate ? calcDDay(eventDate) : '-'}
         </span>
       </div>
 
@@ -233,7 +235,6 @@ interface ReservationTicketProps {
 function ReservationTicket({ reservation }: ReservationTicketProps) {
   const {
     eventTitle,
-    eventStartTime,
     eventEndTime,
     eventTrack,
     applicationUnit,
@@ -243,17 +244,18 @@ function ReservationTicket({ reservation }: ReservationTicketProps) {
   const isEnded = isEventEnded(eventEndTime);
   const isActive = status === 'CONFIRMED' && !isEnded;
   const extraInfoEntries = getOrderedExtraInfo(extraInfo);
+  const eventDate = extraInfo?.eventDate;
 
   return (
     <div className="group flex cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-brand-500 hover:shadow-sm">
       <div className="relative flex w-32 shrink-0 flex-col items-center justify-center overflow-hidden bg-brand-50 p-4">
         <div className="absolute -top-6 -right-6 h-16 w-16 rounded-full bg-white opacity-50" />
         <span className="relative z-10 text-14 font-bold whitespace-nowrap text-brand-500">
-          {formatDateWithDay(eventStartTime)}
+          {eventDate ? formatDateWithDay(eventDate) : '-'}
         </span>
-        {isActive && (
+        {isActive && eventDate && (
           <span className="relative z-10 mt-1 text-20 leading-none font-bold text-brand-500">
-            {calcDDay(eventStartTime)}
+            {calcDDay(eventDate)}
           </span>
         )}
       </div>
