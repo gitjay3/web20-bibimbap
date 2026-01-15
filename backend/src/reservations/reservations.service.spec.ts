@@ -163,13 +163,15 @@ describe('ReservationsService', () => {
   });
 
   describe('cancel', () => {
+    const userId = 'user-123';
+
     it('예약을 성공적으로 취소한다', async () => {
       const txMock = createTxMock();
       const reservationId = 1;
       const userId = 'user-123';
       const mockReservation = {
         id: reservationId,
-        userId: 'user-123',
+        userId,
         slotId: 1,
         status: 'CONFIRMED',
       };
@@ -203,7 +205,7 @@ describe('ReservationsService', () => {
         callback(txMock),
       );
 
-      await expect(service.cancel(999, 'user-123')).rejects.toThrow(
+      await expect(service.cancel(999, userId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -213,6 +215,7 @@ describe('ReservationsService', () => {
       const userId = 'user-123';
       const cancelledReservation = {
         id: 1,
+        userId,
         status: 'CANCELLED',
       };
 
