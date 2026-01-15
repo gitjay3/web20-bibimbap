@@ -39,7 +39,7 @@ function EventDetail() {
     try {
       const reservation = await getMyReservationForEvent(Number(id));
       setMyReservation(reservation);
-    } catch (error) {
+    } catch {
       // 로그인 안 된 경우 등 에러 무시 TODO: 로그인, mypage랑 연계
       setMyReservation(null);
     }
