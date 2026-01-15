@@ -9,6 +9,7 @@ import { EventSlotsModule } from './event-slots/event-slots.module';
 import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
       isGlobal: true,
     }),
     PrismaModule,
+    RedisModule,
     EventsModule,
     ReservationsModule,
     EventSlotsModule,
