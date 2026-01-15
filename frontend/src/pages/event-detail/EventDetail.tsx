@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router';
-import type { EventDetail, EventDetail as EventDetailType } from '@/types/event';
+import type { EventDetail as EventDetailType } from '@/types/event';
 import { getEvent } from '@/api/event';
 import { getSlotAvailability } from '@/api/eventSlot';
 import { getMyReservationForEvent } from '@/api/reservation';
