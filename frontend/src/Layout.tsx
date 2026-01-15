@@ -17,9 +17,9 @@ function Layout() {
   ];
 
   const adminNav: NavItem[] = [
-    { label: '이벤트 관리', to: '/admin' },
-    { label: '캠퍼 관리', to: '/admin/campers' },
-    { label: '템플릿 관리', to: '/admin/templates' },
+    { label: '이벤트 관리', to: '/' },
+    { label: '캠퍼 관리', to: '/campers' },
+    { label: '템플릿 관리', to: '/templates' },
   ];
 
   const navItems = role === 'USER' ? camperNav : adminNav;
