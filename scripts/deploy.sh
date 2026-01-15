@@ -94,19 +94,72 @@ mkdir -p "$BACKUP_DIR"
 docker compose -f "$COMPOSE_FILE" ps > "$BACKUP_DIR/containers_${ENVIRONMENT}_${TIMESTAMP}.txt" || true
 docker compose -f "$COMPOSE_FILE" images > "$BACKUP_DIR/images_${ENVIRONMENT}_${TIMESTAMP}.txt" || true
 
+# 5. Docker 리소스 정리 (디스크 공간 확보)
+log_info "Step 5: Docker 리소스 정리"
+log_info "정리 전 디스크 사용량:"
+df -h / | tail -1
+
+# 1. 중지된 컨테이너 정리
+log_info "중지된 컨테이너 정리..."
+docker container prune -f || true
+
+# 2. dangling 이미지 정리 (태그 없는 이미지만)
+log_info "dangling 이미지 정리..."
+docker image prune -f || true
+
+# 3. 사용하지 않는 볼륨 정리
+log_info "미사용 볼륨 정리..."
+docker volume prune -f || true
+
+# 4. 빌드 캐시 정리
+log_info "빌드 캐시 정리..."
+docker builder prune -f || true
+
+log_info "정리 후 디스크 사용량:"
+df -h / | tail -1
+
 # 5. 최신 이미지 Pull
-log_info "Step 5: 최신 Docker 이미지 Pull"
+log_info "Step 6: 최신 Docker 이미지 Pull"
 run_with_env docker compose -f "$COMPOSE_FILE" pull
 
-# 6. 컨테이너 재시작
-log_info "Step 6: 컨테이너 재시작"
-
-# .deploy.env가 있으면 DOTENV_PRIVATE_KEY_PRODUCTION 로드
+# .deploy.env가 있으면 DATABASE_URL 등 환경변수 로드
 if [ -f "$PROJECT_ROOT/.deploy.env" ]; then
     set -a
     source "$PROJECT_ROOT/.deploy.env"
     set +a
 fi
+
+# 6. Prisma 마이그레이션 실행
+log_info "Step 7: Prisma 마이그레이션 실행"
+
+# DATABASE_URL 결정: 환경변수 우선, 없으면 dotenvx로 복호화
+if [ -n "${DATABASE_URL:-}" ]; then
+    MIGRATION_DATABASE_URL="$DATABASE_URL"
+    log_info "환경변수에서 DATABASE_URL 사용"
+elif command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
+    MIGRATION_DATABASE_URL=$(dotenvx get DATABASE_URL -f "$ENV_FILE")
+    log_info "dotenvx로 DATABASE_URL 복호화"
+else
+    log_error "DATABASE_URL을 찾을 수 없습니다"
+    exit 1
+fi
+
+# 디버깅: DATABASE_URL 값 확인 (민감정보 제외)
+log_info "DATABASE_URL 길이: ${#MIGRATION_DATABASE_URL}"
+log_info "DATABASE_URL 시작: ${MIGRATION_DATABASE_URL:0:15}..."
+
+# DATABASE_URL을 export하고 -e 플래그로 쉘 환경변수 참조
+export DATABASE_URL="$MIGRATION_DATABASE_URL"
+
+if docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL backend npx prisma migrate deploy; then
+    log_info "마이그레이션 성공"
+else
+    log_error "마이그레이션 실패"
+    exit 1
+fi
+
+# 7. 컨테이너 재시작
+log_info "Step 8: 컨테이너 재시작"
 
 run_with_env docker compose -f "$COMPOSE_FILE" down
 run_with_env docker compose -f "$COMPOSE_FILE" up -d
@@ -117,11 +170,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 7. 컨테이너 시작 대기
-log_info "Step 7: 컨테이너 시작 대기 (5초)"
+# 8. 컨테이너 시작 대기
+log_info "Step 9: 컨테이너 시작 대기 (5초)"
 sleep 5
 
-# 8. 완료
+# 9. 완료
 log_info "=== 배포 완료 ==="
 docker compose -f "$COMPOSE_FILE" ps
 

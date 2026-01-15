@@ -1,10 +1,10 @@
-import type { EventCategory } from "@/types/event";
+import type { Track } from "@/types/event";
 
 interface EventCategoryLabelProps {
-  category: EventCategory;
+  category: Track;
 }
 
-const CATEGORY_LABEL_TEXT: Record<EventCategory, string> = {
+const CATEGORY_LABEL_TEXT: Record<Track, string> = {
   WEB: 'WEB',
   ANDROID: 'ANDROID',
   IOS: 'iOS',

@@ -35,6 +35,10 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        project: './tsconfig.app.json',
+        tsconfigRootDir: __dirname,
+      },
     },
     plugins: {
       'react-hooks': reactHooks,
@@ -64,12 +68,23 @@ export default [
             '**/*.setup.{ts,js}',
             '**/__tests__/**',
             '**/tests/**',
+            '**/*.test.{ts,tsx}',
+            '**/*.spec.{ts,tsx}',
+            '**/test/**',
           ],
         },
       ],
       // Allow dangling underscores for __dirname, __filename
       'no-underscore-dangle': ['error', { allow: ['__dirname', '__filename'] }],
       'react/require-default-props': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_', // 함수 인자
+          varsIgnorePattern: '^_', // 일반 변수
+          destructuredArrayIgnorePattern: '^_', // 배열 구조분해
+        },
+      ],
     },
   },
   prettier,

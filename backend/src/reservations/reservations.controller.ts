@@ -19,7 +19,8 @@ import {
 import { ReservationsService } from './reservations.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
-import { ErrorResponseDto } from './dto/error-response.dto';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -44,11 +45,12 @@ export class ReservationsController {
     description: '슬롯을 찾을 수 없음',
     type: ErrorResponseDto,
   })
-  async apply(@Body() applyReservationDto: ApplyReservationDto) {
-    const tempUserId = 'test-user-123';
-
+  async apply(
+    @CurrentUser('id') userId: string,
+    @Body() applyReservationDto: ApplyReservationDto,
+  ) {
     const reservation = await this.reservationsService.apply(
-      tempUserId,
+      userId,
       applyReservationDto,
     );
 
@@ -65,12 +67,24 @@ export class ReservationsController {
     description: '예약 목록 조회 성공',
     type: [ReservationResponseDto],
   })
-  async findAll() {
-    const tempUserId = 'test-user-123';
-
-    const reservations =
-      await this.reservationsService.findAllByUser(tempUserId);
+  async findAll(@CurrentUser('id') userId: string) {
+    const reservations = await this.reservationsService.findAllByUser(userId);
     return reservations.map((r) => new ReservationResponseDto(r));
+  }
+
+  @Get('my/:eventId')
+  @ApiOperation({ summary: '특정 이벤트에 대한 내 예약 조회' })
+  @ApiParam({ name: 'eventId', description: '이벤트 ID' })
+  @ApiResponse({ status: 200, type: ReservationResponseDto })
+  async findMyReservationForEvent(
+    @CurrentUser('id') userId: string,
+    @Param('eventId', ParseIntPipe) eventId: number,
+  ) {
+    const reservation = await this.reservationsService.findByUserAndEvent(
+      userId,
+      eventId,
+    );
+    return reservation ? new ReservationResponseDto(reservation) : null;
   }
 
   @Get(':id')
@@ -125,8 +139,11 @@ export class ReservationsController {
     description: '예약을 찾을 수 없음',
     type: ErrorResponseDto,
   })
-  async cancel(@Param('id', ParseIntPipe) id: number) {
-    const reservation = await this.reservationsService.cancel(id);
+  async cancel(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const reservation = await this.reservationsService.cancel(id, userId);
     return new ReservationResponseDto(reservation);
   }
 }

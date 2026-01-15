@@ -3,14 +3,15 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { Reservation, Prisma } from '@prisma/client';
+
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
   include: {
-    EventSlot: {
+    slot: {
       include: {
-        Event: true;
+        event: true;
       };
     };
   };
@@ -72,9 +73,9 @@ export class ReservationsService {
     return this.prisma.reservation.findMany({
       where: { userId },
       include: {
-        EventSlot: {
+        slot: {
           include: {
-            Event: true,
+            event: true,
           },
         },
       },
@@ -88,16 +89,30 @@ export class ReservationsService {
     return this.prisma.reservation.findUnique({
       where: { id },
       include: {
-        EventSlot: {
+        slot: {
           include: {
-            Event: true,
+            event: true,
           },
         },
       },
     }) as Promise<ReservationWithRelations | null>;
   }
 
-  async cancel(id: number): Promise<Reservation> {
+  async findByUserAndEvent(
+    userId: string,
+    eventId: number,
+  ): Promise<ReservationWithRelations | null> {
+    return this.prisma.reservation.findFirst({
+      where: {
+        userId,
+        slot: { eventId },
+        status: { in: ['PENDING', 'CONFIRMED'] },
+      },
+      include: { slot: { include: { event: true } } },
+    }) as Promise<ReservationWithRelations | null>;
+  }
+
+  async cancel(id: number, userId: string): Promise<Reservation> {
     // apply와 동일
     const updated = await this.prisma.$transaction(async (tx) => {
       const reservation = await tx.reservation.findUnique({
@@ -108,11 +123,13 @@ export class ReservationsService {
         throw new NotFoundException('예약을 찾을 수 없습니다');
       }
 
+      if (reservation.userId !== userId) {
+        throw new BadRequestException('본인의 예약만 취소할 수 있습니다');
+      }
+
       if (reservation.status === 'CANCELLED') {
         throw new BadRequestException('이미 취소된 예약입니다');
       }
-
-      //TODO: 추후 사용자 인증 확정하고 본인 예약만 취소할 수 있게 체크 로직 구현해야 함
 
       const [updated] = await Promise.all([
         tx.reservation.update({

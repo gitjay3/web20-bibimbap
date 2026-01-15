@@ -52,8 +52,8 @@ jobs:
           tags: |
             ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:production-latest
             ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:${{ steps.version.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
       - name: Image built successfully
         run: |
@@ -105,6 +105,7 @@ jobs:
       - name: Copy deployment files to server
         run: |
           scp -r scripts/ ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/
+          scp -r nginx/ ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/
           scp docker-compose.yml ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/docker-compose.yml
           scp .env.production ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.env.production
           scp /tmp/deploy.env ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }}:~/bookstcamp/.deploy.env

@@ -21,7 +21,11 @@ services:
     networks:
       - bookstcamp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-bookstcamp_dev}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-dev} -d ${POSTGRES_DB:-bookstcamp_dev}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,11 +33,44 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${POSTGRES_CPU_LIMIT:-0.5}'
+          cpus: "${POSTGRES_CPU_LIMIT:-0.5}"
           memory: ${POSTGRES_MEMORY_LIMIT:-512M}
         reservations:
-          cpus: '${POSTGRES_CPU_RESERVATION:-0.25}'
+          cpus: "${POSTGRES_CPU_RESERVATION:-0.25}"
           memory: ${POSTGRES_MEMORY_RESERVATION:-256M}
+
+  # Nginx 리버스 프록시
+  nginx:
+    image: nginx:alpine
+    container_name: bookstcamp-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /data/swag/etc/letsencrypt/etc/letsencrypt:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - bookstcamp-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
 
   backend:
     image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:production-latest
@@ -50,9 +87,12 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
-      - CORS_ORIGIN=${CORS_ORIGIN}
-    ports:
-      - "${BACKEND_PORT:-3001}:3001"
+      - FRONTEND_URL=${FRONTEND_URL}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
+    expose:
+      - "3001"
     depends_on:
       - redis
     networks:
@@ -60,10 +100,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${BACKEND_CPU_LIMIT:-1.0}'
+          cpus: "${BACKEND_CPU_LIMIT:-1.0}"
           memory: ${BACKEND_MEMORY_LIMIT:-1G}
         reservations:
-          cpus: '${BACKEND_CPU_RESERVATION:-0.5}'
+          cpus: "${BACKEND_CPU_RESERVATION:-0.5}"
           memory: ${BACKEND_MEMORY_RESERVATION:-512M}
     logging:
       driver: "json-file"
@@ -78,17 +118,17 @@ services:
       dockerfile: frontend/Dockerfile
     container_name: bookstcamp-frontend
     restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-8080}:8080"
+    expose:
+      - "8080"
     networks:
       - bookstcamp-network
     deploy:
       resources:
         limits:
-          cpus: '${FRONTEND_CPU_LIMIT:-0.5}'
+          cpus: "${FRONTEND_CPU_LIMIT:-0.5}"
           memory: ${FRONTEND_MEMORY_LIMIT:-256M}
         reservations:
-          cpus: '${FRONTEND_CPU_RESERVATION:-0.25}'
+          cpus: "${FRONTEND_CPU_RESERVATION:-0.25}"
           memory: ${FRONTEND_MEMORY_RESERVATION:-128M}
     logging:
       driver: "json-file"
@@ -122,10 +162,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '${REDIS_CPU_LIMIT:-0.5}'
+          cpus: "${REDIS_CPU_LIMIT:-0.5}"
           memory: ${REDIS_MEMORY_LIMIT:-512M}
         reservations:
-          cpus: '${REDIS_CPU_RESERVATION:-0.25}'
+          cpus: "${REDIS_CPU_RESERVATION:-0.25}"
           memory: ${REDIS_MEMORY_RESERVATION:-256M}
     logging:
       driver: "json-file"

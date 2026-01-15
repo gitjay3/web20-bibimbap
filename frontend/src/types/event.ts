@@ -1,11 +1,35 @@
-export type EventCategory = 'WEB' | 'ANDROID' | 'IOS' | 'COMMON';
-export type EventStatus = 'ONGOING' | 'UPCOMING' | 'ENDED';
+export type Track = 'COMMON' | 'WEB' | 'IOS' | 'ANDROID';
+export type Status = 'ONGOING' | 'UPCOMING' | 'ENDED';
+export type ApplicationUnit = 'INDIVIDUAL' | 'TEAM';
 
 export interface Event {
-  category: EventCategory;
-  status: EventStatus;
+  id: number;
   title: string;
-  description: string;
-  startAt: Date;
-  endAt: Date;
+  description: string | null;
+  track: Track;
+  applicationUnit: ApplicationUnit;
+  startTime: Date;
+  endTime: Date;
+  status: Status;
+}
+
+export interface EventSlot {
+  id: number;
+  eventId: number;
+  maxCapacity: number;
+  currentCount: number;
+  version: number;
+  extraInfo: Record<string, string>;
+}
+
+export interface SlotSchemaField {
+  label: string;
+  type: string;
+}
+
+export type SlotSchema = Record<string, SlotSchemaField>;
+
+export interface EventDetail extends Event {
+  slotSchema: SlotSchema;
+  slots: EventSlot[];
 }

@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "pnpm run test:frontend && pnpm run test:backend",
+    "test:frontend": "cd frontend && pnpm test",
+    "test:backend": "cd backend && pnpm test",
     "prepare": "husky",
     "dev:frontend": "cd frontend && pnpm dev",
     "dev:backend": "cd backend && pnpm start:dev",
@@ -17,15 +19,27 @@
     "env:encrypt:prod": "dotenvx encrypt -f .env.production",
     "env:decrypt:dev": "dotenvx decrypt --stdout -f .env.development",
     "env:decrypt:prod": "dotenvx decrypt --stdout -f .env.production",
-    "docker:local:up": "dotenvx run -f .env.development -- docker compose --profile local up --build -d",
-    "docker:local:down": "docker compose --profile local down",
-    "docker:local:logs": "docker compose logs -f",
-    "docker:local:clean": "docker compose --profile local down -v"
+    "docker:local:up": "dotenvx run -f .env.development -- docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local up --build -d",
+    "docker:local:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local down",
+    "docker:local:logs": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local logs -f",
+    "docker:local:clean": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local down -v",
+    "db:migrate:local": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL pnpm --filter backend prisma migrate dev'",
+    "db:generate:local": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL pnpm --filter backend prisma generate'",
+    "db:seed:local": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL pnpm --filter backend prisma db seed'",
+    "db:studio:local": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL pnpm --filter backend prisma studio'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
+  "lint-staged": {
+    "frontend/src/**/*.{ts,tsx}": [
+      "pnpm --filter frontend eslint --fix"
+    ],
+    "backend/src/**/*.ts": [
+      "pnpm --filter backend eslint --fix"
+    ]
+  },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.4",
     "husky": "^9.1.7",
