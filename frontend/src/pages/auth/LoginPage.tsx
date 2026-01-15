@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import GithubIcon from '@/assets/icons/github.svg?react';
+import { adminLogin } from '@/api/auth';
 
 export default function LoginPage() {
   const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleGithubLogin = () => {
     window.location.href = '/api/auth/github';
@@ -14,9 +17,25 @@ export default function LoginPage() {
     setIsAdminLogin(true);
   };
 
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleCancelAdminLogin = () => {
+    setIsAdminLogin(false);
+    setId('');
+    setPassword('');
+    setIsLoading(false);
+  };
+
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 운영진 로그인 API 연동
+    if (isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      await adminLogin({ id, password });
+      window.location.href = '/';
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,6 +84,9 @@ export default function LoginPage() {
               value={id}
               onChange={(e) => setId(e.target.value)}
               className="border-neutral-border-default h-12 rounded-lg border px-4 text-sm"
+              required
+              disabled={isLoading}
+              autoComplete="username"
             />
 
             <input
@@ -73,16 +95,24 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="border-neutral-border-default h-12 rounded-lg border px-4 font-sans text-sm"
+              required
+              disabled={isLoading}
+              autoComplete="current-password"
             />
 
-            <button type="submit" className="h-12 rounded-lg bg-black text-sm font-bold text-white">
-              로그인
+            <button
+              type="submit"
+              className="h-12 rounded-lg bg-black text-sm font-bold text-white"
+              disabled={isLoading}
+            >
+              {isLoading ? '로그인 중...' : '로그인'}
             </button>
 
             <button
               type="button"
-              onClick={() => setIsAdminLogin(false)}
+              onClick={handleCancelAdminLogin}
               className="text-neutral-text-tertiary text-sm font-medium"
+              disabled={isLoading}
             >
               취소
             </button>

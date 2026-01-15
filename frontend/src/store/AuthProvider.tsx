@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import getMe from '@/api/auth';
+import { getMe } from '@/api/auth';
 import type { User } from '@/types/user';
 import { AuthContext } from './AuthContext';
 
