@@ -85,8 +85,8 @@ async function main() {
       track: Track.WEB,
       applicationUnit: ApplicationUnit.TEAM,
       creatorId: adminUserId,
-      startTime: new Date('2026-01-01T00:00:00+09:00'),
-      endTime: new Date('2026-01-31T23:59:59+09:00'),
+      startTime: new Date('2026-02-01T00:00:00+09:00'),
+      endTime: new Date('2026-02-28T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },
