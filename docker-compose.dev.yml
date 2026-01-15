@@ -14,6 +14,9 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123} # 추후 Redis 설정  다듬으면서 수정 필요할 수도 있음
     volumes:
       - ./backend:/app/backend
       - ./package.json:/app/package.json:ro

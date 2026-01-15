@@ -2,11 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { Track } from '@prisma/client';
+import { RedisService } from '../redis/redis.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
+  ) {}
 
   async create(dto: CreateEventDto, creatorId: string) {
     const {
@@ -20,7 +24,7 @@ export class EventsService {
       slots,
     } = dto;
 
-    return await this.prisma.event.create({
+    const event = await this.prisma.event.create({
       data: {
         title,
         description,
@@ -42,6 +46,14 @@ export class EventsService {
         slots: true,
       },
     });
+
+    await Promise.all(
+      event.slots.map((slot) =>
+        this.redisService.initStock(slot.id, slot.maxCapacity, 0),
+      ),
+    );
+
+    return event;
   }
 
   async findAll(track?: string) {

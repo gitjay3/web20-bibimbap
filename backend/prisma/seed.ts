@@ -85,8 +85,8 @@ async function main() {
       track: Track.WEB,
       applicationUnit: ApplicationUnit.TEAM,
       creatorId: adminUserId,
-      startTime: new Date('2026-01-15T14:00:00+09:00'),
-      endTime: new Date('2026-01-17T18:00:00+09:00'),
+      startTime: new Date('2026-01-01T00:00:00+09:00'),
+      endTime: new Date('2026-01-31T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },
@@ -109,8 +109,8 @@ async function main() {
       track: Track.ANDROID,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
-      startTime: new Date('2026-01-22T10:00:00+09:00'),
-      endTime: new Date('2026-01-22T12:00:00+09:00'),
+      startTime: new Date('2026-03-01T00:00:00+09:00'),
+      endTime: new Date('2026-03-31T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },
@@ -133,8 +133,8 @@ async function main() {
       track: Track.IOS,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
-      startTime: new Date('2026-01-28T13:00:00+09:00'),
-      endTime: new Date('2026-01-28T16:00:00+09:00'),
+      startTime: new Date('2026-04-01T00:00:00+09:00'),
+      endTime: new Date('2026-04-30T23:59:59+09:00'),
       slotSchema: {
         content: { label: '내용', type: 'string' },
         startTime: { label: '시작 시간', type: 'string' },

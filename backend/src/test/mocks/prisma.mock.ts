@@ -51,6 +51,7 @@ export const createTxMock = () => ({
   eventSlot: {
     findUnique: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
   },
   reservation: {
     findFirst: jest.fn(),

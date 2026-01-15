@@ -1,11 +1,23 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { Reservation, Prisma } from '@prisma/client';
+import {
+  ReservationJobData,
+  RESERVATION_QUEUE,
+  PROCESS_RESERVATION_JOB,
+} from './dto/reservation-job.dto';
+import {
+  SlotFullException,
+  SlotNotFoundException,
+  ReservationNotFoundException,
+  UnauthorizedReservationException,
+  AlreadyCancelledException,
+  OptimisticLockException,
+} from '../../common/exceptions/api.exception';
 
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
   include: {
@@ -19,54 +31,45 @@ type ReservationWithRelations = Prisma.ReservationGetPayload<{
 
 @Injectable()
 export class ReservationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+    @InjectQueue(RESERVATION_QUEUE)
+    private reservationQueue: Queue<ReservationJobData>,
+  ) {}
 
-  async apply(userId: string, dto: ApplyReservationDto): Promise<Reservation> {
-    // 한 트랜잭션 내에서 원자적 실행 -> tx
-    const reservation = await this.prisma.$transaction(async (tx) => {
-      const slot = await tx.eventSlot.findUnique({
-        where: { id: dto.slotId },
-      });
-
-      if (!slot) {
-        throw new NotFoundException('예약을 찾을 수 없습니다');
-      }
-
-      if (slot.currentCount >= slot.maxCapacity) {
-        throw new BadRequestException('정원이 마감되었습니다');
-      }
-      // 중복체크
-      const existing = await tx.reservation.findFirst({
-        where: {
-          userId,
-          slotId: dto.slotId,
-          status: { in: ['PENDING', 'CONFIRMED'] },
-        },
-      });
-
-      if (existing) {
-        throw new BadRequestException('이미 예약한 일정입니다');
-      }
-
-      // 카운트 증가까지 원자적으로 실행
-      const [reservation] = await Promise.all([
-        tx.reservation.create({
-          data: {
-            userId,
-            slotId: dto.slotId,
-            status: 'CONFIRMED', // 즉시 확정
-          },
-        }),
-        tx.eventSlot.update({
-          where: { id: dto.slotId },
-          data: { currentCount: { increment: 1 } },
-        }),
-      ]);
-
-      return reservation;
+  async apply(
+    userId: string,
+    dto: ApplyReservationDto,
+  ): Promise<{ status: string; message: string }> {
+    // 슬롯 정보 조회
+    const slot = await this.prisma.eventSlot.findUnique({
+      where: { id: dto.slotId },
     });
 
-    return reservation;
+    if (!slot) {
+      throw new SlotNotFoundException();
+    }
+
+    // Redis에서 재고 차감 시도
+    const success = await this.redisService.decrementStock(dto.slotId);
+
+    if (!success) {
+      throw new SlotFullException();
+    }
+
+    // Queue에 Job 추가
+    await this.reservationQueue.add(PROCESS_RESERVATION_JOB, {
+      userId,
+      slotId: dto.slotId,
+      maxCapacity: slot.maxCapacity,
+    });
+
+    // 즉시 응답 (비동기 처리)
+    return {
+      status: 'PENDING',
+      message: '예약이 접수되었습니다. 잠시 후 확정됩니다.', // 예약 대기 시간 확인하고 이 메세지 수정 혹은 생략 가능
+    };
   }
 
   async findAllByUser(userId: string): Promise<ReservationWithRelations[]> {
@@ -113,38 +116,57 @@ export class ReservationsService {
   }
 
   async cancel(id: number, userId: string): Promise<Reservation> {
-    // apply와 동일
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 예약 조회 (슬롯 정보 포함) -> 트랜잭션을 위한 version과 maxCapacity 받아와야 함
       const reservation = await tx.reservation.findUnique({
         where: { id },
+        include: { slot: true },
       });
 
       if (!reservation) {
-        throw new NotFoundException('예약을 찾을 수 없습니다');
+        throw new ReservationNotFoundException();
       }
 
       if (reservation.userId !== userId) {
-        throw new BadRequestException('본인의 예약만 취소할 수 있습니다');
+        throw new UnauthorizedReservationException();
       }
 
       if (reservation.status === 'CANCELLED') {
-        throw new BadRequestException('이미 취소된 예약입니다');
+        throw new AlreadyCancelledException();
       }
 
-      const [updated] = await Promise.all([
-        tx.reservation.update({
-          where: { id },
-          data: { status: 'CANCELLED' },
-        }),
-        tx.eventSlot.update({
-          where: { id: reservation.slotId },
-          data: { currentCount: { decrement: 1 } },
-        }),
-      ]);
+      // 낙관적 락을 통한 슬롯 업데이트
+      const updatedSlot = await tx.eventSlot.updateMany({
+        where: {
+          id: reservation.slotId,
+          version: reservation.slot.version, // Read version
+        },
+        data: {
+          currentCount: { decrement: 1 },
+          version: { increment: 1 },
+        },
+      });
 
-      return { updated, userId: reservation.userId };
+      if (updatedSlot.count === 0) {
+        throw new OptimisticLockException();
+      }
+
+      // 예약 상태 변경
+      const updatedReservation = await tx.reservation.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+      });
+
+      return {
+        reservation: updatedReservation,
+        slotId: reservation.slotId,
+        maxCapacity: reservation.slot.maxCapacity,
+      };
     });
 
-    return updated.updated;
+    // Redis 재고 복구 (트랜잭션 성공 후)
+    await this.redisService.incrementStock(result.slotId, result.maxCapacity);
+
+    return result.reservation;
   }
 }
