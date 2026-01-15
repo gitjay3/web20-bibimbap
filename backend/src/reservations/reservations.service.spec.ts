@@ -166,6 +166,7 @@ describe('ReservationsService', () => {
     it('예약을 성공적으로 취소한다', async () => {
       const txMock = createTxMock();
       const reservationId = 1;
+      const userId = 'user-123';
       const mockReservation = {
         id: reservationId,
         userId: 'user-123',
@@ -185,7 +186,7 @@ describe('ReservationsService', () => {
         callback(txMock),
       );
 
-      const result = await service.cancel(reservationId);
+      const result = await service.cancel(reservationId, userId);
 
       expect(result).toEqual(updatedReservation);
       expect(txMock.eventSlot.update).toHaveBeenCalledWith({
@@ -202,11 +203,14 @@ describe('ReservationsService', () => {
         callback(txMock),
       );
 
-      await expect(service.cancel(999)).rejects.toThrow(NotFoundException);
+      await expect(service.cancel(999, 'user-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('이미 취소된 예약이면 BadRequestException을 던진다', async () => {
       const txMock = createTxMock();
+      const userId = 'user-123';
       const cancelledReservation = {
         id: 1,
         status: 'CANCELLED',
@@ -218,8 +222,12 @@ describe('ReservationsService', () => {
         callback(txMock),
       );
 
-      await expect(service.cancel(1)).rejects.toThrow(BadRequestException);
-      await expect(service.cancel(1)).rejects.toThrow('이미 취소된 예약입니다');
+      await expect(service.cancel(1, userId)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.cancel(1, userId)).rejects.toThrow(
+        '이미 취소된 예약입니다',
+      );
     });
   });
 
