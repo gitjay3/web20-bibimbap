@@ -22,10 +22,12 @@ export interface EventSlot {
   extraInfo: Record<string, string>;
 }
 
-export interface SlotSchema {
-  fields: string[];
-  description: string;
+export interface SlotSchemaField {
+  label: string;
+  type: string;
 }
+
+export type SlotSchema = Record<string, SlotSchemaField>;
 
 export interface EventDetail extends Event {
   slotSchema: SlotSchema;
