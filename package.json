@@ -38,7 +38,7 @@
     ],
     "backend/src/**/*.ts": [
       "pnpm --filter backend eslint --fix"
-    ]
+    ],
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.4",

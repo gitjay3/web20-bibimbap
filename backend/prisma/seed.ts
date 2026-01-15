@@ -86,10 +86,13 @@ async function main() {
       applicationUnit: ApplicationUnit.TEAM,
       creatorId: adminUserId,
       startTime: new Date('2026-01-15T14:00:00+09:00'),
-      endTime: new Date('2026-01-15T18:00:00+09:00'),
+      endTime: new Date('2026-01-17T18:00:00+09:00'),
       slotSchema: {
-        fields: ['content', 'startTime', 'endTime', 'location'],
-        description: '멘토링 세션 정보',
+        content: { label: '내용', type: 'string' },
+        startTime: { label: '시작 시간', type: 'string' },
+        endTime: { label: '종료 시간', type: 'string' },
+        location: { label: '장소', type: 'string' },
+        mentorName: { label: '멘토명', type: 'string' },
       },
     },
   });
@@ -109,8 +112,11 @@ async function main() {
       startTime: new Date('2026-01-22T10:00:00+09:00'),
       endTime: new Date('2026-01-22T12:00:00+09:00'),
       slotSchema: {
-        fields: ['content', 'startTime', 'endTime', 'location'],
-        description: '안드로이드 세션 정보',
+        content: { label: '내용', type: 'string' },
+        startTime: { label: '시작 시간', type: 'string' },
+        endTime: { label: '종료 시간', type: 'string' },
+        location: { label: '장소', type: 'string' },
+        mentorName: { label: '멘토명', type: 'string' },
       },
     },
   });
@@ -130,8 +136,11 @@ async function main() {
       startTime: new Date('2026-01-28T13:00:00+09:00'),
       endTime: new Date('2026-01-28T16:00:00+09:00'),
       slotSchema: {
-        fields: ['content', 'startTime', 'endTime', 'location'],
-        description: 'iOS 세션 정보',
+        content: { label: '내용', type: 'string' },
+        startTime: { label: '시작 시간', type: 'string' },
+        endTime: { label: '종료 시간', type: 'string' },
+        location: { label: '장소', type: 'string' },
+        mentorName: { label: '멘토명', type: 'string' },
       },
     },
   });
@@ -149,6 +158,7 @@ async function main() {
         startTime: '14:00',
         endTime: '15:00',
         location: 'Zoom',
+        mentorName: '크롱',
       },
     },
     {
@@ -161,6 +171,7 @@ async function main() {
         startTime: '15:00',
         endTime: '16:00',
         location: 'Zoom',
+        mentorName: '크롱',
       },
     },
     {
@@ -173,6 +184,7 @@ async function main() {
         startTime: '16:00',
         endTime: '17:00',
         location: 'Zoom',
+        mentorName: '크롱',
       },
     },
     {
@@ -185,6 +197,7 @@ async function main() {
         startTime: '17:00',
         endTime: '18:00',
         location: 'Zoom',
+        mentorName: '크롱',
       },
     },
     {
@@ -197,6 +210,7 @@ async function main() {
         startTime: '10:00',
         endTime: '10:30',
         location: '강남 캠퍼스 301호',
+        mentorName: '호눅스',
       },
     },
     {
@@ -209,6 +223,7 @@ async function main() {
         startTime: '10:30',
         endTime: '11:00',
         location: '강남 캠퍼스 301호',
+        mentorName: '호눅스',
       },
     },
     {
@@ -221,6 +236,7 @@ async function main() {
         startTime: '11:00',
         endTime: '12:00',
         location: '강남 캠퍼스 301호',
+        mentorName: '호눅스',
       },
     },
     {
@@ -233,6 +249,7 @@ async function main() {
         startTime: '13:00',
         endTime: '14:00',
         location: 'Zoom',
+        mentorName: 'JK',
       },
     },
     {
@@ -245,6 +262,7 @@ async function main() {
         startTime: '14:00',
         endTime: '15:00',
         location: 'Zoom',
+        mentorName: 'JK',
       },
     },
     {
@@ -257,6 +275,7 @@ async function main() {
         startTime: '15:00',
         endTime: '16:00',
         location: 'Zoom',
+        mentorName: 'JK',
       },
     },
   ];
