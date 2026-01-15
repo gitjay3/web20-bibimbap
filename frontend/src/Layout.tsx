@@ -1,5 +1,6 @@
 import Header from '@/components/Header';
 import { Outlet } from 'react-router';
+import { useAuth } from '@/store/AuthContext';
 
 export interface NavItem {
   label: string;
@@ -7,8 +8,8 @@ export interface NavItem {
 }
 
 function Layout() {
-  // TODO: 로그인 된 유저의 role을 가져오는 코드 작성
-  const role = 'CAMPER';
+  const { user } = useAuth();
+  const role = user?.role || 'USER';
 
   const camperNav: NavItem[] = [
     { label: '이벤트 예약', to: '/' },
@@ -16,12 +17,12 @@ function Layout() {
   ];
 
   const adminNav: NavItem[] = [
-    { label: '이벤트 관리', to: '/admin' },
-    { label: '캠퍼 관리', to: '/admin/campers' },
-    { label: '템플릿 관리', to: '/admin/templates' },
+    { label: '이벤트 관리', to: '/' },
+    { label: '캠퍼 관리', to: '/campers' },
+    { label: '템플릿 관리', to: '/templates' },
   ];
 
-  const navItems = role === 'CAMPER' ? camperNav : adminNav;
+  const navItems = role === 'USER' ? camperNav : adminNav;
 
   return (
     <div className="min-h-screen">
