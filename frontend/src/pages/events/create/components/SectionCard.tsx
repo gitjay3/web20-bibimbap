@@ -1,10 +1,12 @@
+import type { ReactNode } from 'react';
+
 type SectionCardProps = {
   title: string;
   description: string;
-  // children: ReactNode;
+  children: ReactNode;
 };
 
-export default function SectionCard({ title, description }: SectionCardProps) {
+export default function SectionCard({ title, description, children }: SectionCardProps) {
   return (
     <div className="border-neutral-border-default flex flex-col gap-6 rounded-xl border bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -14,7 +16,7 @@ export default function SectionCard({ title, description }: SectionCardProps) {
         </div>
       </div>
 
-      {/* <div>{children}</div> */}
+      <div>{children}</div>
     </div>
   );
 }
