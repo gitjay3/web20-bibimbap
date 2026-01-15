@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
 import { GithubAuthGuard } from './guards/github-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
@@ -11,7 +12,6 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('auth')
-@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -19,6 +19,7 @@ export class AuthController {
     private readonly auth: AuthService,
   ) {}
 
+  @Public()
   @Post('login')
   @ApiOperation({
     summary: '내부 계정 로그인',
@@ -45,6 +46,7 @@ export class AuthController {
     return { message: 'Login successful', role: user.role };
   }
 
+  @Public()
   @Get('github')
   @UseGuards(GithubAuthGuard)
   @ApiOperation({
@@ -57,6 +59,7 @@ export class AuthController {
   })
   githubLogin() {}
 
+  @Public()
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
   @ApiOperation({
@@ -96,6 +99,20 @@ export class AuthController {
 
     const FRONTEND_URL = this.config.getOrThrow<string>('FRONTEND_URL');
     return res.redirect(FRONTEND_URL);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: '내 정보 조회',
+    description: '현재 로그인한 사용자의 정보를 조회합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '내 정보 조회 성공',
+  })
+  getMe(@CurrentUser() user: User) {
+    return user;
   }
 
   private setTokenCookie(res: Response, accessToken: string) {
