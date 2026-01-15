@@ -20,16 +20,8 @@ import { ReservationsService } from './reservations.service';
 import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
 import { ErrorResponseDto } from '../common/dto/error-response.dto';
-import { UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import type { Request } from 'express';
-import { User } from '@prisma/client';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
-interface AuthenticatedRequest extends Request {
-  user: User;
-}
-
-@UseGuards(JwtAuthGuard)
 @ApiTags('reservations')
 @Controller('reservations')
 export class ReservationsController {
@@ -54,11 +46,9 @@ export class ReservationsController {
     type: ErrorResponseDto,
   })
   async apply(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser('id') userId: string,
     @Body() applyReservationDto: ApplyReservationDto,
   ) {
-    const userId = req.user.id;
-
     const reservation = await this.reservationsService.apply(
       userId,
       applyReservationDto,
@@ -77,9 +67,7 @@ export class ReservationsController {
     description: '예약 목록 조회 성공',
     type: [ReservationResponseDto],
   })
-  async findAll(@Req() req: AuthenticatedRequest) {
-    const userId = req.user.id;
-
+  async findAll(@CurrentUser('id') userId: string) {
     const reservations = await this.reservationsService.findAllByUser(userId);
     return reservations.map((r) => new ReservationResponseDto(r));
   }
@@ -89,11 +77,11 @@ export class ReservationsController {
   @ApiParam({ name: 'eventId', description: '이벤트 ID' })
   @ApiResponse({ status: 200, type: ReservationResponseDto })
   async findMyReservationForEvent(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser('id') userId: string,
     @Param('eventId', ParseIntPipe) eventId: number,
   ) {
     const reservation = await this.reservationsService.findByUserAndEvent(
-      req.user.id,
+      userId,
       eventId,
     );
     return reservation ? new ReservationResponseDto(reservation) : null;
@@ -152,10 +140,10 @@ export class ReservationsController {
     type: ErrorResponseDto,
   })
   async cancel(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser('id') userId: string,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const reservation = await this.reservationsService.cancel(id, req.user.id);
+    const reservation = await this.reservationsService.cancel(id, userId);
     return new ReservationResponseDto(reservation);
   }
 }
