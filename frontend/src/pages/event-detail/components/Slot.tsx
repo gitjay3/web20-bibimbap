@@ -1,6 +1,14 @@
 import type { EventSlot } from '@/types/event';
 import cn from '@/utils/cn';
 
+const FIELD_ORDER = ['content', 'startTime', 'endTime', 'location', 'mentor'];
+
+function getOrderedValues(extraInfo: Record<string, string>): string[] {
+  return FIELD_ORDER
+    .filter((key) => key in extraInfo)
+    .map((key) => extraInfo[key]);
+}
+
 interface SlotProps {
   isReservable: boolean;
   slot: EventSlot;
@@ -11,6 +19,7 @@ interface SlotProps {
 function Slot({ isReservable, slot, selectedSlotId, setSelectedSlotId }: SlotProps) {
   const isClosed = slot.maxCapacity === slot.currentCount;
   const isSelected = selectedSlotId === slot.id;
+  const orderedValues = getOrderedValues(slot.extraInfo);
 
   return (
     <button
@@ -27,8 +36,8 @@ function Slot({ isReservable, slot, selectedSlotId, setSelectedSlotId }: SlotPro
       }}
     >
       <div className="flex gap-1">
-        {Object.entries(slot.extraInfo).map(([_key, value], idx) => (
-          <>
+        {orderedValues.map((value, idx) => (
+          <div key={idx} className="flex items-center gap-1">
             <div
               className={cn(
                 isSelected && 'text-brand-text-primary',
@@ -37,10 +46,10 @@ function Slot({ isReservable, slot, selectedSlotId, setSelectedSlotId }: SlotPro
             >
               {value}
             </div>
-            {idx < Object.entries(slot.extraInfo).length - 1 && (
+            {idx < orderedValues.length - 1 && (
               <div className="text-neutral-border-default">|</div>
             )}
-          </>
+          </div>
         ))}
       </div>
       <div className={cn('text-12', isClosed && 'text-error-text-primary')}>
