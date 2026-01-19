@@ -165,6 +165,7 @@ describe('EventsService', () => {
         startTime: new Date(),
         endTime: new Date(),
         slotSchema: {},
+        organizationId: 'org-uuid',
         slots: [{ maxCapacity: 10, extraInfo: {} }],
       };
 
@@ -190,6 +191,7 @@ describe('EventsService', () => {
           endTime: createDto.endTime,
           slotSchema: createDto.slotSchema,
           creatorId: mockAdminUserId,
+          organizationId: createDto.organizationId,
           slots: {
             create: createDto.slots.map((slot) => ({
               maxCapacity: slot.maxCapacity,
