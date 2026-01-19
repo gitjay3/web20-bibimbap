@@ -51,7 +51,8 @@ export class EventsController {
   @Get()
   @ApiOperation({
     summary: '이벤트 목록 조회',
-    description: '이벤트 목록을 조회합니다. track 및 organizationId 필터를 지원합니다.',
+    description:
+      '이벤트 목록을 조회합니다. track 및 organizationId 필터를 지원합니다.',
   })
   @ApiQuery({
     name: 'track',
