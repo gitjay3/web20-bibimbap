@@ -29,6 +29,7 @@ async function bootstrap() {
     .addTag('reservations', '예약 관련 API')
     .addTag('events', '이벤트 관련 API')
     .addTag('event-slots', '슬롯 정원 조회 API')
+    .addTag('templates', '이벤트 템플릿 관리 API')
     .addCookieAuth('access_token', {
       type: 'apiKey',
       in: 'cookie',
