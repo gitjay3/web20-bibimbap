@@ -4,7 +4,7 @@ import EventStatusLabel from '@/components/EventStatusLabel';
 import type { Event } from '@/types/event';
 import formatKoreanDateTime from '@/utils/formatKoreanDateTime';
 import CalendarIcon from '@/assets/icons/calendar-clock.svg?react';
-import { Link } from 'react-router';
+import { Link, useParams } from 'react-router';
 import Card from '@/components/Card';
 
 interface EventCardProps {
@@ -12,11 +12,12 @@ interface EventCardProps {
 }
 
 function EventCard({ event }: EventCardProps) {
+  const { orgId } = useParams<{ orgId: string }>();
   const { id, track, status, title, description, startTime, endTime, applicationUnit } = event;
 
   return (
     <Card>
-      <Link to={`/events/${id}`} className='flex flex-col justify-between h-full'>
+      <Link to={`/orgs/${orgId}/events/${id}`} className='flex flex-col justify-between h-full'>
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
             <ApplicationUnitLabel applicationUnit={applicationUnit} />

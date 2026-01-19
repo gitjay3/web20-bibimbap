@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
 import type { Event } from '@/types/event';
 import Dropdown from '@/components/Dropdown';
 import { getEvents } from '@/api/event';
@@ -24,13 +25,14 @@ const statusOptions = [
 ] as const;
 
 function EventList() {
+  const { orgId } = useParams<{ orgId: string }>();
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     (async () => {
-      setEvents(await getEvents());
+      setEvents(await getEvents(orgId));
     })();
-  }, []);
+  }, [orgId]);
 
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<EventTrackFilter>('ALL');
 
