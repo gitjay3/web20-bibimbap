@@ -79,7 +79,7 @@ async function main() {
   // 3-1. 조직(Organization) 생성
   const organization = await prisma.organization.create({
     data: {
-      name: '부스트캠프 9기',
+      name: '부스트캠프 10기 웹 풀스택 멤버십',
     },
   });
   console.log('✓ 조직 생성:', organization.name);
@@ -92,6 +92,39 @@ async function main() {
       camperId: 'J283',
       name: '한지은',
       username: 'hanpengbutt',
+      track: Track.WEB,
+      status: PreRegStatus.INVITED,
+    },
+  });
+
+  await prisma.camperPreRegistration.create({
+    data: {
+      organizationId: organization.id,
+      camperId: 'J049',
+      name: '김시영',
+      username: 'wfs0502',
+      track: Track.WEB,
+      status: PreRegStatus.INVITED,
+    },
+  });
+
+  await prisma.camperPreRegistration.create({
+    data: {
+      organizationId: organization.id,
+      camperId: 'J116',
+      name: '박재성',
+      username: 'gitjay3',
+      track: Track.WEB,
+      status: PreRegStatus.INVITED,
+    },
+  });
+
+  await prisma.camperPreRegistration.create({
+    data: {
+      organizationId: organization.id,
+      camperId: 'J248',
+      name: '정희재',
+      username: 'RainWhales',
       track: Track.WEB,
       status: PreRegStatus.INVITED,
     },
@@ -133,6 +166,7 @@ async function main() {
       track: Track.WEB,
       applicationUnit: ApplicationUnit.TEAM,
       creatorId: adminUserId,
+      organizationId: organization.id,
       startTime: new Date('2026-01-01T00:00:00+09:00'),
       endTime: new Date('2026-02-28T23:59:59+09:00'),
       slotSchema: {
@@ -158,6 +192,7 @@ async function main() {
       track: Track.ANDROID,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
+      organizationId: organization.id,
       startTime: new Date('2026-03-01T00:00:00+09:00'),
       endTime: new Date('2026-03-31T23:59:59+09:00'),
       slotSchema: {
@@ -183,6 +218,7 @@ async function main() {
       track: Track.IOS,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
+      organizationId: organization.id,
       startTime: new Date('2026-04-01T00:00:00+09:00'),
       endTime: new Date('2026-04-30T23:59:59+09:00'),
       slotSchema: {
