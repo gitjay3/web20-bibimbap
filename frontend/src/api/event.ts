@@ -2,8 +2,10 @@ import type { Event, EventDetail } from '@/types/event';
 import calcStatus from '@/utils/calcStatus';
 import api from './api';
 
-export async function getEvents(): Promise<Event[]> {
-  const { data } = await api.get<Omit<Event, 'status'>[]>(`/events`);
+export async function getEvents(organizationId?: string): Promise<Event[]> {
+  const { data } = await api.get<Omit<Event, 'status'>[]>(`/events`, {
+    params: { organizationId },
+  });
 
   return data.map((event) => {
     const startTime = new Date(event.startTime);

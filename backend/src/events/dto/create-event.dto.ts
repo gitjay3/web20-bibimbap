@@ -50,6 +50,10 @@ export class CreateEventDto {
   @IsObject()
   slotSchema: Record<string, any>;
 
+  @IsString()
+  @IsNotEmpty()
+  organizationId: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateEventSlotDto)

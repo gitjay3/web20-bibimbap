@@ -21,6 +21,7 @@ export class EventsService {
       startTime,
       endTime,
       slotSchema,
+      organizationId,
       slots,
     } = dto;
 
@@ -34,6 +35,7 @@ export class EventsService {
         endTime,
         slotSchema,
         creatorId,
+        organizationId,
 
         slots: {
           create: slots.map((slot) => ({
@@ -56,14 +58,18 @@ export class EventsService {
     return event;
   }
 
-  async findAll(track?: string) {
+  async findAll(track?: string, organizationId?: string) {
     const parsedTrack = this.parseTrack(track);
 
     return this.prisma.event.findMany({
-      where:
-        parsedTrack && parsedTrack !== Track.COMMON
-          ? { track: parsedTrack }
-          : undefined,
+      where: {
+        AND: [
+          parsedTrack && parsedTrack !== Track.COMMON
+            ? { track: parsedTrack }
+            : {},
+          organizationId ? { organizationId } : {},
+        ],
+      },
       orderBy: { startTime: 'asc' },
       select: {
         id: true,
