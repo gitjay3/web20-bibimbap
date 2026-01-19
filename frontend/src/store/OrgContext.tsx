@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Organization } from '@/api/organization';
 
 interface OrgContextType {
@@ -14,7 +14,8 @@ export function OrgProvider({
   children: ReactNode;
   organization: Organization | null;
 }) {
-  return <OrgContext.Provider value={{ organization }}>{children}</OrgContext.Provider>;
+  const value = useMemo(() => ({ organization }), [organization]);
+  return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
 
 export function useOrg() {
