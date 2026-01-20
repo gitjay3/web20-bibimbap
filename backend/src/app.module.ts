@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RedisModule } from './redis/redis.module';
 import { BullModule } from '@nestjs/bullmq';
+import { TemplatesModule } from './templates/templates.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
     ReservationsModule,
     EventSlotsModule,
     AuthModule,
+    TemplatesModule,
     OrganizationsModule,
   ],
   controllers: [AppController],

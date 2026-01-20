@@ -55,6 +55,12 @@ export default [
           tsx: 'never',
         },
       ],
+      'jsx-a11y/label-has-associated-control': [
+        'error',
+        {
+          some: ['nesting', 'id'],
+        },
+      ],
       // Allow React to be imported automatically (React 17+)
       'react/react-in-jsx-scope': 'off',
       // Allow JSX in .tsx files

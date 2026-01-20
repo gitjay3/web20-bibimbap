@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
-import { Track } from '@prisma/client';
+import { Track, Event, EventSlot } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+
+type EventWithSlots = Event & { slots: EventSlot[] };
 
 @Injectable()
 export class EventsService {
@@ -25,7 +27,7 @@ export class EventsService {
       slots,
     } = dto;
 
-    const event = await this.prisma.event.create({
+    const event = (await this.prisma.event.create({
       data: {
         title,
         description,
@@ -47,7 +49,7 @@ export class EventsService {
       include: {
         slots: true,
       },
-    });
+    })) as EventWithSlots;
 
     await Promise.all(
       event.slots.map((slot) =>

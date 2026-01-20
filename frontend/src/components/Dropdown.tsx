@@ -18,7 +18,10 @@ interface DropdownProps<T extends string> {
 function Dropdown<T extends string>({ options, value, setValue, className }: DropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedLabel = useMemo(() => options.find((o) => o.key === value)?.label ?? value, [options, value]);
+  const selectedLabel = useMemo(
+    () => options.find((o) => o.key === value)?.label ?? value,
+    [options, value],
+  );
 
   const ref = useRef<HTMLDivElement>(null);
   useOutsideClick(ref, () => setIsOpen(false));
@@ -36,7 +39,7 @@ function Dropdown<T extends string>({ options, value, setValue, className }: Dro
       {isOpen && (
         <div
           ref={ref}
-          className="border-neutral-border-default text-neutral-text-secondary absolute top-12 right-0 flex w-full flex-col overflow-hidden rounded-xl border bg-white p-2 shadow-md"
+          className="border-neutral-border-default text-neutral-text-secondary absolute top-12 right-0 z-50 flex w-full flex-col overflow-hidden rounded-xl border bg-white p-2 shadow-md"
         >
           {options.map((option) => (
             <button
