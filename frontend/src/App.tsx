@@ -8,6 +8,7 @@ import CamperMyPage from './pages/camper-mypage/CamperMyPage';
 import LoginPage from './pages/auth/LoginPage';
 import RootProviders from './RootProvider';
 import ProtectedRoute from './ProtectedRoute';
+import EventCreatePage from './pages/events/create/EventCreatePage';
 
 const router = createBrowserRouter([
   {
@@ -25,7 +26,10 @@ const router = createBrowserRouter([
               { path: '/me', element: <CamperMyPage /> },
               {
                 element: <ProtectedRoute allowedRoles={['ADMIN']} />,
-                children: [{ path: '/templates', element: <ManageTemplate /> }],
+                children: [
+                  { path: '/templates', element: <ManageTemplate /> },
+                  { path: '/events/new', element: <EventCreatePage /> },
+                ],
               },
             ],
           },

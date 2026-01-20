@@ -9,7 +9,7 @@ export interface NavItem {
 
 function Layout() {
   const { user } = useAuth();
-  const role = user?.role || 'USER';
+  const role = user?.role ?? 'USER';
 
   const camperNav: NavItem[] = [
     { label: '이벤트 예약', to: '/' },
