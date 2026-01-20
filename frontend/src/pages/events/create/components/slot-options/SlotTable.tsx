@@ -21,7 +21,16 @@ export default function SlotTable({ templateFields, rows, onRemove }: Props) {
     setValueAs: (v: string) => {
       if (v === '' || v === null) return undefined;
       const n = Number(v);
-      return Number.isNaN(n) ? 0 : Math.max(0, n);
+      return Number.isNaN(n) ? undefined : n;
+    },
+  };
+
+  const capacityRegisterOptions = {
+    setValueAs: (v: string) => {
+      if (v === '' || v === null) return undefined;
+      const n = Number(v);
+      if (Number.isNaN(n)) return undefined;
+      return Math.max(0, n);
     },
   };
 
@@ -60,8 +69,11 @@ export default function SlotTable({ templateFields, rows, onRemove }: Props) {
               {templateFields.map((field) => (
                 <td key={field.id} className="px-2 py-2">
                   <input
-                    {...register(`slots.${rowIndex}.${field.id}` as const)}
-                    type={field.type}
+                    {...register(
+                      `slots.${rowIndex}.${field.id}` as const,
+                      field.type === 'number' ? numberRegisterOptions : {},
+                    )}
+                    type={field.type === 'number' ? 'number' : field.type}
                     placeholder={getPlaceholder(field)}
                     onKeyDown={field.type === 'number' ? blockNegativeKey : undefined}
                     className={inputBaseClassName}
@@ -71,8 +83,9 @@ export default function SlotTable({ templateFields, rows, onRemove }: Props) {
 
               <td className="px-2 py-2">
                 <input
-                  {...register(`slots.${rowIndex}.capacity` as const, numberRegisterOptions)}
+                  {...register(`slots.${rowIndex}.capacity` as const, capacityRegisterOptions)}
                   type="number"
+                  min={0}
                   placeholder="0"
                   onKeyDown={blockNegativeKey}
                   className={inputBaseClassName}
