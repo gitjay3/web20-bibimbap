@@ -1,9 +1,23 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Res,
+  Delete,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { OrganizationsService } from './organizations.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 import { CreateCamperDto } from './dto/create-camper.dto';
+import { UpdateCamperDto } from './dto/update-camper.dto';
 import { CamperDto } from './dto/camper.dto';
 
 @ApiTags('organizations')
@@ -39,6 +53,24 @@ export class OrganizationsController {
     return this.organizationsService.findCampers(id);
   }
 
+  @Get(':id/campers/template')
+  @ApiOperation({ summary: '조직 캠퍼 추가용 엑셀 템플릿 다운로드' })
+  @ApiResponse({ status: 200, description: '템플릿 다운로드 성공' })
+  async getCamperTemplate(@Res() res: Response) {
+    const buffer = await this.organizationsService.getCamperTemplate();
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=camper_template.xlsx',
+    );
+
+    res.send(buffer);
+  }
+
   @Post(':id/campers')
   @ApiOperation({ summary: '조직 캠퍼 추가' })
   @ApiResponse({
@@ -52,5 +84,37 @@ export class OrganizationsController {
     @Body() dto: CreateCamperDto,
   ): Promise<CamperDto> {
     return this.organizationsService.createCamper(id, dto);
+  }
+
+  @Patch(':orgId/campers/:id')
+  @ApiOperation({ summary: '캠퍼 정보 수정' })
+  @ApiResponse({ status: 200, description: '수정 성공' })
+  @ApiResponse({ status: 404, description: '캠퍼를 찾을 수 없음' })
+  @ApiResponse({ status: 409, description: '중복된 데이터' })
+  updateCamper(
+    @Param('orgId') orgId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateCamperDto,
+  ) {
+    return this.organizationsService.updateCamper(orgId, id, dto);
+  }
+
+  @Delete(':orgId/campers/:id')
+  @ApiOperation({ summary: '캠퍼 정보 삭제' })
+  @ApiResponse({ status: 200, description: '삭제 성공' })
+  @ApiResponse({ status: 404, description: '캠퍼를 찾을 수 없음' })
+  deleteCamper(@Param('orgId') orgId: string, @Param('id') id: string) {
+    return this.organizationsService.removeCamper(orgId, id);
+  }
+
+  @Post(':id/campers/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: '캠퍼 일괄 업로드 (엑셀)' })
+  @ApiResponse({ status: 201, description: '업로드 및 Upsert 성공' })
+  uploadCampers(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.organizationsService.uploadCampers(id, file.buffer);
   }
 }

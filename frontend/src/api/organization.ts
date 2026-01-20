@@ -30,3 +30,31 @@ export async function createCamper(
   const { data } = await api.post<Camper>(`/organizations/${orgId}/campers`, camper);
   return data;
 }
+
+export async function getCamperTemplate(orgId: string): Promise<Blob> {
+  const { data } = await api.get(`/organizations/${orgId}/campers/template`, {
+    responseType: 'blob',
+  });
+  return data;
+}
+
+export async function updateCamper(
+  orgId: string,
+  id: string,
+  camper: Partial<Omit<Camper, 'id' | 'status'>>,
+): Promise<Camper> {
+  const { data } = await api.patch<Camper>(`/organizations/${orgId}/campers/${id}`, camper);
+  return data;
+}
+
+export async function deleteCamper(orgId: string, id: string): Promise<void> {
+  await api.delete(`/organizations/${orgId}/campers/${id}`);
+}
+
+export async function uploadCampers(orgId: string, formData: FormData): Promise<void> {
+  await api.post(`/organizations/${orgId}/campers/upload`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
