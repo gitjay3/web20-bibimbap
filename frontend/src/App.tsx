@@ -11,6 +11,7 @@ import ProtectedRoute from './ProtectedRoute';
 import SelectOrgPage from './pages/auth/select-org/SelectOrgPage';
 import OrgLayout from './OrgLayout';
 import EventCreatePage from './pages/events/create/EventCreatePage';
+import ManageCamper from './pages/manage-camper/ManageCamper';
 
 const router = createBrowserRouter([
   {
@@ -35,7 +36,10 @@ const router = createBrowserRouter([
                   { path: 'me', element: <CamperMyPage /> },
                   {
                     element: <ProtectedRoute allowedRoles={['ADMIN']} />,
-                    children: [{ path: 'templates', element: <ManageTemplate /> }],
+                    children: [
+                      { path: 'templates', element: <ManageTemplate /> },
+                      { path: 'campers', element: <ManageCamper /> },
+                    ],
                   },
                 ],
               },
