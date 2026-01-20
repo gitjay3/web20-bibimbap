@@ -95,7 +95,6 @@ export default function EventCreatePage() {
 
     const created = await createEvent(payload);
 
-    // ✅ org 컨텍스트 유지해서 이동
     navigate(`/orgs/${orgId}/events/${created.id}`);
   };
 
