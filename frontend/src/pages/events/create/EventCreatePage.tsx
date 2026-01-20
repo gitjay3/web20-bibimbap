@@ -74,7 +74,7 @@ export default function EventCreatePage() {
         <div className="flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate(-1)}
             className="border-neutral-border-default text-neutral-text-secondary h-12 rounded-md border bg-white px-5 text-sm font-semibold"
           >
             취소
