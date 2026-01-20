@@ -12,7 +12,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RedisModule } from './redis/redis.module';
 import { QueueModule } from './queue/queue.module';
-import { BullModule } from '@nestjs/bullmq';
 import { TemplatesModule } from './templates/templates.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 
