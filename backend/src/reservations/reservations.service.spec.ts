@@ -53,7 +53,7 @@ describe('ReservationsService', () => {
 
   describe('apply', () => {
     const userId = 'user-123';
-    const dto: ApplyReservationDto = { slotId: 1 };
+    const dto: ApplyReservationDto = { eventId: 1, slotId: 1 };
 
     it('예약을 큐에 성공적으로 등록한다', async () => {
       const mockSlot = {
