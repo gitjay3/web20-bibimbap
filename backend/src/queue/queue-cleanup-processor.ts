@@ -1,9 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { QueueService } from './queue.service';
-
-export const QUEUE_CLEANUP_QUEUE = 'queue-cleanup';
-export const CLEANUP_JOB = 'cleanup-inactive-users';
+import { QUEUE_CLEANUP_QUEUE } from './queue.constants';
 
 export interface CleanupJobData {
   eventId: number;

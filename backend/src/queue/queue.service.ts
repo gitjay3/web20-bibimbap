@@ -3,11 +3,8 @@ import { RedisService } from '../redis/redis.service';
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import {
-  QUEUE_CLEANUP_QUEUE,
-  CLEANUP_JOB,
-  CleanupJobData,
-} from './queue-cleanup-processor';
+import { CleanupJobData } from './queue-cleanup-processor';
+import { CLEANUP_JOB, QUEUE_CLEANUP_QUEUE } from './queue.constants';
 
 @Injectable()
 export class QueueService {

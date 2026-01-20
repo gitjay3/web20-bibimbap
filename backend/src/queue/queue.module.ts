@@ -3,10 +3,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { QueueService } from './queue.service';
 import { QueueController } from './queue.controller';
 import { QueueTokenGuard } from './guards/queue-token.guard';
-import {
-  QueueCleanupProcessor,
-  QUEUE_CLEANUP_QUEUE,
-} from './queue-cleanup-processor';
+import { QueueCleanupProcessor } from './queue-cleanup-processor';
+import { QUEUE_CLEANUP_QUEUE } from './queue.constants';
 
 @Module({
   imports: [
