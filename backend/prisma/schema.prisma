@@ -173,5 +173,6 @@ model Event {
     claimedUser  User?        @relation(fields: [claimedUserId], references: [id])
     organization Organization @relation(fields: [organizationId], references: [id])
 
+    @@unique([organizationId, camperId])
     @@index([username])
   }

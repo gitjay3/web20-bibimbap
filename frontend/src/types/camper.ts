@@ -1,5 +1,7 @@
 import type { Track } from '@/types/event';
 
+export type { Track };
+
 export type RegistrationStaus = 'INVITED' | 'CLAIMED'
 
 export interface Camper {
