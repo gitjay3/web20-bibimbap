@@ -1,10 +1,27 @@
+export type FieldType = 'text' | 'number' | 'time';
+
 export interface Field {
-  label: string;
-  type: 'TEXT' | 'NUMBER' | 'DATETIME';
+  name: string;
+  type: FieldType;
+}
+
+export interface SlotSchema {
+  fields: Field[];
 }
 
 export interface Template {
   id: number;
   title: string;
-  slotSchema: Field[];
+  description: string | null;
+  slotSchema: SlotSchema;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export interface CreateTemplateDto {
+  title: string;
+  description?: string;
+  slotSchema: SlotSchema;
+}
+
+export type UpdateTemplateDto = Partial<CreateTemplateDto>;
