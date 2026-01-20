@@ -8,7 +8,7 @@ import { createEvent } from '@/api/event';
 import { eventSchema, type EventFormValues } from './schema';
 import BasicInfoSection from './components/BasicInfoSection';
 import ScheduleSection from './components/ScheduleSection';
-import SlotOptionsSection from './components/SlotOptionsSection';
+import SlotOptionsSection from './components/slot-options/SlotOptionsSection';
 
 export default function EventCreatePage() {
   const navigate = useNavigate();
