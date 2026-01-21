@@ -1,5 +1,6 @@
 import type { Event, EventDetail } from '@/types/event';
 import calcStatus from '@/utils/calcStatus';
+import type { CreateEventRequest } from '@/types/BEapi';
 import api from './api';
 
 export async function getEvents(organizationId?: string): Promise<Event[]> {
@@ -32,4 +33,9 @@ export async function getEvent(id: number): Promise<EventDetail> {
     endTime,
     status: calcStatus(startTime, endTime),
   };
+}
+
+export async function createEvent(body: CreateEventRequest) {
+  const { data } = await api.post('/events', body);
+  return data;
 }

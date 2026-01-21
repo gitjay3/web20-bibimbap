@@ -11,7 +11,10 @@ import {
   IsString,
   Min,
   ValidateNested,
+  IsIn,
 } from 'class-validator';
+
+type SlotFieldType = 'text' | 'number' | 'time';
 
 class CreateEventSlotDto {
   @IsInt()
@@ -20,6 +23,26 @@ class CreateEventSlotDto {
 
   @IsObject()
   extraInfo: Record<string, any>;
+}
+
+class SlotSchemaFieldDto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsIn(['text', 'number', 'time'])
+  type: SlotFieldType;
+}
+
+class SlotSchemaDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SlotSchemaFieldDto)
+  fields: SlotSchemaFieldDto[];
 }
 
 export class CreateEventDto {
@@ -47,8 +70,9 @@ export class CreateEventDto {
   @IsDate()
   endTime: Date;
 
-  @IsObject()
-  slotSchema: Record<string, any>;
+  @ValidateNested()
+  @Type(() => SlotSchemaDto)
+  slotSchema: SlotSchemaDto;
 
   @IsString()
   @IsNotEmpty()

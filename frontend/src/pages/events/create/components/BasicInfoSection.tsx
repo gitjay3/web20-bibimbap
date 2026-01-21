@@ -42,7 +42,12 @@ export default function BasicInfoSection() {
           <div className="flex gap-6">
             {['INDIVIDUAL', 'TEAM'].map((type) => (
               <label key={type} className="text-14 flex cursor-pointer items-center gap-2">
-                <input {...register('applyType')} type="radio" value={type} className="h-4 w-4" />
+                <input
+                  {...register('applicationUnit')}
+                  type="radio"
+                  value={type}
+                  className="h-4 w-4"
+                />
                 {type === 'INDIVIDUAL' ? '개인 신청' : '팀 신청'}
               </label>
             ))}

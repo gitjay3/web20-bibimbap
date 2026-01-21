@@ -4,6 +4,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { Track, Event, EventSlot } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { toPrismaJson } from 'src/common/utils/to-json';
 
 type EventWithSlots = Event & { slots: EventSlot[] };
 
@@ -27,6 +28,8 @@ export class EventsService {
       slots,
     } = dto;
 
+    const slotSchemaJson = toPrismaJson(slotSchema);
+
     const event = (await this.prisma.event.create({
       data: {
         title,
@@ -35,7 +38,7 @@ export class EventsService {
         applicationUnit,
         startTime,
         endTime,
-        slotSchema,
+        slotSchema: slotSchemaJson,
         creatorId,
         organizationId,
 
