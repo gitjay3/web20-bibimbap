@@ -43,13 +43,16 @@ function Header({ navItems }: HeaderProps) {
         </nav>
       </div>
       {user && (
-        <button
-          type="button"
-          onClick={logout}
-          className="text-neutral-text-secondary hover:text-brand-500 hover:bg-neutral-surface-default flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-        >
-          <LogoutIcon className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-14 text-gray-700">안녕하세요, {user.name}님</span>
+          <button
+            type="button"
+            onClick={logout}
+            className="text-neutral-text-secondary hover:text-brand-500 hover:bg-neutral-surface-default flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+          >
+            <LogoutIcon className="h-4 w-4" />
+          </button>
+        </div>
       )}
     </header>
   );
