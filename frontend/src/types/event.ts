@@ -1,6 +1,7 @@
 export type Track = 'COMMON' | 'WEB' | 'IOS' | 'ANDROID';
 export type Status = 'ONGOING' | 'UPCOMING' | 'ENDED';
 export type ApplicationUnit = 'INDIVIDUAL' | 'TEAM';
+export type SlotFieldType = 'text' | 'number' | 'time';
 
 export interface Event {
   id: number;
@@ -23,11 +24,14 @@ export interface EventSlot {
 }
 
 export interface SlotSchemaField {
-  label: string;
-  type: string;
+  id: string;
+  name: string;
+  type: SlotFieldType;
 }
 
-export type SlotSchema = Record<string, SlotSchemaField>;
+export interface SlotSchema {
+  fields: SlotSchemaField[];
+}
 
 export interface EventDetail extends Event {
   slotSchema: SlotSchema;

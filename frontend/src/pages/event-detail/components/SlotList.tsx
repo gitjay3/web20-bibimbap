@@ -1,8 +1,6 @@
 import type { EventSlot, SlotSchema, Status } from '@/types/event';
 import Slot from './Slot';
 
-const FIELD_ORDER = ['content', 'eventDate', 'startTime', 'endTime', 'location', 'mentorName'];
-
 interface SlotListProps {
   status: Status;
   slotSchema: SlotSchema;
@@ -20,21 +18,16 @@ function SlotList({
   setSelectedSlotId,
   disabled = false,
 }: SlotListProps) {
-  const orderedSchemaEntries = FIELD_ORDER.filter((key) => key in slotSchema).map((key) => ({
-    key,
-    field: slotSchema[key],
-  }));
+  const fields = slotSchema.fields ?? [];
 
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-20 font-bold">예약 옵션</h3>
       <div className="text-12 flex items-center gap-1">
-        {orderedSchemaEntries.map(({ key, field }, idx) => (
-          <div key={key} className="flex items-center gap-1">
-            <div className="text-neutral-text-secondary">{field.label}</div>
-            {idx < orderedSchemaEntries.length - 1 && (
-              <div className="text-neutral-border-default">|</div>
-            )}
+        {fields.map((field, idx) => (
+          <div key={field.id} className="flex items-center gap-1">
+            <div className="text-neutral-text-secondary">{field.name}</div>
+            {idx < fields.length - 1 && <div className="text-neutral-border-default">|</div>}
           </div>
         ))}
       </div>
@@ -44,6 +37,7 @@ function SlotList({
             key={slot.id}
             isReservable={status === 'ONGOING' && !disabled}
             slot={slot}
+            fields={fields}
             selectedSlotId={selectedSlotId}
             setSelectedSlotId={setSelectedSlotId}
           />
