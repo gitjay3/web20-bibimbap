@@ -18,5 +18,6 @@ export const getQueueStatus = async (eventId: number) => {
     totalWaiting: number;
     hasToken: boolean;
     inQueue: boolean;
+    tokenExpiresAt: number | null;
   };
 };

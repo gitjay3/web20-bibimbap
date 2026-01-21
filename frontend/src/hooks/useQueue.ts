@@ -15,6 +15,8 @@ interface QueueState {
   inQueue: boolean;
   isLoading: boolean;
   error: string | null;
+  isNew: boolean | null;
+  tokenExpiresAt: number | null;
 }
 
 function useQueue({ eventId, enabled = true }: UseQueueOptions) {
@@ -25,35 +27,12 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
     inQueue: false,
     isLoading: true,
     error: null,
+    isNew: null,
+    tokenExpiresAt: null,
   });
 
   const sessionIdRef = useRef<string | null>(null);
   const hasEnteredRef = useRef<boolean>(false);
-
-  // 대기열 진입
-  const enter = useCallback(async () => {
-    try {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      const result = await enterQueue(eventId);
-      sessionIdRef.current = result.sessionId;
-
-      setState((prev) => ({
-        ...prev,
-        position: result.position,
-        inQueue: true,
-        isLoading: false,
-      }));
-
-      return result;
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: '대기열 진입에 실패했습니다.',
-      }));
-      throw error;
-    }
-  }, [eventId]);
 
   // 상태 조회 (폴링용)
   const fetchStatus = useCallback(async () => {
@@ -67,6 +46,7 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
         inQueue: status.inQueue,
         isLoading: false,
         error: null,
+        tokenExpiresAt: status.tokenExpiresAt,
       }));
       return status;
     } catch (error) {
@@ -74,6 +54,34 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
       return null;
     }
   }, [eventId]);
+
+  // 대기열 진입
+  const enter = useCallback(async () => {
+    try {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      const result = await enterQueue(eventId);
+      sessionIdRef.current = result.sessionId;
+
+      setState((prev) => ({
+        ...prev,
+        position: result.position,
+        inQueue: true,
+        isLoading: false,
+        isNew: result.isNew,
+      }));
+
+      await fetchStatus();
+
+      return result;
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: '대기열 진입에 실패했습니다.',
+      }));
+      throw error;
+    }
+  }, [eventId, fetchStatus]);
 
   useEffect(() => {
     if (enabled && !hasEnteredRef.current) {

@@ -9,12 +9,21 @@ interface SlotListProps {
   slots: EventSlot[];
   selectedSlotId: number | null;
   setSelectedSlotId: React.Dispatch<React.SetStateAction<number | null>>;
+  disabled?: boolean;
 }
 
-function SlotList({ status, slotSchema, slots, selectedSlotId, setSelectedSlotId }: SlotListProps) {
-  const orderedSchemaEntries = FIELD_ORDER
-    .filter((key) => key in slotSchema)
-    .map((key) => ({ key, field: slotSchema[key] }));
+function SlotList({
+  status,
+  slotSchema,
+  slots,
+  selectedSlotId,
+  setSelectedSlotId,
+  disabled = false,
+}: SlotListProps) {
+  const orderedSchemaEntries = FIELD_ORDER.filter((key) => key in slotSchema).map((key) => ({
+    key,
+    field: slotSchema[key],
+  }));
 
   return (
     <div className="flex flex-col gap-3">
@@ -31,7 +40,13 @@ function SlotList({ status, slotSchema, slots, selectedSlotId, setSelectedSlotId
       </div>
       <div className="flex flex-col gap-3">
         {slots.map((slot) => (
-          <Slot key={slot.id} isReservable={status === 'ONGOING'} slot={slot} selectedSlotId={selectedSlotId} setSelectedSlotId={setSelectedSlotId} />
+          <Slot
+            key={slot.id}
+            isReservable={status === 'ONGOING' && !disabled}
+            slot={slot}
+            selectedSlotId={selectedSlotId}
+            setSelectedSlotId={setSelectedSlotId}
+          />
         ))}
       </div>
     </div>

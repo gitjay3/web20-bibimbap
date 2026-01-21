@@ -114,6 +114,7 @@ export class QueueService {
     totalWaiting: number;
     hasToken: boolean;
     token?: string; // 토큰 발급 시 함께 반환
+    tokenExpiresAt?: number;
   }> {
     const client = this.redisService.getClient();
     const queueKey = this.getQueueKey(eventId);
@@ -123,11 +124,13 @@ export class QueueService {
     // 이미 토큰이 있는지 확인
     const existingToken = await client.get(tokenKey);
     if (existingToken) {
+      const ttl = await client.ttl(tokenKey);
       return {
         position: null,
         totalWaiting: await client.zcard(queueKey),
         hasToken: true,
         token: existingToken,
+        tokenExpiresAt: Date.now() + ttl * 1000,
       };
     }
 
@@ -143,6 +146,7 @@ export class QueueService {
         totalWaiting,
         hasToken: true,
         token,
+        tokenExpiresAt: Date.now() + this.TOKEN_TTL * 1000,
       };
     }
 
