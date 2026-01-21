@@ -93,6 +93,7 @@ export class OrganizationsService {
         username: true,
         track: true,
         status: true,
+        groupNumber: true,
       },
       orderBy: { camperId: 'asc' },
     });
@@ -141,6 +142,7 @@ export class OrganizationsService {
         username: true,
         track: true,
         status: true,
+        groupNumber: true,
       },
     });
 
@@ -153,16 +155,15 @@ export class OrganizationsService {
     let finalCamper = newCamper;
     if (user) {
       finalCamper = await this.prisma.$transaction(async (tx) => {
-        // User 정보 업데이트 (name, camperId)
+        // User 정보 업데이트 (name만)
         await tx.user.update({
           where: { id: user.id },
           data: {
             name: dto.name,
-            camperId: dto.camperId,
           },
         });
 
-        // CamperOrganization 생성 (이미 있으면 무시)
+        // CamperOrganization 생성/업데이트 (camperId, groupNumber 포함)
         await tx.camperOrganization.upsert({
           where: {
             userId_organizationId: {
@@ -170,10 +171,15 @@ export class OrganizationsService {
               organizationId,
             },
           },
-          update: {},
+          update: {
+            camperId: dto.camperId,
+            groupNumber: dto.groupNumber,
+          },
           create: {
             userId: user.id,
             organizationId,
+            camperId: dto.camperId,
+            groupNumber: dto.groupNumber,
           },
         });
 
@@ -191,6 +197,7 @@ export class OrganizationsService {
             username: true,
             track: true,
             status: true,
+            groupNumber: true,
           },
         });
       });
@@ -239,8 +246,41 @@ export class OrganizationsService {
         username: true,
         track: true,
         status: true,
+        groupNumber: true,
+        claimedUserId: true,
       },
     });
+
+    // CLAIMED 상태면 User와 CamperOrganization도 업데이트
+    if (updated.status === PreRegStatus.CLAIMED && updated.claimedUserId) {
+      const claimedUserId = updated.claimedUserId;
+
+      await this.prisma.$transaction(async (tx) => {
+        // User 업데이트 (name)
+        if (dto.name) {
+          await tx.user.update({
+            where: { id: claimedUserId },
+            data: { name: dto.name },
+          });
+        }
+
+        // CamperOrganization 업데이트 (camperId, groupNumber)
+        await tx.camperOrganization.update({
+          where: {
+            userId_organizationId: {
+              userId: claimedUserId,
+              organizationId: orgId,
+            },
+          },
+          data: {
+            ...(dto.camperId !== undefined && { camperId: dto.camperId }),
+            ...(dto.groupNumber !== undefined && {
+              groupNumber: dto.groupNumber,
+            }),
+          },
+        });
+      });
+    }
 
     return updated;
   }
@@ -255,6 +295,7 @@ export class OrganizationsService {
       { header: '이름', key: 'name', width: 15 },
       { header: 'GitHub ID', key: 'username', width: 20 },
       { header: '분야', key: 'track', width: 15 },
+      { header: '그룹 번호', key: 'groupNumber', width: 15 },
     ];
 
     // 헤더 스타일링 (선택 사항)
@@ -323,6 +364,7 @@ export class OrganizationsService {
       name: string;
       username: string;
       track: Track;
+      groupNumber?: number;
     }[] = [];
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // 헤더 건너뛰기
@@ -331,13 +373,15 @@ export class OrganizationsService {
       const name = row.getCell(2).text?.trim();
       const username = row.getCell(3).text?.trim();
       const trackRaw = row.getCell(4).text?.trim()?.toUpperCase();
+      const groupNumberStr = row.getCell(5).text?.trim();
+      const groupNumber = groupNumberStr ? parseInt(groupNumberStr, 10) : undefined;
 
       if (!camperId || !name || !username || !trackRaw) return;
 
       const track = trackRaw as Track;
       if (!Object.values(Track).includes(track)) return;
 
-      campersData.push({ camperId, name, username, track });
+      campersData.push({ camperId, name, username, track, groupNumber });
     });
 
     if (campersData.length === 0) {
@@ -353,9 +397,7 @@ export class OrganizationsService {
         where: { username: { in: usernames } },
         select: { id: true, username: true },
       });
-      const userMap = new Map(
-        existingUsers.map((u) => [u.username, u.id]),
-      );
+      const userMap = new Map(existingUsers.map((u) => [u.username, u.id]));
 
       for (const data of campersData) {
         // 부스트캠프 ID(camperId)를 기준으로 Upsert
@@ -370,6 +412,7 @@ export class OrganizationsService {
             name: data.name,
             username: data.username,
             track: data.track,
+            groupNumber: data.groupNumber,
             status: PreRegStatus.INVITED, // 업로드 시 재활성화
           },
           create: {
@@ -383,16 +426,15 @@ export class OrganizationsService {
 
         // 사용자가 이미 가입되어 있다면 정보 업데이트 및 조직 연결
         if (userId) {
-          // User 정보 업데이트
+          // User 정보 업데이트 (name만)
           await tx.user.update({
             where: { id: userId },
             data: {
               name: data.name,
-              camperId: data.camperId,
             },
           });
 
-          // CamperOrganization 생성
+          // CamperOrganization 생성/업데이트
           await tx.camperOrganization.upsert({
             where: {
               userId_organizationId: {
@@ -400,10 +442,15 @@ export class OrganizationsService {
                 organizationId,
               },
             },
-            update: {},
+            update: {
+              camperId: data.camperId,
+              groupNumber: data.groupNumber,
+            },
             create: {
               userId,
               organizationId,
+              camperId: data.camperId,
+              groupNumber: data.groupNumber,
             },
           });
 

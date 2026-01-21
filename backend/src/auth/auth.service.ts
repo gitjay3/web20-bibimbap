@@ -89,7 +89,6 @@ export class AuthService {
         data: {
           username: data.githubLogin, // GitHub username 저장
           name: preRegistrations[0]?.name || null, // 사전 등록된 실명 (없으면 null)
-          camperId: preRegistrations[0]?.camperId || null, // 부스트캠프 ID (없으면 null)
           role: Role.USER,
           authAccounts: {
             create: {
@@ -107,6 +106,7 @@ export class AuthService {
           data: preRegistrations.map((preReg) => ({
             userId: newUser.id,
             organizationId: preReg.organizationId,
+            camperId: preReg.camperId, // camperId를 CamperOrganization에 저장
           })),
         });
 
