@@ -19,6 +19,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
+    // /api/metrics 경로는 Prometheus 스크래핑을 위해 인증 제외
+    const request = context.switchToHttp().getRequest();
+    if (request.path === '/api/metrics') {
+      return true;
+    }
+
     return super.canActivate(context);
   }
 }
