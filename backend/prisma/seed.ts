@@ -152,6 +152,18 @@ async function main() {
 
   console.log('✓ 사전 등록 데이터 생성 완료');
 
+  // 공통 schema
+  const defaultSlotSchema = {
+    fields: [
+      { id: 'f1', name: '내용', type: 'text' },
+      { id: 'f2', name: '행사 날짜', type: 'text' },
+      { id: 'f3', name: '시작 시간', type: 'text' },
+      { id: 'f4', name: '종료 시간', type: 'text' },
+      { id: 'f5', name: '장소', type: 'text' },
+      { id: 'f6', name: '멘토명', type: 'text' },
+    ],
+  };
+
   // 4. 이벤트 생성
   const event1 = await prisma.event.upsert({
     where: { id: 1 },
@@ -167,14 +179,7 @@ async function main() {
       organizationId: organization.id,
       startTime: new Date('2026-01-01T00:00:00+09:00'),
       endTime: new Date('2026-02-28T23:59:59+09:00'),
-      slotSchema: {
-        content: { label: '내용', type: 'string' },
-        eventDate: { label: '행사 날짜', type: 'string' },
-        startTime: { label: '시작 시간', type: 'string' },
-        endTime: { label: '종료 시간', type: 'string' },
-        location: { label: '장소', type: 'string' },
-        mentorName: { label: '멘토명', type: 'string' },
-      },
+      slotSchema: defaultSlotSchema,
     },
   });
   console.log('✓ 이벤트 1 생성:', event1.title);
@@ -193,14 +198,7 @@ async function main() {
       organizationId: organization.id,
       startTime: new Date('2026-03-01T00:00:00+09:00'),
       endTime: new Date('2026-03-31T23:59:59+09:00'),
-      slotSchema: {
-        content: { label: '내용', type: 'string' },
-        eventDate: { label: '행사 날짜', type: 'string' },
-        startTime: { label: '시작 시간', type: 'string' },
-        endTime: { label: '종료 시간', type: 'string' },
-        location: { label: '장소', type: 'string' },
-        mentorName: { label: '멘토명', type: 'string' },
-      },
+      slotSchema: defaultSlotSchema,
     },
   });
   console.log('✓ 이벤트 2 생성:', event2.title);
@@ -219,14 +217,7 @@ async function main() {
       organizationId: organization.id,
       startTime: new Date('2026-04-01T00:00:00+09:00'),
       endTime: new Date('2026-04-30T23:59:59+09:00'),
-      slotSchema: {
-        content: { label: '내용', type: 'string' },
-        eventDate: { label: '행사 날짜', type: 'string' },
-        startTime: { label: '시작 시간', type: 'string' },
-        endTime: { label: '종료 시간', type: 'string' },
-        location: { label: '장소', type: 'string' },
-        mentorName: { label: '멘토명', type: 'string' },
-      },
+      slotSchema: defaultSlotSchema,
     },
   });
   console.log('✓ 이벤트 3 생성:', event3.title);
@@ -239,12 +230,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 5,
       extraInfo: {
-        content: 'A팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '14:00',
-        endTime: '15:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'A팀 멘토링',
+        f2: '2026-02-15',
+        f3: '14:00',
+        f4: '15:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -253,12 +244,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 3,
       extraInfo: {
-        content: 'B팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '15:00',
-        endTime: '16:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'B팀 멘토링',
+        f2: '2026-02-15',
+        f3: '15:00',
+        f4: '16:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -267,12 +258,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 1,
       extraInfo: {
-        content: 'C팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '16:00',
-        endTime: '17:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'C팀 멘토링',
+        f2: '2026-02-15',
+        f3: '16:00',
+        f4: '17:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -281,12 +272,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 2,
       extraInfo: {
-        content: 'D팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '17:00',
-        endTime: '18:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'D팀 멘토링',
+        f2: '2026-02-15',
+        f3: '17:00',
+        f4: '18:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -295,12 +286,12 @@ async function main() {
       maxCapacity: 6,
       currentCount: 4,
       extraInfo: {
-        content: '코루틴 기초',
-        eventDate: '2026-03-15',
-        startTime: '10:00',
-        endTime: '10:30',
-        location: '강남 캠퍼스 301호',
-        mentorName: '호눅스',
+        f1: '코루틴 기초',
+        f2: '2026-03-15',
+        f3: '10:00',
+        f4: '10:30',
+        f5: '강남 캠퍼스 301호',
+        f6: '호눅스',
       },
     },
     {
@@ -309,12 +300,12 @@ async function main() {
       maxCapacity: 6,
       currentCount: 6,
       extraInfo: {
-        content: '비동기 처리 실습',
-        eventDate: '2026-03-15',
-        startTime: '10:30',
-        endTime: '11:00',
-        location: '강남 캠퍼스 301호',
-        mentorName: '호눅스',
+        f1: '비동기 처리 실습',
+        f2: '2026-03-15',
+        f3: '10:30',
+        f4: '11:00',
+        f5: '강남 캠퍼스 301호',
+        f6: '호눅스',
       },
     },
     {
@@ -323,12 +314,12 @@ async function main() {
       maxCapacity: 6,
       currentCount: 2,
       extraInfo: {
-        content: 'Q&A 세션',
-        eventDate: '2026-03-15',
-        startTime: '11:00',
-        endTime: '12:00',
-        location: '강남 캠퍼스 301호',
-        mentorName: '호눅스',
+        f1: 'Q&A 세션',
+        f2: '2026-03-15',
+        f3: '11:00',
+        f4: '12:00',
+        f5: '강남 캠퍼스 301호',
+        f6: '호눅스',
       },
     },
     {
@@ -337,12 +328,12 @@ async function main() {
       maxCapacity: 4,
       currentCount: 3,
       extraInfo: {
-        content: '오토레이아웃 기초',
-        eventDate: '2026-04-15',
-        startTime: '13:00',
-        endTime: '14:00',
-        location: 'Zoom',
-        mentorName: 'JK',
+        f1: '오토레이아웃 기초',
+        f2: '2026-04-15',
+        f3: '13:00',
+        f4: '14:00',
+        f5: 'Zoom',
+        f6: 'JK',
       },
     },
     {
@@ -351,12 +342,12 @@ async function main() {
       maxCapacity: 4,
       currentCount: 4,
       extraInfo: {
-        content: '스택뷰 활용',
-        eventDate: '2026-04-15',
-        startTime: '14:00',
-        endTime: '15:00',
-        location: 'Zoom',
-        mentorName: 'JK',
+        f1: '스택뷰 활용',
+        f2: '2026-04-15',
+        f3: '14:00',
+        f4: '15:00',
+        f5: 'Zoom',
+        f6: 'JK',
       },
     },
     {
@@ -365,12 +356,12 @@ async function main() {
       maxCapacity: 4,
       currentCount: 1,
       extraInfo: {
-        content: '다양한 해상도 대응',
-        eventDate: '2026-04-15',
-        startTime: '15:00',
-        endTime: '16:00',
-        location: 'Zoom',
-        mentorName: 'JK',
+        f1: '다양한 해상도 대응',
+        f2: '2026-04-15',
+        f3: '15:00',
+        f4: '16:00',
+        f5: 'Zoom',
+        f6: 'JK',
       },
     },
   ];
