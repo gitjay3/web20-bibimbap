@@ -1,3 +1,21 @@
+export type CreateEventRequest = {
+  track: 'ALL' | 'COMMON' | 'WEB' | 'ANDROID' | 'IOS';
+  applicationUnit: 'INDIVIDUAL' | 'TEAM';
+  organizationId: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  slotSchema: {
+    fields: Array<{ id: string; name: string; type: 'text' | 'number' | 'time' }>;
+  };
+  slots: Array<Record<string, unknown>>;
+};
+
+export type CreateEventResponse = {
+  id: string;
+};
+
 export interface EventSlotExtraInfo {
   content?: string;
   startTime?: string;

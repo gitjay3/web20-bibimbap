@@ -24,7 +24,7 @@ function Main() {
         description={description}
         action={
           isAdmin ? (
-            <Button type="secondary" onClickHandler={() => navigate('/events/new')}>
+            <Button type="secondary" onClickHandler={() => navigate('events/new')}>
               <PlusIcon className="h-4 w-4" />
               이벤트 생성
             </Button>

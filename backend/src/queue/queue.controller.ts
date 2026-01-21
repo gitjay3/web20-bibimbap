@@ -54,6 +54,7 @@ export class QueueController {
         totalWaiting: status.totalWaiting,
         hasToken: status.hasToken,
         inQueue: status.position !== null,
+        tokenExpiresAt: status.tokenExpiresAt ?? null,
       },
     };
   }

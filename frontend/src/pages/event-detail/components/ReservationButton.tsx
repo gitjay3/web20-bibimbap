@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { applyReservation, cancelReservation } from '@/api/reservation';
+import { createReservation, cancelReservation } from '@/api/reservation';
 import cn from '@/utils/cn';
 import type { ReservationApiResponse } from '@/types/BEapi';
 
 interface ReservationButtonProps {
+  eventId: number;
   isReservable: boolean;
   selectedSlotId: number | null;
   myReservation: ReservationApiResponse | null;
@@ -13,6 +14,7 @@ interface ReservationButtonProps {
 }
 
 function ReservationButton({
+  eventId,
   isReservable,
   selectedSlotId,
   myReservation,
@@ -28,13 +30,24 @@ function ReservationButton({
     setIsSubmitting(true);
 
     try {
-      await applyReservation(selectedSlotId);
+      await createReservation(eventId, selectedSlotId);
 
       toast.success('예약이 완료되었습니다!');
 
       onReservationSuccess();
     } catch (error) {
-      console.error('예약 신청 실패:', error);
+      if (error instanceof Error) {
+        if (error.message === 'SLOT_FULL') {
+          toast.error('정원이 마감되었습니다. 다른 슬롯을 선택해주세요.');
+        } else if (error.message === 'NO_TOKEN') {
+          toast.error('예약 권한이 만료되었습니다. 페이지를 새로고침합니다.');
+          window.location.reload();
+        } else {
+          toast.error('예약에 실패했습니다. 다시 시도해주세요.');
+        }
+      } else {
+        toast.error('예약에 실패했습니다. 다시 시도해주세요.');
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -164,7 +164,7 @@ describe('EventsService', () => {
         applicationUnit: ApplicationUnit.INDIVIDUAL,
         startTime: new Date(),
         endTime: new Date(),
-        slotSchema: {},
+        slotSchema: { fields: [] },
         organizationId: 'org-uuid',
         slots: [{ maxCapacity: 10, extraInfo: {} }],
       };

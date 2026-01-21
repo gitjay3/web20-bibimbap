@@ -74,8 +74,6 @@ async function main() {
 
   console.log('✓ 테스트 사용자 생성:', testUser.user.id);
 
-  console.log('✓ 테스트 사용자 생성:', testUser.user.id);
-
   // 3-1. 조직(Organization) 생성
   const organization = await prisma.organization.create({
     data: {

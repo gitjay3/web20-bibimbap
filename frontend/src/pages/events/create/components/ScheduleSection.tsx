@@ -34,6 +34,12 @@ export default function ScheduleSection() {
               {...register('openTime')}
             />
           </div>
+
+          {(errors.openDate || errors.openTime) && (
+            <p className="text-12 text-error-text-primary mt-1">
+              {errors.openDate?.message || errors.openTime?.message}
+            </p>
+          )}
         </div>
 
         {/* 예약 마감 섹션 */}
@@ -56,8 +62,10 @@ export default function ScheduleSection() {
             />
           </div>
 
-          {errors.closeTime && (
-            <p className="text-12 text-error-text-primary mt-1">{errors.closeTime.message}</p>
+          {(errors.closeDate || errors.closeTime) && (
+            <p className="text-12 text-error-text-primary mt-1">
+              {errors.closeDate?.message || errors.closeTime?.message}
+            </p>
           )}
         </div>
       </div>

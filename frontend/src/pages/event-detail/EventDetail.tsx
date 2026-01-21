@@ -5,6 +5,9 @@ import { getEvent } from '@/api/event';
 import { getSlotAvailability } from '@/api/eventSlot';
 import { getMyReservationForEvent } from '@/api/reservation';
 import type { ReservationApiResponse } from '@/types/BEapi';
+import useQueue from '@/hooks/useQueue';
+import QueueStatus from '@/components/QueueStatus';
+import { useAuth } from '@/store/AuthContext';
 import EventDetailHeader from './components/EventDetailHeader';
 import ReservationButton from './components/ReservationButton';
 import SlotList from './components/SlotList';
@@ -13,10 +16,24 @@ const POLLING_INTERVAL = 1000; // 성능 보면서 ms 단위로 바꿔도?
 
 function EventDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [myReservation, setMyReservation] = useState<ReservationApiResponse | null>(null);
   const [event, setEvent] = useState<EventDetailType | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isLoggedIn = user !== null;
+
+  const {
+    position,
+    totalWaiting,
+    hasToken,
+    tokenExpiresAt,
+    isLoading: isQueueLoading,
+    isNew,
+  } = useQueue({
+    eventId: Number(id) || 0,
+    enabled: event?.status === 'ONGOING' && isLoggedIn, // ONGOING, 로그인 확인
+  });
 
   // 이벤트 정보 불러오기
   const fetchEvent = useCallback(async () => {
@@ -130,7 +147,6 @@ function EventDetail() {
       </div>
     );
   }
-
   return (
     <div className="flex justify-center">
       <div className="w-160">
@@ -143,17 +159,38 @@ function EventDetail() {
             applicationUnit={event.applicationUnit}
           />
           <hr className="border-neutral-border-default" />
+
+          {/* 대기열 상태 (ONGOING일 때만 표시) */}
+          {event.status === 'ONGOING' &&
+            (isLoggedIn ? (
+              <QueueStatus
+                position={position}
+                totalWaiting={totalWaiting}
+                hasToken={hasToken}
+                tokenExpiresAt={tokenExpiresAt}
+                isLoading={isQueueLoading}
+                isNew={isNew}
+              />
+            ) : (
+              <div className="border-neutral-border-default bg-neutral-surface-default rounded-lg border p-4">
+                <p className="text-neutral-text-secondary text-center">
+                  예약하려면 로그인이 필요합니다.
+                </p>
+              </div>
+            ))}
           <SlotList
             status={event.status}
             slotSchema={event.slotSchema}
             slots={event.slots}
             selectedSlotId={selectedSlotId}
             setSelectedSlotId={setSelectedSlotId}
+            disabled={event.status === 'ONGOING' && !hasToken}
           />
         </div>
       </div>
       <ReservationButton
-        isReservable={event.status === 'ONGOING'}
+        eventId={Number(id)}
+        isReservable={event.status === 'ONGOING' && hasToken} // ← 수정: hasToken 조건 추가
         selectedSlotId={selectedSlotId}
         myReservation={myReservation}
         onReservationSuccess={handleReservationSuccess}
