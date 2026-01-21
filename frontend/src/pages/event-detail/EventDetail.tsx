@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router';
 import type { EventDetail as EventDetailType } from '@/types/event';
 import { getEvent } from '@/api/event';
@@ -12,16 +12,20 @@ import EventDetailHeader from './components/EventDetailHeader';
 import ReservationButton from './components/ReservationButton';
 import SlotList from './components/SlotList';
 
-const POLLING_INTERVAL = 1000; // 성능 보면서 ms 단위로 바꿔도?
+const POLLING_INTERVAL = 1000;
 
 function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+
   const [myReservation, setMyReservation] = useState<ReservationApiResponse | null>(null);
   const [event, setEvent] = useState<EventDetailType | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
   const isLoggedIn = user !== null;
+  const eventId = Number(id) || 0;
+  const eventStatus = event?.status;
 
   const {
     position,
@@ -31,43 +35,42 @@ function EventDetail() {
     isLoading: isQueueLoading,
     isNew,
   } = useQueue({
-    eventId: Number(id) || 0,
-    enabled: event?.status === 'ONGOING' && isLoggedIn, // ONGOING, 로그인 확인
+    eventId,
+    enabled: eventStatus === 'ONGOING' && isLoggedIn,
   });
 
   // 이벤트 정보 불러오기
   const fetchEvent = useCallback(async () => {
-    if (!id) return;
+    if (!eventId) return;
 
     try {
-      const eventData = await getEvent(Number(id));
+      const eventData = await getEvent(eventId);
       setEvent(eventData);
     } catch (error) {
       console.error('이벤트 조회 실패:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [eventId]);
 
-  // 이 이벤트가 내 예약인지 조회
+  // 내 예약 조회
   const fetchMyReservation = useCallback(async () => {
-    if (!id) return;
+    if (!eventId) return;
 
     try {
-      const reservation = await getMyReservationForEvent(Number(id));
+      const reservation = await getMyReservationForEvent(eventId);
       setMyReservation(reservation);
     } catch {
-      // 로그인 안 된 경우 등 에러 무시 TODO: 로그인, mypage랑 연계
       setMyReservation(null);
     }
-  }, [id]);
+  }, [eventId]);
 
   // 실시간 정원 폴링
   const updateSlotAvailability = useCallback(async () => {
-    if (!id) return;
+    if (!eventId) return;
 
     try {
-      const availabilityData = await getSlotAvailability(Number(id));
+      const availabilityData = await getSlotAvailability(eventId);
 
       setEvent((prevEvent) => {
         if (!prevEvent) return null;
@@ -91,7 +94,7 @@ function EventDetail() {
     } catch (error) {
       console.error('실시간 정원 갱신 실패:', error);
     }
-  }, [id]);
+  }, [eventId]);
 
   // 초기 로드
   useEffect(() => {
@@ -99,28 +102,33 @@ function EventDetail() {
     fetchMyReservation();
   }, [fetchEvent, fetchMyReservation]);
 
+  // 탭 비활성 시 폴링 일시 중단
+  const isPageVisibleRef = useRef(true);
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      isPageVisibleRef.current = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
   // 실시간 정원 폴링
   useEffect(() => {
-    if (!event || event.status !== 'ONGOING') {
-      return () => {};
-    }
-    // TODO : 사용자가 다른 탭으로 이동하면 폴링을 일시 중단
+    if (eventStatus !== 'ONGOING') return () => {};
 
+    // 첫 갱신
     updateSlotAvailability();
 
-    // 폴링
     const intervalId = setInterval(() => {
+      if (!isPageVisibleRef.current) return;
       updateSlotAvailability();
     }, POLLING_INTERVAL);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [event, updateSlotAvailability]);
+    return () => clearInterval(intervalId);
+  }, [eventStatus, updateSlotAvailability]);
 
   const handleReservationSuccess = useCallback(() => {
     setSelectedSlotId(null);
-    // 예약 성공 시 이벤트 정보 갱신
     fetchEvent();
     fetchMyReservation();
   }, [fetchEvent, fetchMyReservation]);
@@ -145,6 +153,7 @@ function EventDetail() {
       </div>
     );
   }
+
   return (
     <div className="flex justify-center">
       <div className="w-160">
@@ -158,7 +167,7 @@ function EventDetail() {
           />
           <hr className="border-neutral-border-default" />
 
-          {/* 대기열 상태 (ONGOING일 때만 표시) */}
+          {/* 대기열 상태 */}
           {event.status === 'ONGOING' &&
             (isLoggedIn ? (
               <QueueStatus
@@ -176,6 +185,7 @@ function EventDetail() {
                 </p>
               </div>
             ))}
+
           <SlotList
             status={event.status}
             slotSchema={event.slotSchema}
@@ -186,9 +196,10 @@ function EventDetail() {
           />
         </div>
       </div>
+
       <ReservationButton
-        eventId={Number(id)}
-        isReservable={event.status === 'ONGOING' && hasToken} // ← 수정: hasToken 조건 추가
+        eventId={eventId}
+        isReservable={event.status === 'ONGOING' && hasToken}
         selectedSlotId={selectedSlotId}
         myReservation={myReservation}
         onReservationSuccess={handleReservationSuccess}
