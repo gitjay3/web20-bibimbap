@@ -1,7 +1,7 @@
 # Bookstcamp
 
 <div align="center">
-  
+
 **부스트캠프 내의 예약이 필요한 이벤트들을 한 곳에서 관리하는 서비스**
 
 [데모 보기](#) · [버그 리포트](../../issues) · [기능 제안](../../issues)
@@ -12,13 +12,19 @@
 
 ## 목차
 
-- [프로젝트 소개](#프로젝트-소개)
-- [팀원](#팀원)
-- [주요 기능](#주요-기능)
-- [기술 스택](#기술-스택)
-- [사전 요구사항](#사전-요구사항)
-- [설치 및 실행](#설치-및-실행)
-- [라이선스](#라이선스)
+- [Bookstcamp](#bookstcamp)
+  - [목차](#목차)
+  - [프로젝트 소개](#프로젝트-소개)
+  - [팀원](#팀원)
+  - [주요 기능](#주요-기능)
+    - [캠퍼 기능](#캠퍼-기능)
+    - [운영진 기능](#운영진-기능)
+  - [기술 스택](#기술-스택)
+    - [Frontend](#frontend)
+    - [Backend \& Database](#backend--database)
+    - [Infrastructure](#infrastructure)
+  - [설치 및 실행](#설치-및-실행)
+  - [라이선스](#라이선스)
 
 <br>
 
@@ -85,7 +91,7 @@ Bookstcamp는 동시성 제어를 통한 정확한 선착순 처리와 실시간
 
 ### Frontend
 
-![Frontend Skills](https://skillicons.dev/icons?i=react,typescript,vite)
+![Frontend Skills](https://skillicons.dev/icons?i=react,typescript,vite,tailwind)
 
 ### Backend & Database
 
@@ -93,22 +99,14 @@ Bookstcamp는 동시성 제어를 통한 정확한 선착순 처리와 실시간
 
 ### Infrastructure
 
-![Infrastructure Skills](https://skillicons.dev/icons?i=docker)
+![Infrastructure Skills](https://skillicons.dev/icons?i=docker,nginx,githubactions)
 ![Naver Cloud](https://img.shields.io/badge/Naver%20Cloud-03C75A?style=for-the-badge&logo=naver&logoColor=white)
-
-<br>
-
-## 사전 요구사항
-
-- Node.js 18+
-- pnpm 8+
-- Docker & Docker Compose
 
 <br>
 
 ## 설치 및 실행
 
-### 로컬 환경
+> Node.js 18+, pnpm 8+, Docker 필요
 
 ```bash
 # 저장소 클론
@@ -118,17 +116,18 @@ cd web20-bibimbap
 # 의존성 설치
 pnpm install
 
-# Docker 컨테이너 실행 (프론트엔드 + 백엔드 + DB + Redis)
+# Docker 컨테이너 실행
 pnpm docker:local:up
 
-# 컨테이너 중지
-pnpm docker:local:down
+# Prisma 클라이언트 생성
+pnpm db:generate:local
+
+# 시드 데이터 삽입
+pnpm db:seed:local
 ```
 
-실행 후 다음 주소로 접속:
-
-- 프론트엔드: http://localhost:5173
-- 백엔드 API: http://localhost:3001
+- 로컬 확인: http://localhost
+- API 문서(Swagger): http://localhost/api-docs
 
 <br>
  
