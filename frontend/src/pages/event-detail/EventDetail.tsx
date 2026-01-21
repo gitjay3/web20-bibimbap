@@ -69,26 +69,24 @@ function EventDetail() {
     try {
       const availabilityData = await getSlotAvailability(Number(id));
 
-      // TODO : 나중에 정보 비교해서 변경사항 없으면 리렌더링 안되게
-
       setEvent((prevEvent) => {
         if (!prevEvent) return null;
 
-        return {
-          ...prevEvent,
-          slots: prevEvent.slots.map((slot) => {
-            const updatedSlot = availabilityData.slots.find((s) => s.slotId === slot.id);
+        let changed = false;
 
-            if (updatedSlot) {
-              return {
-                ...slot,
-                currentCount: updatedSlot.currentCount,
-              };
-            }
+        const nextSlots = prevEvent.slots.map((slot) => {
+          const updated = availabilityData.slots.find((s) => s.slotId === slot.id);
+          if (!updated) return slot;
 
-            return slot;
-          }),
-        };
+          if (slot.currentCount !== updated.currentCount) {
+            changed = true;
+            return { ...slot, currentCount: updated.currentCount };
+          }
+          return slot;
+        });
+
+        if (!changed) return prevEvent;
+        return { ...prevEvent, slots: nextSlots };
       });
     } catch (error) {
       console.error('실시간 정원 갱신 실패:', error);
