@@ -1,18 +1,9 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Param,
-  ParseIntPipe,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { QueueService } from './queue.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { randomUUID } from 'crypto';
 
 @Controller('queue')
-@UseGuards(JwtAuthGuard)
 export class QueueController {
   constructor(private readonly queueService: QueueService) {}
 
@@ -22,11 +13,11 @@ export class QueueController {
     @Param('eventId', ParseIntPipe) eventId: number,
     @CurrentUser('id') userId: string,
   ) {
-    const sessionId = randomUUID;
+    const sessionId = randomUUID();
     const result = await this.queueService.enterQueue(
       eventId,
       userId,
-      sessionId(),
+      sessionId,
     );
 
     return {
