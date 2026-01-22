@@ -159,7 +159,7 @@ async function main() {
   const defaultSlotSchema = {
     fields: [
       { id: 'f1', name: '내용', type: 'text' },
-      { id: 'f2', name: '행사 날짜', type: 'text' },
+      { id: 'f2', name: '날짜', type: 'text' },
       { id: 'f3', name: '시작 시간', type: 'text' },
       { id: 'f4', name: '종료 시간', type: 'text' },
       { id: 'f5', name: '장소', type: 'text' },
