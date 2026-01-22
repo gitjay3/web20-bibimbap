@@ -182,6 +182,6 @@ sleep 5
 
 # 9. 완료
 log_info "=== 배포 완료 ==="
-docker compose -f "$COMPOSE_FILE" ps
+run_with_env docker compose -f "$COMPOSE_FILE" ps
 
 exit 0
