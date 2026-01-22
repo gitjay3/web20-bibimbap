@@ -75,9 +75,10 @@ export class AuthService {
     // 2. 가입되지 않은 경우 User 생성
     // 2-1. 사전 등록(PreRegistration) 확인
     // GitHub Username을 기준으로 INVITED 상태인 초대장을 찾는다.
+    // 대소문자 무시 비교 (GitHub username은 대소문자 구분 없음)
     const preRegistrations = await this.prisma.camperPreRegistration.findMany({
       where: {
-        username: data.githubLogin,
+        username: { equals: data.githubLogin, mode: 'insensitive' },
         status: PreRegStatus.INVITED,
       },
     });
