@@ -19,6 +19,7 @@ import {
   AlreadyCancelledException,
   OptimisticLockException,
 } from '../../common/exceptions/api.exception';
+import { MetricsService } from '../metrics/metrics.service';
 
 type ReservationWithRelations = Prisma.ReservationGetPayload<{
   include: {
@@ -36,6 +37,7 @@ export class ReservationsService {
     private prisma: PrismaService,
     private redisService: RedisService,
     private queueService: QueueService,
+    private metricsService: MetricsService,
     @InjectQueue(RESERVATION_QUEUE)
     private reservationQueue: Queue<ReservationJobData>,
   ) {}
@@ -44,6 +46,8 @@ export class ReservationsService {
     userId: string,
     dto: ApplyReservationDto,
   ): Promise<{ status: string; message: string }> {
+    const startTime = Date.now();
+
     // 슬롯 정보 조회
     const slot = await this.prisma.eventSlot.findUnique({
       where: { id: dto.slotId },
@@ -57,6 +61,7 @@ export class ReservationsService {
     const success = await this.redisService.decrementStock(dto.slotId);
 
     if (!success) {
+      this.metricsService.recordReservation(dto.slotId, 'slot_full');
       throw new SlotFullException();
     }
 
@@ -66,6 +71,13 @@ export class ReservationsService {
       slotId: dto.slotId,
       maxCapacity: slot.maxCapacity,
     });
+
+    // 메트릭 기록
+    this.metricsService.recordReservation(dto.slotId, 'pending');
+    this.metricsService.reservationLatency.observe(
+      { operation: 'apply' },
+      (Date.now() - startTime) / 1000,
+    );
 
     // await this.queueService.invalidateToken(dto.eventId, userId); 지금은 수강신청같은 방식. 1인 1예약이라면 토큰 무효화
 
@@ -120,57 +132,81 @@ export class ReservationsService {
   }
 
   async cancel(id: number, userId: string): Promise<Reservation> {
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 예약 조회 (슬롯 정보 포함) -> 트랜잭션을 위한 version과 maxCapacity 받아와야 함
-      const reservation = await tx.reservation.findUnique({
-        where: { id },
-        include: { slot: true },
+    const startTime = Date.now();
+    let slotId: number | undefined;
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 예약 조회 (슬롯 정보 포함) -> 트랜잭션을 위한 version과 maxCapacity 받아와야 함
+        const reservation = await tx.reservation.findUnique({
+          where: { id },
+          include: { slot: true },
+        });
+
+        if (!reservation) {
+          throw new ReservationNotFoundException();
+        }
+
+        slotId = reservation.slotId;
+
+        if (reservation.userId !== userId) {
+          throw new UnauthorizedReservationException();
+        }
+
+        if (reservation.status === 'CANCELLED') {
+          throw new AlreadyCancelledException();
+        }
+
+        // 낙관적 락을 통한 슬롯 업데이트
+        const updatedSlot = await tx.eventSlot.updateMany({
+          where: {
+            id: reservation.slotId,
+            version: reservation.slot.version, // Read version
+          },
+          data: {
+            currentCount: { decrement: 1 },
+            version: { increment: 1 },
+          },
+        });
+
+        if (updatedSlot.count === 0) {
+          this.metricsService.recordOptimisticLockConflict('cancellation');
+          throw new OptimisticLockException();
+        }
+
+        // 예약 상태 변경
+        const updatedReservation = await tx.reservation.update({
+          where: { id },
+          data: { status: 'CANCELLED' },
+        });
+
+        return {
+          reservation: updatedReservation,
+          slotId: reservation.slotId,
+          maxCapacity: reservation.slot.maxCapacity,
+        };
       });
 
-      if (!reservation) {
-        throw new ReservationNotFoundException();
+      // Redis 재고 복구 (트랜잭션 성공 후)
+      await this.redisService.incrementStock(
+        result.slotId,
+        result.maxCapacity,
+        'cancellation',
+      );
+
+      // 메트릭 기록
+      this.metricsService.recordReservation(result.slotId, 'cancelled');
+      this.metricsService.reservationLatency.observe(
+        { operation: 'cancel' },
+        (Date.now() - startTime) / 1000,
+      );
+
+      return result.reservation;
+    } catch (error) {
+      if (slotId) {
+        this.metricsService.recordReservation(slotId, 'failed');
       }
-
-      if (reservation.userId !== userId) {
-        throw new UnauthorizedReservationException();
-      }
-
-      if (reservation.status === 'CANCELLED') {
-        throw new AlreadyCancelledException();
-      }
-
-      // 낙관적 락을 통한 슬롯 업데이트
-      const updatedSlot = await tx.eventSlot.updateMany({
-        where: {
-          id: reservation.slotId,
-          version: reservation.slot.version, // Read version
-        },
-        data: {
-          currentCount: { decrement: 1 },
-          version: { increment: 1 },
-        },
-      });
-
-      if (updatedSlot.count === 0) {
-        throw new OptimisticLockException();
-      }
-
-      // 예약 상태 변경
-      const updatedReservation = await tx.reservation.update({
-        where: { id },
-        data: { status: 'CANCELLED' },
-      });
-
-      return {
-        reservation: updatedReservation,
-        slotId: reservation.slotId,
-        maxCapacity: reservation.slot.maxCapacity,
-      };
-    });
-
-    // Redis 재고 복구 (트랜잭션 성공 후)
-    await this.redisService.incrementStock(result.slotId, result.maxCapacity);
-
-    return result.reservation;
+      throw error;
+    }
   }
 }

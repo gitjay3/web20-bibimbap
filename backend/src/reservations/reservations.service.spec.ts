@@ -14,6 +14,7 @@ import {
 } from '../../common/exceptions/api.exception';
 import type { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { QueueService } from '../queue/queue.service';
+import { MetricsService } from '../metrics/metrics.service';
 
 const createRedisMock = () => ({
   initStock: jest.fn().mockResolvedValue(undefined),
@@ -30,18 +31,26 @@ const createQueueServiceMock = () => ({
   hasValidToken: jest.fn().mockResolvedValue(true),
 });
 
+const createMetricsMock = () => ({
+  recordReservation: jest.fn(),
+  recordOptimisticLockConflict: jest.fn(),
+  reservationLatency: { observe: jest.fn() },
+});
+
 describe('ReservationsService', () => {
   let service: ReservationsService;
   let prismaMock: ReturnType<typeof createPrismaMock>;
   let redisMock: ReturnType<typeof createRedisMock>;
   let queueMock: ReturnType<typeof createQueueMock>;
   let queueServiceMock: ReturnType<typeof createQueueServiceMock>;
+  let metricsMock: ReturnType<typeof createMetricsMock>;
 
   beforeEach(async () => {
     prismaMock = createPrismaMock();
     redisMock = createRedisMock();
     queueMock = createQueueMock();
     queueServiceMock = createQueueServiceMock();
+    metricsMock = createMetricsMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +58,7 @@ describe('ReservationsService', () => {
         { provide: PrismaService, useValue: prismaMock },
         { provide: RedisService, useValue: redisMock },
         { provide: QueueService, useValue: queueServiceMock },
+        { provide: MetricsService, useValue: metricsMock },
         { provide: getQueueToken(RESERVATION_QUEUE), useValue: queueMock },
       ],
     }).compile();
@@ -144,6 +154,7 @@ describe('ReservationsService', () => {
       expect(redisMock.incrementStock).toHaveBeenCalledWith(
         mockReservation.slotId,
         mockSlot.maxCapacity,
+        'cancellation',
       );
     });
 

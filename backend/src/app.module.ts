@@ -15,6 +15,7 @@ import { QueueModule } from './queue/queue.module';
 import { TemplatesModule } from './templates/templates.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
       inject: [ConfigService],
     }),
     PrismaModule,
+    MetricsModule,
     RedisModule,
     EventsModule,
     ReservationsModule,

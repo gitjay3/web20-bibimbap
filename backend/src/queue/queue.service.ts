@@ -5,11 +5,13 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { CleanupJobData } from './queue-cleanup-processor';
 import { CLEANUP_JOB, QUEUE_CLEANUP_QUEUE } from './queue.constants';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class QueueService {
   constructor(
     private readonly redisService: RedisService,
+    private readonly metricsService: MetricsService,
     @InjectQueue(QUEUE_CLEANUP_QUEUE)
     private cleanupQueue: Queue<CleanupJobData>,
   ) {}
@@ -79,6 +81,10 @@ export class QueueService {
       await client.expire(statusKey, this.USER_STATUS_TTL);
 
       const position = await client.zrank(queueKey, userId);
+
+      // 메트릭: 기존 사용자 재진입
+      this.metricsService.recordQueueEntry(eventId, false);
+
       return {
         position: position ?? 0,
         isNew: false,
@@ -98,6 +104,13 @@ export class QueueService {
 
     // 현재 순번 조회
     const position = await client.zrank(queueKey, userId);
+
+    // 메트릭: 신규 사용자 진입
+    this.metricsService.recordQueueEntry(eventId, true);
+
+    // 대기열 인원 업데이트
+    const totalWaiting = await client.zcard(queueKey);
+    this.metricsService.updateQueueStatus(eventId, totalWaiting);
 
     return {
       position: position ?? 0,
@@ -182,6 +195,13 @@ export class QueueService {
 
     // 대기열에서 제거
     await client.zrem(queueKey, userId);
+
+    // 메트릭: 토큰 발급
+    this.metricsService.recordTokenIssued(eventId);
+
+    // 대기열 인원 업데이트
+    const totalWaiting = await client.zcard(queueKey);
+    this.metricsService.updateQueueStatus(eventId, totalWaiting);
 
     return token;
   }

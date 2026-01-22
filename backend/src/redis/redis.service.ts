@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import * as fs from 'fs';
 import * as path from 'path';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -21,7 +22,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     initStock?: string;
   } = {};
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private metricsService: MetricsService,
+  ) {}
 
   async onModuleInit() {
     this.client = new Redis({
@@ -103,23 +107,46 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   // 재고 차감 (예약 신청 시)
   async decrementStock(slotId: number): Promise<boolean> {
     const key = this.getStockKey(slotId);
+    const startTime = Date.now();
+
     const result = await this.client.evalsha(
       this.scripts.decrementStock!,
       1,
       key,
     );
-    return result === 1;
+
+    const success = result === 1;
+    this.metricsService.recordStockDecrement(
+      slotId,
+      success,
+      Date.now() - startTime,
+    );
+
+    return success;
   }
 
   // 재고 복구 (예약 실패/취소 시)
-  async incrementStock(slotId: number, maxCapacity: number): Promise<number> {
+  async incrementStock(
+    slotId: number,
+    maxCapacity: number,
+    reason: 'cancellation' | 'failure_recovery' = 'failure_recovery',
+  ): Promise<number> {
     const key = this.getStockKey(slotId);
+    const startTime = Date.now();
+
     const result = await this.client.evalsha(
       this.scripts.incrementStock!,
       1,
       key,
       maxCapacity,
     );
+
+    this.metricsService.recordStockIncrement(
+      slotId,
+      reason,
+      Date.now() - startTime,
+    );
+
     return result as number;
   }
 
