@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useNavigate, useParams } from 'react-router';
+import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import PageHeader from '@/components/PageHeader';
-import { useNavigate, useParams } from 'react-router';
 import toISODateTime from '@/utils/date';
 import { createEvent } from '@/api/event';
 import { eventSchema, type EventFormValues } from './schema';
@@ -13,10 +12,9 @@ import SlotOptionsSection from './components/slot-options/SlotOptionsSection';
 export default function EventCreatePage() {
   const navigate = useNavigate();
   const { orgId } = useParams<{ orgId: string }>();
-  const [isLoading, setIsLoading] = useState(true);
 
   if (!orgId) {
-    throw new Error('organizationI가이 없습니다.');
+    throw new Error('organizationId가 없습니다.');
   }
 
   const methods = useForm<EventFormValues>({
@@ -31,36 +29,14 @@ export default function EventCreatePage() {
       openTime: '10:00',
       closeTime: '18:00',
       slotSchema: { fields: [] },
-      slots: [{}],
+      slots: [],
     },
+    mode: 'onSubmit',
   });
-
-  useEffect(() => {
-    const fetchTemplate = async () => {
-      try {
-        // TODO: 실제 API 호출
-        const mockFieldsFromBackend: EventFormValues['slotSchema']['fields'] = [
-          { id: 'f_1', name: '시간', type: 'time' },
-          { id: 'f_2', name: '장소', type: 'text' },
-          { id: 'f_3', name: '멘토', type: 'text' },
-        ];
-
-        methods.reset((prev) => ({
-          ...prev,
-          slotSchema: { fields: mockFieldsFromBackend },
-        }));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTemplate();
-  }, [methods]);
 
   const onSubmit = async (data: EventFormValues) => {
     const startTime = toISODateTime(data.openDate, data.openTime);
     const endTime = toISODateTime(data.closeDate, data.closeTime);
-
     if (!startTime || !endTime) return;
 
     const allowedFieldIds = new Set(data.slotSchema.fields.map((f) => f.id));
@@ -69,16 +45,14 @@ export default function EventCreatePage() {
       const extraInfo: Record<string, unknown> = {};
 
       Object.entries(slot).forEach(([k, v]) => {
-        if (allowedFieldIds.has(k)) extraInfo[k] = v;
+        if (k === 'capacity') return;
+        if (allowedFieldIds.has(k) && v !== undefined && v !== '') extraInfo[k] = v;
       });
 
       const capacityRaw = (slot as Record<string, unknown>).capacity;
-      const maxCapacity = Number(capacityRaw ?? 1);
+      const maxCapacity = Math.max(1, Number(capacityRaw ?? 1) || 1);
 
-      return {
-        maxCapacity,
-        extraInfo,
-      };
+      return { maxCapacity, extraInfo };
     });
 
     const payload = {
@@ -94,11 +68,8 @@ export default function EventCreatePage() {
     };
 
     const created = await createEvent(payload);
-
     navigate(`/orgs/${orgId}/events/${created.id}`);
   };
-
-  if (isLoading) return <div>로딩 중...</div>;
 
   return (
     // eslint-disable-next-line react/jsx-props-no-spreading

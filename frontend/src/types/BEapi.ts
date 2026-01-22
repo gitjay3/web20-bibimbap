@@ -7,7 +7,7 @@ export type CreateEventRequest = {
   startTime: string;
   endTime: string;
   slotSchema: {
-    fields: Array<{ id: string; name: string; type: 'text' | 'number' | 'time' }>;
+    fields: Array<{ id: string; name: string; type: 'text' | 'number' | 'time' | 'datetime' }>;
   };
   slots: Array<Record<string, unknown>>;
 };

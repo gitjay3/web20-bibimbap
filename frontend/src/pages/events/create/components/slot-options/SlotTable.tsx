@@ -8,9 +8,15 @@ type Props = {
   templateFields: Array<{ id: string; name: string; type: SlotFieldType }>;
   rows: Array<{ id: string }>;
   onRemove: (index: number) => void;
+  isInitializing?: boolean;
 };
 
-export default function SlotTable({ templateFields, rows, onRemove }: Props) {
+export default function SlotTable({
+  templateFields,
+  rows,
+  onRemove,
+  isInitializing = false,
+}: Props) {
   const { register } = useFormContext<EventFormValues>();
 
   const blockNegativeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -43,70 +49,89 @@ export default function SlotTable({ templateFields, rows, onRemove }: Props) {
   const inputBaseClassName =
     'w-full rounded-md border border-neutral-border-default px-3 py-2 text-14 outline-none placeholder:text-neutral-text-tertiary focus:border-brand-border-default';
 
+  if (rows.length === 0 && isInitializing) {
+    return (
+      <div className="border-neutral-border-default overflow-hidden rounded-lg border bg-white">
+        <div className="text-14 text-neutral-text-tertiary px-4 py-10 text-center">
+          선택지 목록을 불러오는 중...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="border-neutral-border-default overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-150 table-fixed border-collapse">
+      <table className="w-full min-w-max border-collapse">
         <thead>
           <tr className="bg-neutral-surface-default text-14 text-neutral-text-tertiary font-medium">
-            <th className="w-16 py-3.5 text-center">No.</th>
+            <th className="w-16 py-3.5 text-center whitespace-nowrap">No.</th>
+
             {templateFields.map((field) => (
-              <th key={field.id} className="px-4 py-3.5 text-left">
+              <th key={field.id} className="min-w-40 px-4 py-3.5 text-left whitespace-nowrap">
                 {field.name}
               </th>
             ))}
-            <th className="w-28 px-4 py-3.5 text-left">정원</th>
-            <th className="w-16 py-3.5 text-center">삭제</th>
+
+            <th className="w-28 px-4 py-3.5 text-left whitespace-nowrap">정원</th>
+            <th className="w-16 py-3.5 text-center whitespace-nowrap">삭제</th>
           </tr>
         </thead>
 
-        <tbody className="divide-neutral-border-default divide-y bg-white">
-          {rows.map((row, rowIndex) => (
-            <tr key={row.id}>
-              <td className="text-14 text-neutral-text-tertiary py-4 text-center">
-                {rowIndex + 1}
-              </td>
+        {rows.length > 0 ? (
+          <tbody className="divide-neutral-border-default divide-y bg-white">
+            {rows.map((row, rowIndex) => (
+              <tr key={row.id}>
+                <td className="text-14 text-neutral-text-tertiary py-4 text-center">
+                  {rowIndex + 1}
+                </td>
 
-              {templateFields.map((field) => (
-                <td key={field.id} className="px-2 py-2">
+                {templateFields.map((field) => (
+                  <td key={field.id} className="px-2 py-2">
+                    <input
+                      {...register(
+                        `slots.${rowIndex}.${field.id}` as const,
+                        field.type === 'number' ? numberRegisterOptions : {},
+                      )}
+                      type={field.type === 'number' ? 'number' : field.type}
+                      placeholder={getPlaceholder(field)}
+                      onKeyDown={field.type === 'number' ? blockNegativeKey : undefined}
+                      className={inputBaseClassName}
+                    />
+                  </td>
+                ))}
+
+                <td className="px-2 py-2">
                   <input
-                    {...register(
-                      `slots.${rowIndex}.${field.id}` as const,
-                      field.type === 'number' ? numberRegisterOptions : {},
-                    )}
-                    type={field.type === 'number' ? 'number' : field.type}
-                    placeholder={getPlaceholder(field)}
-                    onKeyDown={field.type === 'number' ? blockNegativeKey : undefined}
+                    {...register(`slots.${rowIndex}.capacity` as const, capacityRegisterOptions)}
+                    type="number"
+                    min={1}
+                    placeholder="1"
+                    onKeyDown={blockNegativeKey}
                     className={inputBaseClassName}
                   />
                 </td>
-              ))}
 
-              <td className="px-2 py-2">
-                <input
-                  {...register(`slots.${rowIndex}.capacity` as const, capacityRegisterOptions)}
-                  type="number"
-                  min={1}
-                  placeholder="1"
-                  onKeyDown={blockNegativeKey}
-                  className={inputBaseClassName}
-                />
-              </td>
-
-              <td className="py-2 text-center">
-                <button type="button" onClick={() => onRemove(rowIndex)}>
-                  <TrashIcon className="text-neutral-text-tertiary h-5 w-5" />
-                </button>
+                <td className="py-2 text-center">
+                  <button type="button" onClick={() => onRemove(rowIndex)}>
+                    <TrashIcon className="text-neutral-text-tertiary h-5 w-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        ) : (
+          <tbody>
+            <tr>
+              <td
+                colSpan={templateFields.length + 3}
+                className="text-12 text-error-text-primary py-12 text-center font-medium"
+              >
+                등록된 선택지가 없습니다. &apos;선택지 추가&apos; 버튼을 눌러주세요.
               </td>
             </tr>
-          ))}
-        </tbody>
+          </tbody>
+        )}
       </table>
-
-      {rows.length === 0 && (
-        <div className="text-12 text-error-text-primary py-12 text-center font-medium">
-          등록된 선택지가 없습니다. &apos;선택지 추가&apos; 버튼을 눌러주세요.
-        </div>
-      )}
     </div>
   );
 }
