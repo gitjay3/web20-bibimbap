@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { TemplatesController } from './templates.controller';
 import { TemplatesService } from './templates.service';
+import { Template } from '@prisma/client';
 
 describe('TemplatesController', () => {
   let controller: TemplatesController;
@@ -56,12 +57,26 @@ describe('TemplatesController', () => {
 
   describe('findAll', () => {
     it('모든 템플릿 목록을 반환한다', async () => {
-      const mockTemplates = [
-        { id: 1, title: 'Template 1' },
-        { id: 2, title: 'Template 2' },
+      const mockTemplates: Template[] = [
+        {
+          id: 1,
+          title: 'Template 1',
+          description: null,
+          slotSchema: {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 2,
+          title: 'Template 2',
+          description: null,
+          slotSchema: {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ];
 
-      serviceMock.findAll.mockResolvedValue(mockTemplates as any);
+      serviceMock.findAll.mockResolvedValue(mockTemplates);
 
       const result = await controller.findAll();
 
@@ -72,13 +87,16 @@ describe('TemplatesController', () => {
 
   describe('findOne', () => {
     it('ID로 템플릿을 조회한다', async () => {
-      const mockTemplate = {
+      const mockTemplate: Template = {
         id: 1,
         title: 'Test Template',
+        description: null,
         slotSchema: { fields: [] },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      serviceMock.findOne.mockResolvedValue(mockTemplate as any);
+      serviceMock.findOne.mockResolvedValue(mockTemplate);
 
       const result = await controller.findOne(1);
 
@@ -98,14 +116,16 @@ describe('TemplatesController', () => {
   describe('update', () => {
     it('템플릿을 수정한다', async () => {
       const updateDto = { title: 'Updated Title' };
-      const mockUpdated = {
+      const mockUpdated: Template = {
         id: 1,
         title: 'Updated Title',
         description: null,
         slotSchema: { fields: [] },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      serviceMock.update.mockResolvedValue(mockUpdated as any);
+      serviceMock.update.mockResolvedValue(mockUpdated);
 
       const result = await controller.update(1, updateDto);
 
@@ -116,12 +136,16 @@ describe('TemplatesController', () => {
 
   describe('remove', () => {
     it('템플릿을 삭제한다', async () => {
-      const mockDeleted = {
+      const mockDeleted: Template = {
         id: 1,
         title: 'Deleted Template',
+        description: null,
+        slotSchema: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      serviceMock.remove.mockResolvedValue(mockDeleted as any);
+      serviceMock.remove.mockResolvedValue(mockDeleted);
 
       const result = await controller.remove(1);
 
