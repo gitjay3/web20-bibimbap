@@ -87,10 +87,16 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
   }, [template, reset, isOpen]);
 
   const onSubmit = async (data: TemplateFormValues) => {
+    // 각 필드에 고유 ID 생성 (f1, f2, f3, ...)
+    const fieldsWithIds = data.slotSchema.fields.map((field, index) => ({
+      ...field,
+      id: `f${index + 1}`,
+    }));
+
     await onSave({
       title: data.title,
       description: data.description || undefined,
-      slotSchema: data.slotSchema,
+      slotSchema: { fields: fieldsWithIds },
     });
     onClose();
   };
