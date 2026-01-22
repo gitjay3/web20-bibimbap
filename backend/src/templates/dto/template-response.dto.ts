@@ -2,12 +2,15 @@ import { Template } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 class FieldResponseDto {
+  @ApiProperty({ description: '필드 ID', example: 'field-1' })
+  id: string;
+
   @ApiProperty({ description: '필드 이름', example: '시작 시간' })
   name: string;
 
   @ApiProperty({
     description: '필드 타입',
-    enum: ['text', 'number', 'time'],
+    enum: ['text', 'number', 'time', 'datetime'],
     example: 'time',
   })
   type: string;
@@ -47,8 +50,8 @@ export class TemplateResponseDto {
     type: SlotSchemaResponseDto,
     example: {
       fields: [
-        { name: '시작 시간', type: 'time' },
-        { name: '멘토명', type: 'text' },
+        { id: 'field-1', name: '시작 시간', type: 'time' },
+        { id: 'field-2', name: '멘토명', type: 'text' },
       ],
     },
   })

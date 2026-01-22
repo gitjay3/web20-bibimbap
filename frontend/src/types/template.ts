@@ -1,6 +1,7 @@
-export type FieldType = 'text' | 'number' | 'time';
+export type FieldType = 'text' | 'number' | 'time' | 'datetime';
 
 export interface Field {
+  id: string;
   name: string;
   type: FieldType;
 }

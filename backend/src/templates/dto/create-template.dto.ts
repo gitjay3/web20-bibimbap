@@ -10,6 +10,11 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class FieldDto {
+  @ApiProperty({ description: '필드 ID', example: 'field-1' })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
   @ApiProperty({ description: '필드 이름', example: '시작 시간' })
   @IsString()
   @IsNotEmpty()
@@ -17,11 +22,11 @@ class FieldDto {
 
   @ApiProperty({
     description: '필드 타입',
-    enum: ['text', 'number', 'time'],
+    enum: ['text', 'number', 'time', 'datetime'],
     example: 'time',
   })
   @IsString()
-  @IsIn(['text', 'number', 'time'])
+  @IsIn(['text', 'number', 'time', 'datetime'])
   type: string;
 }
 
@@ -51,9 +56,9 @@ export class CreateTemplateDto {
     description: '슬롯 스키마 정의',
     example: {
       fields: [
-        { name: '시작 시간', type: 'time' },
-        { name: '멘토명', type: 'text' },
-        { name: '정원', type: 'number' },
+        { id: 'field-1', name: '시작 시간', type: 'time' },
+        { id: 'field-2', name: '멘토명', type: 'text' },
+        { id: 'field-3', name: '정원', type: 'number' },
       ],
     },
   })
