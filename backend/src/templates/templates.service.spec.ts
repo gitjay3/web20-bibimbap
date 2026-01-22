@@ -32,8 +32,8 @@ describe('TemplatesService', () => {
         description: '멘토와 함께하는 코드 리뷰 세션',
         slotSchema: {
           fields: [
-            { name: '시작 시간', type: 'time' },
-            { name: '멘토명', type: 'text' },
+            { id: 'field-1', name: '시작 시간', type: 'time' },
+            { id: 'field-2', name: '멘토명', type: 'text' },
           ],
         },
       };
@@ -63,7 +63,7 @@ describe('TemplatesService', () => {
       const createDto = {
         title: '간단한 템플릿',
         slotSchema: {
-          fields: [{ name: '시간', type: 'time' }],
+          fields: [{ id: 'field-1', name: '시간', type: 'time' }],
         },
       };
 

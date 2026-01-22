@@ -7,6 +7,7 @@ interface ButtonProps {
   variant?: 'fill' | 'outline';
   onClickHandler?: () => void;
   disabled?: boolean;
+  htmlType?: 'button' | 'submit';
 }
 
 function Button({
@@ -15,10 +16,11 @@ function Button({
   onClickHandler,
   disabled = false,
   variant = 'fill',
+  htmlType = 'button',
 }: ButtonProps) {
   return (
     <button
-      type="button"
+      type={htmlType === 'submit' ? 'submit' : 'button'}
       className={cn(
         'flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md',
         type === 'primary' ? 'w-full' : 'px-3',

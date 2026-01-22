@@ -34,7 +34,7 @@ describe('TemplatesController', () => {
         title: '코드 리뷰 멘토링',
         description: '멘토와 함께하는 코드 리뷰',
         slotSchema: {
-          fields: [{ name: '시작 시간', type: 'time' }],
+          fields: [{ id: 'field-1', name: '시작 시간', type: 'time' }],
         },
       };
 
