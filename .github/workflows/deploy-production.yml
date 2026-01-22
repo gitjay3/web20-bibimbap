@@ -117,17 +117,12 @@ jobs:
             set -e
             cd ~/bookstcamp
 
-            # 환경변수 로드
-            set -a
-            source .deploy.env
-            set +a
-
-            # 보안: 즉시 삭제
-            rm -f .deploy.env
-
-            # 배포 스크립트 실행
+            # 배포 스크립트 실행 (.deploy.env는 deploy.sh 내부에서 로드됨)
             chmod +x scripts/*.sh
             ./scripts/deploy.sh prod
+
+            # 보안: 배포 완료 후 삭제
+            rm -f .deploy.env
           EOF
 
       - name: Verify deployment
