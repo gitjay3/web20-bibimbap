@@ -1,7 +1,7 @@
 export type Track = 'COMMON' | 'WEB' | 'IOS' | 'ANDROID';
 export type Status = 'ONGOING' | 'UPCOMING' | 'ENDED';
 export type ApplicationUnit = 'INDIVIDUAL' | 'TEAM';
-export type SlotFieldType = 'text' | 'number' | 'time';
+export type SlotFieldType = 'text' | 'number' | 'date' | 'time';
 
 export interface Event {
   id: number;

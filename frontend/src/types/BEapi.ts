@@ -98,6 +98,9 @@ export interface ReservationApiResponse {
     endTime?: string;
     [key: string]: unknown;
   };
+  slotSchema?: {
+    fields: Array<{ id: string; name: string; type: string }>;
+  };
 }
 
 export interface ApplyReservationDto {

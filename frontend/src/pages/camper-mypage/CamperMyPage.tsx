@@ -21,6 +21,12 @@ interface SlotExtraInfo {
   [key: string]: unknown;
 }
 
+interface SlotSchemaField {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface MyReservation {
   id: number;
   userId: string;
@@ -33,6 +39,7 @@ interface MyReservation {
   eventTrack: Track;
   applicationUnit: ApplicationUnit;
   extraInfo?: SlotExtraInfo;
+  slotSchema?: { fields: SlotSchemaField[] };
 }
 
 const RESERVATION_STATUS_TEXT: Record<ReservationStatus | 'ENDED', string> = {
@@ -42,20 +49,18 @@ const RESERVATION_STATUS_TEXT: Record<ReservationStatus | 'ENDED', string> = {
   ENDED: '종료',
 };
 
-const EXTRA_INFO_LABELS: Record<string, string> = {
-  content: '내용',
-  eventDate: '날짜',
-  startTime: '시작',
-  endTime: '종료',
-  location: '장소',
-  mentorName: '멘토',
-};
+function getOrderedExtraInfo(
+  extraInfo?: SlotExtraInfo,
+  slotSchema?: { fields: SlotSchemaField[] },
+): { label: string; value: unknown }[] {
+  if (!extraInfo || !slotSchema?.fields) return [];
 
-const EXTRA_INFO_ORDER = ['content', 'eventDate', 'startTime', 'endTime', 'location', 'mentorName'];
-
-function getOrderedExtraInfo(extraInfo?: SlotExtraInfo): [string, unknown][] {
-  if (!extraInfo) return [];
-  return EXTRA_INFO_ORDER.filter((key) => key in extraInfo).map((key) => [key, extraInfo[key]]);
+  return slotSchema.fields
+    .filter((field) => extraInfo[field.id] !== undefined)
+    .map((field) => ({
+      label: field.name,
+      value: extraInfo[field.id],
+    }));
 }
 
 function mapApiResponseToMyReservation(res: ReservationApiResponse): MyReservation {
@@ -71,7 +76,29 @@ function mapApiResponseToMyReservation(res: ReservationApiResponse): MyReservati
     eventTrack: (res.eventTrack ?? 'COMMON') as Track,
     applicationUnit: (res.applicationUnit ?? 'INDIVIDUAL') as ApplicationUnit,
     extraInfo: res.extraInfo,
+    slotSchema: res.slotSchema,
   };
+}
+
+function getEventDateFromSchema(reservation: MyReservation): string | undefined {
+  const { slotSchema, extraInfo } = reservation;
+  if (!slotSchema?.fields || !extraInfo) return undefined;
+
+  // 1. type === 'date'인 필드 찾기
+  const dateField = slotSchema.fields.find((f) => f.type === 'date');
+  if (dateField) {
+    const value = extraInfo[dateField.id];
+    if (typeof value === 'string') return value;
+  }
+
+  // 2. fallback: 필드 이름에 '날짜'가 포함된 필드 찾기
+  const dateNameField = slotSchema.fields.find((f) => f.name.includes('날짜'));
+  if (dateNameField) {
+    const value = extraInfo[dateNameField.id];
+    if (typeof value === 'string') return value;
+  }
+
+  return undefined;
 }
 
 function formatDateWithDay(dateStr: string): string {
@@ -227,8 +254,8 @@ function FeaturedTicket({ reservation, onCancelClick }: FeaturedTicketProps) {
   const { eventTitle, eventEndTime, eventTrack, applicationUnit, status, extraInfo } = reservation;
   const isEnded = isEventEnded(eventEndTime);
   const canCancel = isCancellable(reservation);
-  const extraInfoEntries = getOrderedExtraInfo(extraInfo);
-  const eventDate = extraInfo?.eventDate;
+  const extraInfoEntries = getOrderedExtraInfo(extraInfo, reservation.slotSchema);
+  const eventDate = getEventDateFromSchema(reservation);
 
   return (
     <div className="group flex overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -266,12 +293,10 @@ function FeaturedTicket({ reservation, onCancelClick }: FeaturedTicketProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-y-2 border-t border-gray-100 bg-[#F8FAFC] px-6 py-3">
-          {extraInfoEntries.map(([key, value], idx) => (
-            <div key={key} className="flex items-center">
+          {extraInfoEntries.map(({ label, value }, idx) => (
+            <div key={label} className="flex items-center">
               <div className="flex items-center text-14">
-                <span className="mr-2 font-bold text-brand-500">
-                  {EXTRA_INFO_LABELS[key] ?? key}
-                </span>
+                <span className="mr-2 font-bold text-brand-500">{label}</span>
                 <span className="max-w-40 truncate text-gray-700">{String(value)}</span>
               </div>
               {idx < extraInfoEntries.length - 1 && (
@@ -295,8 +320,8 @@ function ReservationTicket({ reservation, onCancelClick }: ReservationTicketProp
   const isEnded = isEventEnded(eventEndTime);
   const isActive = status === 'CONFIRMED' && !isEnded;
   const canCancel = isCancellable(reservation);
-  const extraInfoEntries = getOrderedExtraInfo(extraInfo);
-  const eventDate = extraInfo?.eventDate;
+  const extraInfoEntries = getOrderedExtraInfo(extraInfo, reservation.slotSchema);
+  const eventDate = getEventDateFromSchema(reservation);
 
   return (
     <div className="group flex overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-brand-500 hover:shadow-sm">
@@ -334,11 +359,9 @@ function ReservationTicket({ reservation, onCancelClick }: ReservationTicketProp
         </div>
 
         <div className="flex items-center gap-6 border-t border-gray-100 bg-[#F8FAFC] px-5 py-2.5">
-          {extraInfoEntries.map(([key, value]) => (
-            <div key={key} className="flex items-center text-12 text-gray-700">
-              <span className="mr-2 font-bold text-brand-500">
-                {EXTRA_INFO_LABELS[key] ?? key}
-              </span>
+          {extraInfoEntries.map(({ label, value }) => (
+            <div key={label} className="flex items-center text-12 text-gray-700">
+              <span className="mr-2 font-bold text-brand-500">{label}</span>
               <span>{String(value)}</span>
             </div>
           ))}
@@ -518,14 +541,14 @@ function CamperMyPage() {
                       </h3>
                     </div>
                     <div className="mt-auto flex min-h-[120px] flex-col gap-2 border-t border-gray-100 bg-brand-50 px-5 py-4">
-                      {getOrderedExtraInfo(reservation.extraInfo).map(([key, value]) => (
-                        <div key={key} className="flex items-center text-12 text-gray-700">
-                          <span className="w-12 shrink-0 font-bold text-brand-500">
-                            {EXTRA_INFO_LABELS[key] ?? key}
-                          </span>
-                          <span className="truncate">{String(value)}</span>
-                        </div>
-                      ))}
+                      {getOrderedExtraInfo(reservation.extraInfo, reservation.slotSchema).map(
+                        ({ label, value }) => (
+                          <div key={label} className="flex items-center gap-3 text-12 text-gray-700">
+                            <span className="w-14 shrink-0 font-bold text-brand-500">{label}</span>
+                            <span className="truncate">{String(value)}</span>
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
                 );
