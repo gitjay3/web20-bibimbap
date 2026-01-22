@@ -22,3 +22,18 @@ output "db_server_id" {
   description = "DB Server ID"
   value       = ncloud_server.db.id
 }
+
+output "monitoring_server_id" {
+  description = "Monitoring Server ID"
+  value       = ncloud_server.monitoring.id
+}
+
+output "app_public_ip" {
+  description = "App Server Public IP"
+  value       = ncloud_public_ip.app.public_ip
+}
+
+output "monitoring_public_ip" {
+  description = "Monitoring Server Public IP"
+  value       = ncloud_public_ip.monitoring.public_ip
+}

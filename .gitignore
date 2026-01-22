@@ -39,6 +39,7 @@ coverage/
 
 # Environment variables
 .env
+.env.monitoring
 .deploy.env
 
 # dotenvx
