@@ -204,8 +204,9 @@ function EventDetail() {
           />
           <hr className="border-neutral-border-default" />
 
-          {/* 대기열 상태 (ONGOING일 때만 표시) */}
-          {event.status === 'ONGOING' &&
+          {/* 대기열 상태 (ONGOING일 때만 표시, 관리자 제외) */}
+          {!isAdmin &&
+            event.status === 'ONGOING' &&
             (isLoggedIn ? (
               <QueueStatus
                 position={position}
@@ -262,14 +263,16 @@ function EventDetail() {
           />
         </div>
       </div>
-      <ReservationButton
-        eventId={Number(id)}
-        isReservable={event.status === 'ONGOING' && hasToken}
-        selectedSlotId={selectedSlotId}
-        myReservation={myReservation}
-        onReservationSuccess={handleReservationSuccess}
-        onCancelSuccess={handleCancelSuccess}
-      />
+      {!isAdmin && (
+        <ReservationButton
+          eventId={Number(id)}
+          isReservable={event.status === 'ONGOING' && hasToken}
+          selectedSlotId={selectedSlotId}
+          myReservation={myReservation}
+          onReservationSuccess={handleReservationSuccess}
+          onCancelSuccess={handleCancelSuccess}
+        />
+      )}
     </div>
   );
 }
