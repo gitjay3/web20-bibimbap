@@ -38,10 +38,19 @@ export class EventSlotsService {
   async getAvailabilityByEvent(eventId: number) {
     const slots = await this.prisma.eventSlot.findMany({
       where: { eventId },
-      select: {
-        id: true,
-        currentCount: true,
-        maxCapacity: true,
+      include: {
+        reservations: {
+          where: { status: 'CONFIRMED' },
+          select: {
+            user: {
+              select: {
+                name: true,
+                username: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { id: 'asc' },
     });
@@ -56,6 +65,11 @@ export class EventSlotsService {
         currentCount: slot.currentCount,
         remainingSeats: Math.max(0, slot.maxCapacity - slot.currentCount),
         isAvailable: slot.currentCount < slot.maxCapacity,
+        reservations: slot.reservations.map((r) => ({
+          name: r.user.name || r.user.username,
+          username: r.user.username,
+          avatarUrl: r.user.avatarUrl,
+        })),
       })),
       timestamp: new Date().toISOString(),
     };
@@ -66,10 +80,19 @@ export class EventSlotsService {
       where: {
         id: { in: slotIds },
       },
-      select: {
-        id: true,
-        currentCount: true,
-        maxCapacity: true,
+      include: {
+        reservations: {
+          where: { status: 'CONFIRMED' },
+          select: {
+            user: {
+              select: {
+                name: true,
+                username: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -78,6 +101,11 @@ export class EventSlotsService {
       currentCount: slot.currentCount,
       remainingSeats: Math.max(0, slot.maxCapacity - slot.currentCount),
       isAvailable: slot.currentCount < slot.maxCapacity,
+      reservations: slot.reservations.map((r) => ({
+        name: r.user.name || r.user.username,
+        username: r.user.username,
+        avatarUrl: r.user.avatarUrl,
+      })),
     }));
 
     return {

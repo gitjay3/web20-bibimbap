@@ -21,6 +21,11 @@ export interface EventSlot {
   currentCount: number;
   version: number;
   extraInfo: Record<string, string>;
+  reservations?: {
+    name: string;
+    username: string;
+    avatarUrl: string;
+  }[];
 }
 
 export interface SlotSchemaField {
