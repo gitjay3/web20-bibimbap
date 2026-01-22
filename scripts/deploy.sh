@@ -151,7 +151,7 @@ log_info "DATABASE_URL 시작: ${MIGRATION_DATABASE_URL:0:15}..."
 # DATABASE_URL을 export하고 -e 플래그로 쉘 환경변수 참조
 export DATABASE_URL="$MIGRATION_DATABASE_URL"
 
-if docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL backend npx prisma migrate deploy; then
+if run_with_env docker compose -f "$COMPOSE_FILE" run --rm -e DATABASE_URL backend npx prisma migrate deploy; then
     log_info "마이그레이션 성공"
 else
     log_error "마이그레이션 실패"
