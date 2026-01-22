@@ -1,20 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import useOutsideClick from '@/hooks/useOutsideClick';
-
-export type SlotFieldType = 'text' | 'number' | 'time';
-
-export type Template = {
-  id: string;
-  title: string;
-  description: string;
-  tags: string[];
-  fields: Array<{ id: string; name: string; type: SlotFieldType }>;
-};
+import type { Template } from '@/types/template';
 
 type Props = {
   open: boolean;
   templates: Template[];
+  isLoading: boolean;
   manageTemplatesHref: string;
   onClose: () => void;
   onSelect: (template: Template) => void;
@@ -23,6 +15,7 @@ type Props = {
 export default function TemplateSelectModal({
   open,
   templates,
+  isLoading,
   manageTemplatesHref,
   onClose,
   onSelect,
@@ -44,6 +37,58 @@ export default function TemplateSelectModal({
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [open, onClose]);
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="text-neutral-text-tertiary py-20 text-center">
+          템플릿을 불러오는 중입니다...
+        </div>
+      );
+    }
+
+    if (templates.length === 0) {
+      return (
+        <div className="text-neutral-text-tertiary py-20 text-center">
+          등록된 템플릿이 없습니다.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {templates.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onSelect(t)}
+            className="border-neutral-border-default hover:bg-neutral-surface-default flex w-full items-center justify-between gap-4 rounded-lg border px-5 py-4 text-left transition"
+          >
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="text-16 text-neutral-text-primary font-semibold">{t.title}</div>
+              {t.description && (
+                <div className="text-13 text-neutral-text-tertiary">{t.description}</div>
+              )}
+
+              <div className="flex flex-wrap gap-1.5">
+                {t.slotSchema.fields.map((field) => (
+                  <span
+                    key={field.id}
+                    className="bg-neutral-border-default/70 text-14 text-neutral-text-tertiary rounded-full px-2 py-1"
+                  >
+                    {field.name}
+                  </span>
+                ))}
+                <span className="bg-neutral-border-default/70 text-14 text-neutral-text-tertiary rounded-full px-2 py-1">
+                  정원
+                </span>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   if (!open) return null;
 
@@ -70,34 +115,9 @@ export default function TemplateSelectModal({
           </button>
         </div>
 
-        {/* List */}
+        {/* List Content */}
         <div className="px-6 pt-5 pb-4">
-          <div className="space-y-3">
-            {templates.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => onSelect(t)}
-                className="border-neutral-border-default hover:bg-neutral-surface-default flex w-full items-center justify-between gap-4 rounded-lg border px-5 py-4 text-left transition"
-              >
-                <div className="flex min-w-0 flex-col gap-2">
-                  <div className="text-16 text-neutral-text-primary font-semibold">{t.title}</div>
-                  <div className="text-13 text-neutral-text-tertiary">{t.description}</div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {t.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-neutral-border-default/70 text-14 text-neutral-text-tertiary rounded-full px-2 py-1"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+          <div className="max-h-96 overflow-y-auto">{renderContent()}</div>
 
           {/* Footer */}
           <div className="mt-6 flex justify-end py-4">

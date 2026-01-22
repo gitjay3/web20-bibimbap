@@ -1,14 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react'; // useMemo 대신 useEffect, useState 추가
 import { useParams } from 'react-router';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
+import { getTemplates } from '@/api/template';
+import type { Field, Template } from '@/types/template';
 import type { EventFormValues } from '../../schema';
 import SectionCard from '../SectionCard';
-import TemplateSelectModal, { type Template, type SlotFieldType } from './TemplateSelectModal';
+import TemplateSelectModal from './TemplateSelectModal';
 import SlotActionsBar from './SlotActionsBar';
 import SlotTable from './SlotTable';
 
 export default function SlotOptionsSection() {
   const { orgId } = useParams<{ orgId: string }>();
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     control,
@@ -19,7 +23,7 @@ export default function SlotOptionsSection() {
   const templateFields = (useWatch({
     control,
     name: 'slotSchema.fields',
-  }) || []) as Array<{ id: string; name: string; type: SlotFieldType }>;
+  }) || []) as Field[];
 
   const { fields, append, remove, replace } = useFieldArray({
     control,
@@ -28,23 +32,23 @@ export default function SlotOptionsSection() {
 
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
-  const templates: Template[] = useMemo(
-    () => [
-      {
-        id: 'tpl_1',
-        title: '시니어 리뷰어 피드백',
-        description: '리뷰어와 시간을 선택하는 템플릿',
-        tags: ['시작 시간', '리뷰어', '정원'],
-        fields: [
-          { id: 'f_1', name: '시작 시간', type: 'time' },
-          { id: 'f_2', name: '리뷰어', type: 'text' },
-        ],
-      },
-    ],
-    [],
-  );
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getTemplates();
+        setTemplates(data);
+      } catch (error) {
+        console.error('템플릿을 불러오는데 실패했습니다:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const buildDefaultSlotRow = (fieldsToUse: Array<{ id: string; type: SlotFieldType }>) => {
+    fetchTemplates();
+  }, []);
+
+  const buildDefaultSlotRow = (fieldsToUse: Field[]) => {
     const base = fieldsToUse.reduce(
       (acc, f) => ({ ...acc, [f.id]: f.type === 'number' ? 0 : '' }),
       {} as Record<string, unknown>,
@@ -57,8 +61,9 @@ export default function SlotOptionsSection() {
   };
 
   const handleSelectTemplate = (t: Template) => {
-    setValue('slotSchema.fields', t.fields, { shouldDirty: true });
-    replace([buildDefaultSlotRow(t.fields)]);
+    const newFields = t.slotSchema.fields;
+    setValue('slotSchema.fields', newFields, { shouldDirty: true });
+    replace([buildDefaultSlotRow(newFields)]);
     setIsTemplateModalOpen(false);
   };
 
@@ -88,6 +93,7 @@ export default function SlotOptionsSection() {
       <TemplateSelectModal
         open={isTemplateModalOpen}
         templates={templates}
+        isLoading={isLoading}
         manageTemplatesHref={manageTemplatesHref}
         onClose={() => setIsTemplateModalOpen(false)}
         onSelect={handleSelectTemplate}
