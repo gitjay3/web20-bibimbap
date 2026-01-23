@@ -12,6 +12,7 @@ import {
   SlotFullException,
   OptimisticLockException,
   SlotNotFoundException,
+  DuplicateReservationException,
 } from '../../common/exceptions/api.exception';
 import { MetricsService } from '../metrics/metrics.service';
 
@@ -98,7 +99,7 @@ export class ReservationsProcessor extends WorkerHost {
         select: { id: true, status: true },
       });
 
-      if (existing) return;
+      if (existing) throw new DuplicateReservationException();
 
       // 낙관적 락으로 슬롯 업데이트
       const updated = await tx.eventSlot.updateMany({

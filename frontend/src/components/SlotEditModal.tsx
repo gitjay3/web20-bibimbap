@@ -99,27 +99,26 @@ export default function SlotEditModal({
         <h2 className="text-lg font-semibold">{mode === 'create' ? '일정 추가' : '일정 수정'}</h2>
 
         <div className="mt-4 flex flex-col gap-4">
-          {slotSchema &&
-            FIELD_ORDER.filter((fieldId) => fieldId in slotSchema).map((fieldId) => {
-              const field = slotSchema[fieldId];
-              return (
-                <div key={fieldId}>
-                  <label
-                    htmlFor={`slot-field-${fieldId}`}
-                    className="text-neutral-text-primary block text-sm font-medium"
-                  >
-                    {field.label}
-                  </label>
-                  <input
-                    id={`slot-field-${fieldId}`}
-                    type={field.type === 'time' ? 'time' : 'text'}
-                    value={extraInfo[fieldId] || ''}
-                    onChange={(e) => setExtraInfo({ ...extraInfo, [fieldId]: e.target.value })}
-                    className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-2"
-                  />
-                </div>
-              );
-            })}
+          {slotSchema?.fields
+            .slice()
+            .sort((a, b) => FIELD_ORDER.indexOf(a.id) - FIELD_ORDER.indexOf(b.id))
+            .map((field) => (
+              <div key={field.id}>
+                <label
+                  htmlFor={`slot-field-${field.id}`}
+                  className="text-neutral-text-primary block text-sm font-medium"
+                >
+                  {field.name}
+                </label>
+                <input
+                  id={`slot-field-${field.id}`}
+                  type={field.type === 'time' ? 'time' : 'text'}
+                  value={extraInfo[field.id] || ''}
+                  onChange={(e) => setExtraInfo({ ...extraInfo, [field.id]: e.target.value })}
+                  className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-2"
+                />
+              </div>
+            ))}
 
           <div>
             <label
