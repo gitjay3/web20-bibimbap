@@ -15,8 +15,8 @@ export default function EventCreatePage() {
   const navigate = useNavigate();
   const { orgId, eventId } = useParams<{ orgId: string; eventId?: string }>();
   const isEditMode = !!eventId;
-  const [isLoading, setIsLoading] = useState(true);
-  const [originalSlots, setOriginalSlots] = useState<EventSlot[]>([]);
+  const [_isLoading, setIsLoading] = useState(true);
+  const [_originalSlots, setOriginalSlots] = useState<EventSlot[]>([]);
 
   if (!orgId) {
     throw new Error('organizationId가 없습니다.');

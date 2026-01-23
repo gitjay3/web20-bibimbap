@@ -8,6 +8,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
 import { CreateEventSlotDto } from './dto/create-event-slot.dto';
 
+interface ReservationUser {
+  user: {
+    name: string | null;
+    username: string;
+    avatarUrl: string | null;
+  };
+}
+
 @Injectable()
 export class EventSlotsService {
   constructor(private prisma: PrismaService) {}
@@ -72,11 +80,13 @@ export class EventSlotsService {
         currentCount: slot.currentCount,
         remainingSeats: Math.max(0, slot.maxCapacity - slot.currentCount),
         isAvailable: slot.currentCount < slot.maxCapacity,
-        reservations: slot.reservations.map((r) => ({
-          name: r.user.name || r.user.username,
-          username: r.user.username,
-          avatarUrl: r.user.avatarUrl,
-        })),
+        reservations: (slot.reservations as unknown as ReservationUser[]).map(
+          (r: ReservationUser) => ({
+            name: r.user.name || r.user.username,
+            username: r.user.username,
+            avatarUrl: r.user.avatarUrl,
+          }),
+        ),
       })),
       timestamp: new Date().toISOString(),
     };
@@ -108,11 +118,13 @@ export class EventSlotsService {
       currentCount: slot.currentCount,
       remainingSeats: Math.max(0, slot.maxCapacity - slot.currentCount),
       isAvailable: slot.currentCount < slot.maxCapacity,
-      reservations: slot.reservations.map((r) => ({
-        name: r.user.name || r.user.username,
-        username: r.user.username,
-        avatarUrl: r.user.avatarUrl,
-      })),
+      reservations: (slot.reservations as unknown as ReservationUser[]).map(
+        (r: ReservationUser) => ({
+          name: r.user.name || r.user.username,
+          username: r.user.username,
+          avatarUrl: r.user.avatarUrl,
+        }),
+      ),
     }));
 
     return {

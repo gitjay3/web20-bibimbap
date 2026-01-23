@@ -92,7 +92,9 @@ describe('ReservationsService', () => {
 
       prismaMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
       prismaMock.reservation.findFirst.mockResolvedValue(null); // 중복 예약 없음
-      prismaMock.camperOrganization.findUnique.mockResolvedValue(mockMembership);
+      prismaMock.camperOrganization.findUnique.mockResolvedValue(
+        mockMembership,
+      );
       redisMock.decrementStock.mockResolvedValue(true);
 
       const result = await service.apply(userId, dto);
@@ -131,7 +133,9 @@ describe('ReservationsService', () => {
 
       prismaMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
       prismaMock.reservation.findFirst.mockResolvedValue(null);
-      prismaMock.camperOrganization.findUnique.mockResolvedValue(mockMembership);
+      prismaMock.camperOrganization.findUnique.mockResolvedValue(
+        mockMembership,
+      );
       redisMock.decrementStock.mockResolvedValue(false);
 
       await expect(service.apply(userId, dto)).rejects.toThrow(

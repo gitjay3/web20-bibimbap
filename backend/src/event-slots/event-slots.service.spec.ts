@@ -103,8 +103,20 @@ describe('EventSlotsService', () => {
       const result = await service.getAvailabilityByEvent(1);
 
       expect(result.slots).toEqual([
-        { slotId: 1, currentCount: 5, remainingSeats: 5, isAvailable: true, reservations: [] },
-        { slotId: 2, currentCount: 10, remainingSeats: 0, isAvailable: false, reservations: [] },
+        {
+          slotId: 1,
+          currentCount: 5,
+          remainingSeats: 5,
+          isAvailable: true,
+          reservations: [],
+        },
+        {
+          slotId: 2,
+          currentCount: 10,
+          remainingSeats: 0,
+          isAvailable: false,
+          reservations: [],
+        },
       ]);
       expect(result.timestamp).toBeDefined();
     });
@@ -133,8 +145,20 @@ describe('EventSlotsService', () => {
       const result = await service.getAvailability([1, 2]);
 
       expect(result.slots).toEqual([
-        { slotId: 1, currentCount: 3, remainingSeats: 7, isAvailable: true, reservations: [] },
-        { slotId: 2, currentCount: 8, remainingSeats: 0, isAvailable: false, reservations: [] },
+        {
+          slotId: 1,
+          currentCount: 3,
+          remainingSeats: 7,
+          isAvailable: true,
+          reservations: [],
+        },
+        {
+          slotId: 2,
+          currentCount: 8,
+          remainingSeats: 0,
+          isAvailable: false,
+          reservations: [],
+        },
       ]);
       expect(result.timestamp).toBeDefined();
     });
