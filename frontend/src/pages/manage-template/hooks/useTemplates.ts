@@ -1,12 +1,7 @@
-import { useCallback, useEffect, useOptimistic, useState } from 'react';
+import { useCallback, useEffect, useOptimistic, useState, startTransition } from 'react';
 import { toast } from 'sonner';
 import type { CreateTemplateDto, Template } from '@/types/template';
-import {
-  getTemplates,
-  createTemplate,
-  updateTemplate,
-  deleteTemplate,
-} from '@/api/template';
+import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from '@/api/template';
 
 type OptimisticAction =
   | { type: 'add'; template: Template }
@@ -24,9 +19,7 @@ function useTemplates() {
         case 'add':
           return [...state, action.template];
         case 'update':
-          return state.map((t) =>
-            t.id === action.template.id ? action.template : t,
-          );
+          return state.map((t) => (t.id === action.template.id ? action.template : t));
         case 'delete':
           return state.filter((t) => t.id !== action.id);
         default:
@@ -61,7 +54,9 @@ function useTemplates() {
         updatedAt: new Date().toISOString(),
       };
 
-      addOptimistic({ type: 'add', template: optimisticTemplate });
+      startTransition(() => {
+        addOptimistic({ type: 'add', template: optimisticTemplate });
+      });
 
       try {
         const created = await createTemplate(dto);
@@ -79,9 +74,7 @@ function useTemplates() {
   const editTemplate = useCallback(
     async (id: number, dto: CreateTemplateDto) => {
       const current = templates.find((t) => t.id === id);
-      if (!current) {
-        throw new Error('Template not found');
-      }
+      if (!current) throw new Error('Template not found');
 
       const optimisticTemplate: Template = {
         ...current,
@@ -90,7 +83,9 @@ function useTemplates() {
         updatedAt: new Date().toISOString(),
       };
 
-      addOptimistic({ type: 'update', template: optimisticTemplate });
+      startTransition(() => {
+        addOptimistic({ type: 'update', template: optimisticTemplate });
+      });
 
       try {
         const updated = await updateTemplate(id, dto);
@@ -110,7 +105,9 @@ function useTemplates() {
       // eslint-disable-next-line no-alert
       if (!window.confirm('정말 삭제하시겠습니까?')) return false;
 
-      addOptimistic({ type: 'delete', id });
+      startTransition(() => {
+        addOptimistic({ type: 'delete', id });
+      });
 
       try {
         await deleteTemplate(id);

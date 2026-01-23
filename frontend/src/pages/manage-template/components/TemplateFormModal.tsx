@@ -11,6 +11,8 @@ import PlusIcon from '@/assets/icons/plus.svg?react';
 import TrashIcon from '@/assets/icons/trash.svg?react';
 import FloppyDiskIcon from '@/assets/icons/floppy-disk.svg?react';
 
+const makeFieldId = () => crypto.randomUUID();
+
 const templateSchema = z.object({
   title: z.string().min(1, '템플릿 이름을 입력해주세요.'),
   description: z.string().optional(),
@@ -18,8 +20,9 @@ const templateSchema = z.object({
     fields: z
       .array(
         z.object({
+          id: z.string(),
           name: z.string().min(1, '필드 이름을 입력해주세요.'),
-          type: z.enum(['text', 'number', 'time']),
+          type: z.enum(['text', 'number', 'time', 'datetime']),
         }),
       )
       .min(1, '최소 1개의 필드가 필요합니다.'),
@@ -57,7 +60,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
       title: '',
       description: '',
       slotSchema: {
-        fields: [{ name: '', type: 'text' }],
+        fields: [{ id: makeFieldId(), name: '', type: 'text' }],
       },
     },
   });
@@ -79,7 +82,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
         title: '',
         description: '',
         slotSchema: {
-          fields: [{ name: '', type: 'text' }],
+          fields: [{ id: makeFieldId(), name: '', type: 'text' }],
         },
       });
     }
@@ -95,7 +98,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
   };
 
   const handleAddField = () => {
-    append({ name: '', type: 'text' });
+    append({ id: makeFieldId(), name: '', type: 'text' });
   };
 
   return (
@@ -104,7 +107,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
         {/* 템플릿 이름 + 설명 */}
         <div className="flex gap-4">
           <div className="flex-1">
-            <label htmlFor={titleId} className="mb-2 block text-16 font-bold">
+            <label htmlFor={titleId} className="text-16 mb-2 block font-bold">
               템플릿 이름
             </label>
             <TextInput
@@ -113,12 +116,10 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
               /* eslint-disable-next-line react/jsx-props-no-spreading */
               {...register('title')}
             />
-            {errors.title && (
-              <p className="text-12 mt-1 text-red-500">{errors.title.message}</p>
-            )}
+            {errors.title && <p className="text-12 mt-1 text-red-500">{errors.title.message}</p>}
           </div>
           <div className="flex-1">
-            <label htmlFor={descriptionId} className="mb-2 block text-16 font-bold">
+            <label htmlFor={descriptionId} className="text-16 mb-2 block font-bold">
               설명 (선택)
             </label>
             <TextInput
@@ -136,7 +137,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
             <span className="text-16 font-bold">필드 정의</span>
             <button
               type="button"
-              className="border-neutral-border-default text-neutral-text-secondary flex cursor-pointer items-center gap-1 rounded-md border bg-white px-3 py-1.5 text-14"
+              className="border-neutral-border-default text-neutral-text-secondary text-14 flex cursor-pointer items-center gap-1 rounded-md border bg-white px-3 py-1.5"
               onClick={handleAddField}
             >
               <PlusIcon className="h-4 w-4" />
@@ -146,7 +147,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
 
           {/* 테이블 헤더 */}
           <div className="border-neutral-border-default rounded-lg border">
-            <div className="text-neutral-text-tertiary border-neutral-border-default flex border-b bg-gray-50 text-12">
+            <div className="text-neutral-text-tertiary border-neutral-border-default text-12 flex border-b bg-gray-50">
               <div className="w-12 px-3 py-2 text-center">순서</div>
               <div className="flex-1 px-3 py-2">필드 이름 (화면에 표시될 이름)</div>
               <div className="w-44 px-3 py-2">데이터 타입</div>
@@ -155,9 +156,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
 
             {/* 정원 기본 필드 (고정) */}
             <div className="border-neutral-border-default flex items-center border-b bg-gray-50/50">
-              <div className="text-neutral-text-tertiary w-12 px-3 py-2 text-center text-14">
-                -
-              </div>
+              <div className="text-neutral-text-tertiary text-14 w-12 px-3 py-2 text-center">-</div>
               <div className="flex flex-1 items-center gap-2 px-3 py-2">
                 <span className="text-neutral-text-secondary text-14">정원</span>
               </div>
@@ -173,7 +172,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
                 key={field.id}
                 className="border-neutral-border-default flex items-center border-b last:border-b-0"
               >
-                <div className="text-neutral-text-secondary w-12 px-3 py-2 text-center text-14">
+                <div className="text-neutral-text-secondary text-14 w-12 px-3 py-2 text-center">
                   {index + 1}
                 </div>
                 <div className="flex-1 px-3 py-2">
