@@ -22,11 +22,11 @@ class FieldDto {
 
   @ApiProperty({
     description: '필드 타입',
-    enum: ['text', 'number', 'time', 'datetime'],
+    enum: ['text', 'number', 'date', 'time'],
     example: 'time',
   })
   @IsString()
-  @IsIn(['text', 'number', 'time', 'datetime'])
+  @IsIn(['text', 'number', 'date', 'time'])
   type: string;
 }
 

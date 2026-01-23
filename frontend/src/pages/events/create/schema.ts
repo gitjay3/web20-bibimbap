@@ -20,7 +20,7 @@ export const eventSchema = z
         z.object({
           id: z.string(),
           name: z.string(),
-          type: z.enum(['text', 'number', 'time', 'datetime']),
+          type: z.enum(['text', 'number', 'date', 'time']),
         }),
       ),
     }),

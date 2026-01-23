@@ -14,7 +14,7 @@ import {
   IsIn,
 } from 'class-validator';
 
-type SlotFieldType = 'text' | 'number' | 'time';
+type SlotFieldType = 'text' | 'number' | 'date' | 'time';
 
 class CreateEventSlotDto {
   @IsInt()
@@ -34,7 +34,7 @@ class SlotSchemaFieldDto {
   @IsNotEmpty()
   name: string;
 
-  @IsIn(['text', 'number', 'time'])
+  @IsIn(['text', 'number', 'date', 'time'])
   type: SlotFieldType;
 }
 

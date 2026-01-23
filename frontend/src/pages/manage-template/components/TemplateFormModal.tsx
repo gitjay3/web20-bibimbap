@@ -22,7 +22,7 @@ const templateSchema = z.object({
         z.object({
           id: z.string(),
           name: z.string().min(1, '필드 이름을 입력해주세요.'),
-          type: z.enum(['text', 'number', 'time', 'datetime']),
+          type: z.enum(['text', 'number', 'date', 'time']),
         }),
       )
       .min(1, '최소 1개의 필드가 필요합니다.'),
@@ -34,6 +34,7 @@ type TemplateFormValues = z.infer<typeof templateSchema>;
 const fieldTypeOptions = [
   { key: 'text' as const, label: '텍스트 (문자열)' },
   { key: 'number' as const, label: '숫자' },
+  { key: 'date' as const, label: '날짜 (YYYY-MM-DD)' },
   { key: 'time' as const, label: '시간 (HH:MM)' },
 ];
 
@@ -89,10 +90,16 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
   }, [template, reset, isOpen]);
 
   const onSubmit = async (data: TemplateFormValues) => {
+    // 각 필드에 고유 ID 생성 (f1, f2, f3, ...)
+    const fieldsWithIds = data.slotSchema.fields.map((field, index) => ({
+      ...field,
+      id: `f${index + 1}`,
+    }));
+
     await onSave({
       title: data.title,
       description: data.description || undefined,
-      slotSchema: data.slotSchema,
+      slotSchema: { fields: fieldsWithIds },
     });
     onClose();
   };

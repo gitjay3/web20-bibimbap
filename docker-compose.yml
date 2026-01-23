@@ -201,6 +201,8 @@ services:
     image: prom/node-exporter:latest
     container_name: bookstcamp-node-exporter
     restart: unless-stopped
+    profiles:
+      - production
     command:
       - "--path.rootfs=/host"
     volumes:

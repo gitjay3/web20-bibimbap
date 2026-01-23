@@ -374,7 +374,9 @@ export class OrganizationsService {
       const username = row.getCell(3).text?.trim();
       const trackRaw = row.getCell(4).text?.trim()?.toUpperCase();
       const groupNumberStr = row.getCell(5).text?.trim();
-      const groupNumber = groupNumberStr ? parseInt(groupNumberStr, 10) : undefined;
+      const groupNumber = groupNumberStr
+        ? parseInt(groupNumberStr, 10)
+        : undefined;
 
       if (!camperId || !name || !username || !trackRaw) return;
 

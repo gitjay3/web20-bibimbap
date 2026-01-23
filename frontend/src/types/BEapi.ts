@@ -7,7 +7,7 @@ export type CreateEventRequest = {
   startTime: string;
   endTime: string;
   slotSchema: {
-    fields: Array<{ id: string; name: string; type: 'text' | 'number' | 'time' | 'datetime' }>;
+    fields: Array<{ id: string; name: string; type: 'text' | 'number' | 'date' | 'time' }>;
   };
   slots: Array<Record<string, unknown>>;
 };
@@ -107,6 +107,9 @@ export interface ReservationApiResponse {
     startTime?: string;
     endTime?: string;
     [key: string]: unknown;
+  };
+  slotSchema?: {
+    fields: Array<{ id: string; name: string; type: string }>;
   };
 }
 

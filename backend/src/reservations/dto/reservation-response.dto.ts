@@ -87,6 +87,13 @@ export class ReservationResponseDto {
   })
   extraInfo?: Record<string, unknown>;
 
+  @ApiProperty({
+    description: '슬롯 스키마 (필드 정의)',
+    example: { fields: [{ id: 'f1', name: '날짜', type: 'date' }] },
+    required: false,
+  })
+  slotSchema?: { fields: Array<{ id: string; name: string; type: string }> };
+
   constructor(reservation: Reservation | ReservationWithRelations) {
     this.id = reservation.id;
     this.userId = reservation.userId;
@@ -102,6 +109,9 @@ export class ReservationResponseDto {
       this.eventTrack = reservation.slot.event.track;
       this.applicationUnit = reservation.slot.event.applicationUnit;
       this.extraInfo = reservation.slot.extraInfo as Record<string, unknown>;
+      this.slotSchema = reservation.slot.event.slotSchema as {
+        fields: Array<{ id: string; name: string; type: string }>;
+      };
     }
   }
 }

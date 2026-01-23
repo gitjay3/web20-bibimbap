@@ -42,6 +42,7 @@ export default function SlotTable({
 
   const getPlaceholder = (field: { name: string; type: SlotFieldType }) => {
     if (field.type === 'number') return '0';
+    if (field.type === 'date') return 'YYYY-MM-DD';
     if (field.type === 'time') return 'HH:MM';
     return `${field.name} 입력`;
   };

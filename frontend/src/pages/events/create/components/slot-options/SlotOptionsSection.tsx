@@ -18,8 +18,8 @@ const FALLBACK_FIELDS: Field[] = [
 const DEFAULT_VALUE_BY_TYPE: Record<Field['type'], unknown> = {
   number: 0,
   text: '',
+  date: '',
   time: '',
-  datetime: '',
 };
 
 export default function SlotOptionsSection() {
