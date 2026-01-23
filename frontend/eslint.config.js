@@ -55,6 +55,12 @@ export default [
           tsx: 'never',
         },
       ],
+      'jsx-a11y/label-has-associated-control': [
+        'error',
+        {
+          some: ['nesting', 'id'],
+        },
+      ],
       // Allow React to be imported automatically (React 17+)
       'react/react-in-jsx-scope': 'off',
       // Allow JSX in .tsx files
@@ -85,6 +91,8 @@ export default [
           destructuredArrayIgnorePattern: '^_', // 배열 구조분해
         },
       ],
+      // 고유 ID가 없는 배열 항목에 index 사용 허용 (warn으로 완화)
+      'react/no-array-index-key': 'warn',
     },
   },
   prettier,

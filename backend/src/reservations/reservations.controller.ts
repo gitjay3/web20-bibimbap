@@ -21,6 +21,8 @@ import { ApplyReservationDto } from './dto/apply-reservation.dto';
 import { ReservationResponseDto } from './dto/reservation-response.dto';
 import { ErrorResponseDto } from '../common/dto/error-response.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { UseGuards } from '@nestjs/common';
+import { QueueTokenGuard } from '../queue/guards/queue-token.guard';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -45,6 +47,7 @@ export class ReservationsController {
     description: '슬롯을 찾을 수 없음',
     type: ErrorResponseDto,
   })
+  @UseGuards(QueueTokenGuard)
   async apply(
     @CurrentUser('id') userId: string,
     @Body() applyReservationDto: ApplyReservationDto,

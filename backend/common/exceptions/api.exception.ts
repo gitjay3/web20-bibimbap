@@ -11,6 +11,24 @@ export class ApiException extends HttpException {
 }
 
 // TODO : 예외 리스트 필요시 추가
+export class ReservationPeriodException extends ApiException {
+  constructor() {
+    super('예약 가능한 기간이 아닙니다', HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class ForbiddenOrganizationException extends ApiException {
+  constructor() {
+    super('이벤트 참여 권한이 없습니다', HttpStatus.FORBIDDEN);
+  }
+}
+
+export class ForbiddenTrackException extends ApiException {
+  constructor() {
+    super('이벤트 트랙 조건에 맞지 않습니다', HttpStatus.FORBIDDEN);
+  }
+}
+
 export class SlotFullException extends ApiException {
   constructor() {
     super('정원이 마감되었습니다', HttpStatus.BAD_REQUEST);

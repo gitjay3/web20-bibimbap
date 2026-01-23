@@ -8,6 +8,12 @@ import {
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { EventSlotsService } from './event-slots.service';
 import { AvailabilityOnlyResponseDto } from './dto/slot-availability-response.dto';
+import { Patch, Delete, Param, Body } from '@nestjs/common';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { Role } from '@prisma/client';
+import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
+import { Post } from '@nestjs/common';
+import { CreateEventSlotDto } from './dto/create-event-slot.dto';
 
 @ApiTags('event-slots')
 @Controller('event-slots')
@@ -66,5 +72,36 @@ export class EventSlotsController {
     }
 
     throw new BadRequestException('식별 ID는 필수입니다.');
+  }
+
+  @Patch(':id')
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '슬롯 수정' })
+  @ApiResponse({ status: 200, description: '수정 성공' })
+  @ApiResponse({ status: 404, description: '슬롯 없음' })
+  async updateSlot(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateEventSlotDto,
+  ) {
+    return this.eventSlotsService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '슬롯 삭제' })
+  @ApiResponse({ status: 200, description: '삭제 성공' })
+  @ApiResponse({ status: 400, description: '예약이 있어 삭제 불가' })
+  @ApiResponse({ status: 404, description: '슬롯 없음' })
+  async deleteSlot(@Param('id', ParseIntPipe) id: number) {
+    return this.eventSlotsService.delete(id);
+  }
+
+  @Post()
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '슬롯 생성' })
+  @ApiResponse({ status: 201, description: '생성 성공' })
+  @ApiResponse({ status: 404, description: '이벤트 없음' })
+  async createSlot(@Body() createDto: CreateEventSlotDto) {
+    return this.eventSlotsService.create(createDto);
   }
 }

@@ -9,6 +9,7 @@ import {
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
+import { ReservationStatus } from '@prisma/client';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -39,7 +40,9 @@ async function main() {
       passwordHash: hashedPassword,
       user: {
         create: {
+          username: 'admin',
           name: '시스템 관리자',
+          avatarUrl: 'https://i.pravatar.cc/150?u=admin',
           role: Role.ADMIN,
         },
       },
@@ -64,7 +67,9 @@ async function main() {
       providerId: '12345678',
       user: {
         create: {
+          username: 'testuser',
           name: '테스트 사용자',
+          avatarUrl: 'https://i.pravatar.cc/150?u=testuser',
           role: Role.USER,
         },
       },
@@ -74,12 +79,28 @@ async function main() {
 
   console.log('✓ 테스트 사용자 생성:', testUser.user.id);
 
-  console.log('✓ 테스트 사용자 생성:', testUser.user.id);
+  // 3-0. 추가 테스트 사용자들 (명단 표시 확인용 - 실제 가입 계정과 겹치지 않게 변경)
+  const extraUsers = await Promise.all([
+    { username: 'testuser1', name: '김코딩', avatar: 'https://i.pravatar.cc/150?u=testuser1' },
+    { username: 'testuser2', name: '박직원', avatar: 'https://i.pravatar.cc/150?u=testuser2' },
+    { username: 'testuser3', name: '이캠퍼', avatar: 'https://i.pravatar.cc/150?u=testuser3' },
+    { username: 'testuser4', name: '최멘토', avatar: 'https://i.pravatar.cc/150?u=testuser4' },
+  ].map(u => 
+    prisma.authAccount.create({
+      data: {
+        provider: AuthProvider.GITHUB,
+        providerId: `mock_${u.username}`,
+        user: { create: { username: u.username, name: u.name, avatarUrl: u.avatar, role: Role.USER } }
+      },
+      include: { user: true }
+    })
+  ));
+  console.log('✓ 추가 테스트 사용자 4명 생성 완료');
 
   // 3-1. 조직(Organization) 생성
   const organization = await prisma.organization.create({
     data: {
-      name: '부스트캠프 9기',
+      name: '부스트캠프 10기 웹 풀스택 멤버십',
     },
   });
   console.log('✓ 조직 생성:', organization.name);
@@ -97,6 +118,39 @@ async function main() {
     },
   });
 
+  await prisma.camperPreRegistration.create({
+    data: {
+      organizationId: organization.id,
+      camperId: 'J049',
+      name: '김시영',
+      username: 'wfs0502',
+      track: Track.WEB,
+      status: PreRegStatus.INVITED,
+    },
+  });
+
+  await prisma.camperPreRegistration.create({
+    data: {
+      organizationId: organization.id,
+      camperId: 'J116',
+      name: '박재성',
+      username: 'gitjay3',
+      track: Track.WEB,
+      status: PreRegStatus.INVITED,
+    },
+  });
+
+  await prisma.camperPreRegistration.create({
+    data: {
+      organizationId: organization.id,
+      camperId: 'J248',
+      name: '정희재',
+      username: 'RainWhales',
+      track: Track.WEB,
+      status: PreRegStatus.INVITED,
+    },
+  });
+
   // (2) 탈퇴/재가입 시나리오 등을 위한 가입 유저 (CLAIMED) - 시드에서는 테스트용으로 미리 연결해둘 수도 있음
   // 여기서는 로직 테스트를 위해 'testuser'를 위한 사전등록 데이터를 생성해둡니다.
   await prisma.camperPreRegistration.create({
@@ -104,7 +158,7 @@ async function main() {
       organizationId: organization.id,
       camperId: 'J999',
       name: '테스트 사용자',
-      username: '12345678',
+      username: 'testuser',
       track: Track.ANDROID,
       status: PreRegStatus.CLAIMED,
       claimedUserId: testUser.user.id,
@@ -116,10 +170,23 @@ async function main() {
     data: {
       userId: testUser.user.id,
       organizationId: organization.id,
+      camperId: 'J999',
     },
   });
 
   console.log('✓ 사전 등록 데이터 생성 완료');
+
+  // 공통 schema
+  const defaultSlotSchema = {
+    fields: [
+      { id: 'f1', name: '내용', type: 'text' },
+      { id: 'f2', name: '날짜', type: 'text' },
+      { id: 'f3', name: '시작 시간', type: 'text' },
+      { id: 'f4', name: '종료 시간', type: 'text' },
+      { id: 'f5', name: '장소', type: 'text' },
+      { id: 'f6', name: '멘토명', type: 'text' },
+    ],
+  };
 
   // 4. 이벤트 생성
   const event1 = await prisma.event.upsert({
@@ -133,16 +200,10 @@ async function main() {
       track: Track.WEB,
       applicationUnit: ApplicationUnit.TEAM,
       creatorId: adminUserId,
+      organizationId: organization.id,
       startTime: new Date('2026-01-01T00:00:00+09:00'),
       endTime: new Date('2026-02-28T23:59:59+09:00'),
-      slotSchema: {
-        content: { label: '내용', type: 'string' },
-        eventDate: { label: '행사 날짜', type: 'string' },
-        startTime: { label: '시작 시간', type: 'string' },
-        endTime: { label: '종료 시간', type: 'string' },
-        location: { label: '장소', type: 'string' },
-        mentorName: { label: '멘토명', type: 'string' },
-      },
+      slotSchema: defaultSlotSchema,
     },
   });
   console.log('✓ 이벤트 1 생성:', event1.title);
@@ -158,16 +219,10 @@ async function main() {
       track: Track.ANDROID,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
+      organizationId: organization.id,
       startTime: new Date('2026-03-01T00:00:00+09:00'),
       endTime: new Date('2026-03-31T23:59:59+09:00'),
-      slotSchema: {
-        content: { label: '내용', type: 'string' },
-        eventDate: { label: '행사 날짜', type: 'string' },
-        startTime: { label: '시작 시간', type: 'string' },
-        endTime: { label: '종료 시간', type: 'string' },
-        location: { label: '장소', type: 'string' },
-        mentorName: { label: '멘토명', type: 'string' },
-      },
+      slotSchema: defaultSlotSchema,
     },
   });
   console.log('✓ 이벤트 2 생성:', event2.title);
@@ -183,16 +238,10 @@ async function main() {
       track: Track.IOS,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
+      organizationId: organization.id,
       startTime: new Date('2026-04-01T00:00:00+09:00'),
       endTime: new Date('2026-04-30T23:59:59+09:00'),
-      slotSchema: {
-        content: { label: '내용', type: 'string' },
-        eventDate: { label: '행사 날짜', type: 'string' },
-        startTime: { label: '시작 시간', type: 'string' },
-        endTime: { label: '종료 시간', type: 'string' },
-        location: { label: '장소', type: 'string' },
-        mentorName: { label: '멘토명', type: 'string' },
-      },
+      slotSchema: defaultSlotSchema,
     },
   });
   console.log('✓ 이벤트 3 생성:', event3.title);
@@ -205,12 +254,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 5,
       extraInfo: {
-        content: 'A팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '14:00',
-        endTime: '15:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'A팀 멘토링',
+        f2: '2026-02-15',
+        f3: '14:00',
+        f4: '15:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -219,12 +268,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 3,
       extraInfo: {
-        content: 'B팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '15:00',
-        endTime: '16:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'B팀 멘토링',
+        f2: '2026-02-15',
+        f3: '15:00',
+        f4: '16:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -233,12 +282,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 1,
       extraInfo: {
-        content: 'C팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '16:00',
-        endTime: '17:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'C팀 멘토링',
+        f2: '2026-02-15',
+        f3: '16:00',
+        f4: '17:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -247,12 +296,12 @@ async function main() {
       maxCapacity: 5,
       currentCount: 2,
       extraInfo: {
-        content: 'D팀 멘토링',
-        eventDate: '2026-02-15',
-        startTime: '17:00',
-        endTime: '18:00',
-        location: 'Zoom',
-        mentorName: '크롱',
+        f1: 'D팀 멘토링',
+        f2: '2026-02-15',
+        f3: '17:00',
+        f4: '18:00',
+        f5: 'Zoom',
+        f6: '크롱',
       },
     },
     {
@@ -261,12 +310,12 @@ async function main() {
       maxCapacity: 6,
       currentCount: 4,
       extraInfo: {
-        content: '코루틴 기초',
-        eventDate: '2026-03-15',
-        startTime: '10:00',
-        endTime: '10:30',
-        location: '강남 캠퍼스 301호',
-        mentorName: '호눅스',
+        f1: '코루틴 기초',
+        f2: '2026-03-15',
+        f3: '10:00',
+        f4: '10:30',
+        f5: '강남 캠퍼스 301호',
+        f6: '호눅스',
       },
     },
     {
@@ -275,12 +324,12 @@ async function main() {
       maxCapacity: 6,
       currentCount: 6,
       extraInfo: {
-        content: '비동기 처리 실습',
-        eventDate: '2026-03-15',
-        startTime: '10:30',
-        endTime: '11:00',
-        location: '강남 캠퍼스 301호',
-        mentorName: '호눅스',
+        f1: '비동기 처리 실습',
+        f2: '2026-03-15',
+        f3: '10:30',
+        f4: '11:00',
+        f5: '강남 캠퍼스 301호',
+        f6: '호눅스',
       },
     },
     {
@@ -289,12 +338,12 @@ async function main() {
       maxCapacity: 6,
       currentCount: 2,
       extraInfo: {
-        content: 'Q&A 세션',
-        eventDate: '2026-03-15',
-        startTime: '11:00',
-        endTime: '12:00',
-        location: '강남 캠퍼스 301호',
-        mentorName: '호눅스',
+        f1: 'Q&A 세션',
+        f2: '2026-03-15',
+        f3: '11:00',
+        f4: '12:00',
+        f5: '강남 캠퍼스 301호',
+        f6: '호눅스',
       },
     },
     {
@@ -303,12 +352,12 @@ async function main() {
       maxCapacity: 4,
       currentCount: 3,
       extraInfo: {
-        content: '오토레이아웃 기초',
-        eventDate: '2026-04-15',
-        startTime: '13:00',
-        endTime: '14:00',
-        location: 'Zoom',
-        mentorName: 'JK',
+        f1: '오토레이아웃 기초',
+        f2: '2026-04-15',
+        f3: '13:00',
+        f4: '14:00',
+        f5: 'Zoom',
+        f6: 'JK',
       },
     },
     {
@@ -317,12 +366,12 @@ async function main() {
       maxCapacity: 4,
       currentCount: 4,
       extraInfo: {
-        content: '스택뷰 활용',
-        eventDate: '2026-04-15',
-        startTime: '14:00',
-        endTime: '15:00',
-        location: 'Zoom',
-        mentorName: 'JK',
+        f1: '스택뷰 활용',
+        f2: '2026-04-15',
+        f3: '14:00',
+        f4: '15:00',
+        f5: 'Zoom',
+        f6: 'JK',
       },
     },
     {
@@ -331,12 +380,12 @@ async function main() {
       maxCapacity: 4,
       currentCount: 1,
       extraInfo: {
-        content: '다양한 해상도 대응',
-        eventDate: '2026-04-15',
-        startTime: '15:00',
-        endTime: '16:00',
-        location: 'Zoom',
-        mentorName: 'JK',
+        f1: '다양한 해상도 대응',
+        f2: '2026-04-15',
+        f3: '15:00',
+        f4: '16:00',
+        f5: 'Zoom',
+        f6: 'JK',
       },
     },
   ];
@@ -354,6 +403,28 @@ async function main() {
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"EventSlot"', 'id'), coalesce(max(id), 1)) FROM "EventSlot"`;
 
   console.log('✓ 슬롯 데이터 생성 완료');
+
+  // 7. 가짜 예약 데이터 생성 (명단 확인용)
+  console.log('🌱 가짜 예약 데이터 생성 중...');
+  const reserversPool = [testUser.user.id, ...extraUsers.map(a => a.user.id)];
+  
+  for (const slot of slots) {
+    if (slot.currentCount > 0) {
+      // 해당 슬롯의 currentCount만큼 예약 데이터 생성
+      for (let i = 0; i < slot.currentCount; i++) {
+        const userId = reserversPool[i % reserversPool.length];
+        await prisma.reservation.create({
+          data: {
+            userId,
+            slotId: slot.id,
+            status: ReservationStatus.CONFIRMED,
+          }
+        });
+      }
+      console.log(`✓ 슬롯 ${slot.id}번에 대한 ${slot.currentCount}건의 예약 데이터 생성 완료`);
+    }
+  }
+
   console.log('🎉 Seed 완료!');
 }
 

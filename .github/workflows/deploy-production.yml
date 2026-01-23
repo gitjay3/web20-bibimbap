@@ -57,7 +57,7 @@ jobs:
 
       - name: Image built successfully
         run: |
-          echo "✅ ${{ matrix.service }} image built and pushed"
+          echo "${{ matrix.service }} image built and pushed"
           echo "Tags: production-latest, ${{ steps.version.outputs.version }}"
 
   # Production 배포 (자동)
@@ -117,17 +117,17 @@ jobs:
             set -e
             cd ~/bookstcamp
 
-            # 환경변수 로드
+            # 환경변수 로드 (NCP_REGISTRY_*, DOTENV_PRIVATE_KEY_PRODUCTION 등)
             set -a
             source .deploy.env
             set +a
 
-            # 보안: 즉시 삭제
-            rm -f .deploy.env
-
             # 배포 스크립트 실행
             chmod +x scripts/*.sh
             ./scripts/deploy.sh prod
+
+            # 보안: 배포 완료 후 삭제
+            rm -f .deploy.env
           EOF
 
       - name: Verify deployment
@@ -159,8 +159,66 @@ jobs:
 
       - name: Deployment successful
         run: |
-          echo "✅ Production deployment completed successfully!"
+          echo "Production deployment completed successfully!"
           echo "Deployed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+  # 모니터링 서버 배포
+  deploy-monitoring:
+    name: Deploy Monitoring Server
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MONITORING_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.MONITORING_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy monitoring files to server
+        run: |
+          ssh ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }} 'mkdir -p ~/bookstcamp/grafana'
+          scp docker-compose.monitoring.yml ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }}:~/bookstcamp/
+          scp prometheus.monitoring.yml ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }}:~/bookstcamp/
+          scp -r grafana/ ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }}:~/bookstcamp/
+
+      - name: Deploy monitoring stack
+        env:
+          GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: |
+          ssh ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }} << EOF
+            set -e
+            cd ~/bookstcamp
+
+            # .env.monitoring 생성
+            cat > .env.monitoring << 'ENVEOF'
+          GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER}
+          GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+          ENVEOF
+            chmod 600 .env.monitoring
+
+            # 기존 컨테이너 중지 및 최신 이미지 pull
+            docker compose -f docker-compose.monitoring.yml --env-file .env.monitoring down || true
+            docker compose -f docker-compose.monitoring.yml --env-file .env.monitoring pull
+
+            # 컨테이너 시작
+            docker compose -f docker-compose.monitoring.yml --env-file .env.monitoring up -d
+
+            echo "Waiting for containers to start..."
+            sleep 10
+
+            echo "=== Monitoring Container Status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}"
+          EOF
+
+      - name: Monitoring deployment successful
+        run: |
+          echo "Monitoring server deployment completed!"
 
   # 배포 실패 시 자동 롤백
   rollback:
@@ -183,7 +241,7 @@ jobs:
             set -e
             cd ~/bookstcamp
 
-            echo "🔄 Executing automatic rollback..."
+            echo "Executing automatic rollback..."
             ./scripts/rollback.sh prod
 
             echo "Waiting for services to stabilize..."
@@ -195,6 +253,6 @@ jobs:
 
       - name: Rollback completed
         run: |
-          echo "⚠️ Production deployment failed and was rolled back"
+          echo "Production deployment failed and was rolled back"
           echo "Please check the logs and fix the issue before redeploying"
-          echo "🔍 Investigate: ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} 'cd ~/bookstcamp && docker compose -f docker-compose.yml logs'"
+          echo "Investigate: ssh ${{ secrets.PRODUCTION_SERVER_USER }}@${{ secrets.PRODUCTION_SERVER_HOST }} 'cd ~/bookstcamp && docker compose -f docker-compose.yml logs'"

@@ -26,13 +26,7 @@ export class StockSyncService implements OnModuleInit {
       },
     });
 
-    for (const slot of slots) {
-      await this.redisService.initStock(
-        slot.id,
-        slot.maxCapacity,
-        slot.currentCount,
-      );
-    }
+    await this.redisService.syncAllStocks(slots);
 
     this.logger.log(`Synchronized ${slots.length} slots to Redis`);
   }

@@ -18,3 +18,24 @@ export async function getSlotAvailabilityByIds(
   });
   return data;
 }
+
+export async function updateEventSlot(
+  slotId: number,
+  data: { maxCapacity?: number; extraInfo?: Record<string, unknown> },
+) {
+  const { data: result } = await api.patch(`/event-slots/${slotId}`, data);
+  return result;
+}
+
+export async function deleteEventSlot(slotId: number): Promise<void> {
+  await api.delete(`/event-slots/${slotId}`);
+}
+
+export async function createEventSlot(data: {
+  eventId: number;
+  maxCapacity: number;
+  extraInfo: Record<string, unknown>;
+}) {
+  const { data: result } = await api.post('/event-slots', data);
+  return result;
+}

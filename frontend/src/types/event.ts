@@ -1,6 +1,7 @@
-export type Track = 'COMMON' | 'WEB' | 'IOS' | 'ANDROID';
+export type Track = 'ALL' | 'COMMON' | 'WEB' | 'IOS' | 'ANDROID';
 export type Status = 'ONGOING' | 'UPCOMING' | 'ENDED';
 export type ApplicationUnit = 'INDIVIDUAL' | 'TEAM';
+export type SlotFieldType = 'text' | 'number' | 'date' | 'time';
 
 export interface Event {
   id: number;
@@ -20,14 +21,22 @@ export interface EventSlot {
   currentCount: number;
   version: number;
   extraInfo: Record<string, string>;
+  reservations?: {
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  }[];
 }
 
 export interface SlotSchemaField {
-  label: string;
-  type: string;
+  id: string;
+  name: string;
+  type: SlotFieldType;
 }
 
-export type SlotSchema = Record<string, SlotSchemaField>;
+export interface SlotSchema {
+  fields: SlotSchemaField[];
+}
 
 export interface EventDetail extends Event {
   slotSchema: SlotSchema;

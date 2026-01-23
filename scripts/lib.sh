@@ -44,9 +44,16 @@ log_error() {
 
 # dotenvx 실행 헬퍼 함수
 run_with_env() {
+    log_info "DEBUG run_with_env: ENV_FILE=$ENV_FILE"
+    log_info "DEBUG run_with_env: dotenvx 존재=$(command -v dotenvx || echo 'not found')"
+    log_info "DEBUG run_with_env: ENV_FILE 존재=$([ -f "$ENV_FILE" ] && echo 'yes' || echo 'no')"
+    log_info "DEBUG run_with_env: DOTENV_PRIVATE_KEY_PRODUCTION=$([ -n "$DOTENV_PRIVATE_KEY_PRODUCTION" ] && echo "set (${#DOTENV_PRIVATE_KEY_PRODUCTION} chars)" || echo "not set")"
+
     if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
+        log_info "DEBUG run_with_env: dotenvx 사용"
         dotenvx run -f "$ENV_FILE" -- "$@"
     else
+        log_info "DEBUG run_with_env: 직접 실행"
         "$@"
     fi
 }

@@ -94,8 +94,8 @@ describe('EventSlotsService', () => {
   describe('getAvailabilityByEvent', () => {
     it('이벤트의 슬롯 가용성을 반환한다', async () => {
       const mockSlots = [
-        { id: 1, currentCount: 5, maxCapacity: 10 },
-        { id: 2, currentCount: 10, maxCapacity: 10 },
+        { id: 1, currentCount: 5, maxCapacity: 10, reservations: [] },
+        { id: 2, currentCount: 10, maxCapacity: 10, reservations: [] },
       ];
 
       prismaMock.eventSlot.findMany.mockResolvedValue(mockSlots);
@@ -103,8 +103,20 @@ describe('EventSlotsService', () => {
       const result = await service.getAvailabilityByEvent(1);
 
       expect(result.slots).toEqual([
-        { slotId: 1, currentCount: 5, remainingSeats: 5, isAvailable: true },
-        { slotId: 2, currentCount: 10, remainingSeats: 0, isAvailable: false },
+        {
+          slotId: 1,
+          currentCount: 5,
+          remainingSeats: 5,
+          isAvailable: true,
+          reservations: [],
+        },
+        {
+          slotId: 2,
+          currentCount: 10,
+          remainingSeats: 0,
+          isAvailable: false,
+          reservations: [],
+        },
       ]);
       expect(result.timestamp).toBeDefined();
     });
@@ -124,8 +136,8 @@ describe('EventSlotsService', () => {
   describe('getAvailability', () => {
     it('슬롯 ID 배열로 가용성을 조회한다', async () => {
       const mockSlots = [
-        { id: 1, currentCount: 3, maxCapacity: 10 },
-        { id: 2, currentCount: 8, maxCapacity: 8 },
+        { id: 1, currentCount: 3, maxCapacity: 10, reservations: [] },
+        { id: 2, currentCount: 8, maxCapacity: 8, reservations: [] },
       ];
 
       prismaMock.eventSlot.findMany.mockResolvedValue(mockSlots);
@@ -133,14 +145,22 @@ describe('EventSlotsService', () => {
       const result = await service.getAvailability([1, 2]);
 
       expect(result.slots).toEqual([
-        { slotId: 1, currentCount: 3, remainingSeats: 7, isAvailable: true },
-        { slotId: 2, currentCount: 8, remainingSeats: 0, isAvailable: false },
+        {
+          slotId: 1,
+          currentCount: 3,
+          remainingSeats: 7,
+          isAvailable: true,
+          reservations: [],
+        },
+        {
+          slotId: 2,
+          currentCount: 8,
+          remainingSeats: 0,
+          isAvailable: false,
+          reservations: [],
+        },
       ]);
       expect(result.timestamp).toBeDefined();
-      expect(prismaMock.eventSlot.findMany).toHaveBeenCalledWith({
-        where: { id: { in: [1, 2] } },
-        select: { id: true, currentCount: true, maxCapacity: true },
-      });
     });
 
     it('빈 배열이면 빈 슬롯 목록을 반환한다', async () => {
@@ -154,7 +174,7 @@ describe('EventSlotsService', () => {
 
     it('존재하지 않는 슬롯 ID는 결과에 포함되지 않는다', async () => {
       prismaMock.eventSlot.findMany.mockResolvedValue([
-        { id: 1, currentCount: 5, maxCapacity: 10 },
+        { id: 1, currentCount: 5, maxCapacity: 10, reservations: [] },
       ]);
 
       const result = await service.getAvailability([1, 999]);

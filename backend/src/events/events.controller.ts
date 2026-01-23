@@ -6,6 +6,8 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Patch,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +24,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { Role } from '@prisma/client';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @ApiTags('events')
 @Controller('events')
@@ -51,7 +54,8 @@ export class EventsController {
   @Get()
   @ApiOperation({
     summary: '이벤트 목록 조회',
-    description: '이벤트 목록을 조회합니다. track 필터를 지원합니다.',
+    description:
+      '이벤트 목록을 조회합니다. track 및 organizationId 필터를 지원합니다.',
   })
   @ApiQuery({
     name: 'track',
@@ -59,12 +63,20 @@ export class EventsController {
     description: '트랙 필터',
     example: 'FRONTEND',
   })
+  @ApiQuery({
+    name: 'organizationId',
+    required: false,
+    description: '조직 ID 필터',
+  })
   @ApiResponse({
     status: 200,
     description: '이벤트 목록 조회 성공',
   })
-  findAll(@Query('track') track?: string) {
-    return this.eventsService.findAll(track);
+  findAll(
+    @Query('track') track?: string,
+    @Query('organizationId') organizationId?: string,
+  ) {
+    return this.eventsService.findAll(track, organizationId);
   }
 
   @Get(':id/slots')
@@ -103,5 +115,27 @@ export class EventsController {
   })
   findOne(@Param('id') id: number) {
     return this.eventsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '이벤트 수정' })
+  @ApiResponse({ status: 200, description: '수정 성공' })
+  @ApiResponse({ status: 404, description: '이벤트 없음' })
+  async updateEvent(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateEventDto,
+  ) {
+    return this.eventsService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '이벤트 삭제' })
+  @ApiResponse({ status: 200, description: '삭제 성공' })
+  @ApiResponse({ status: 400, description: '예약이 있어 삭제 불가' })
+  @ApiResponse({ status: 404, description: '이벤트 없음' })
+  async deleteEvent(@Param('id', ParseIntPipe) id: number) {
+    return this.eventsService.delete(id);
   }
 }

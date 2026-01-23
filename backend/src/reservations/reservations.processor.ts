@@ -10,10 +10,11 @@ import {
 } from './dto/reservation-job.dto';
 import {
   SlotFullException,
-  DuplicateReservationException,
   OptimisticLockException,
   SlotNotFoundException,
+  DuplicateReservationException,
 } from '../../common/exceptions/api.exception';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Processor(RESERVATION_QUEUE)
 export class ReservationsProcessor extends WorkerHost {
@@ -22,6 +23,7 @@ export class ReservationsProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
+    private readonly metricsService: MetricsService,
   ) {
     super();
   }
@@ -32,19 +34,45 @@ export class ReservationsProcessor extends WorkerHost {
       return;
     }
 
-    const { userId, slotId, maxCapacity } = job.data;
-    this.logger.log(`예약 진행중: userId=${userId}, slotId=${slotId}`);
+    const { userId, slotId, maxCapacity, stockDeducted } = job.data;
+    const startTime = Date.now();
+
+    this.logger.log(
+      `예약 처리 시작: jobId=${job.id}, userId=${userId}, slotId=${slotId}`,
+    );
 
     try {
       await this.processReservation(userId, slotId);
-      this.logger.log(`예약 확인: userId=${userId}, slotId=${slotId}`);
+      this.logger.log(`예약 확정: userId=${userId}, slotId=${slotId}`);
+
+      // 성공 메트릭
+      this.metricsService.recordQueueJobComplete(
+        RESERVATION_QUEUE,
+        'completed',
+        Date.now() - startTime,
+      );
+      this.metricsService.recordReservation(slotId, 'confirmed');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`예약 실패: ${message}`);
 
-      // 보상 트랜잭션: Redis 재고 복구
-      await this.redisService.incrementStock(slotId, maxCapacity);
-      this.logger.log(`slotId=${slotId} 의 재고 복구`);
+      // 실패 메트릭
+      this.metricsService.recordQueueJobComplete(
+        RESERVATION_QUEUE,
+        'failed',
+        Date.now() - startTime,
+      );
+      this.metricsService.recordReservation(slotId, 'failed');
+
+      // 보상 트랜잭션: Redis 선차감된 경우에만 재고 복구
+      if (stockDeducted) {
+        await this.redisService.incrementStock(
+          slotId,
+          maxCapacity,
+          'failure_recovery',
+        );
+        this.logger.warn(`재고 복구 완료: slotId=${slotId}`);
+      }
 
       throw error; // BullMQ가 재시도 또는 실패 처리
     }
@@ -59,10 +87,19 @@ export class ReservationsProcessor extends WorkerHost {
       const slot = await tx.eventSlot.findUnique({
         where: { id: slotId },
       });
+      if (!slot) throw new SlotNotFoundException();
 
-      if (!slot) {
-        throw new SlotNotFoundException();
-      }
+      // 중복 예약 확인
+      const existing = await tx.reservation.findFirst({
+        where: {
+          userId,
+          slotId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+        select: { id: true, status: true },
+      });
+
+      if (existing) throw new DuplicateReservationException();
 
       // 낙관적 락으로 슬롯 업데이트
       const updated = await tx.eventSlot.updateMany({
@@ -89,20 +126,9 @@ export class ReservationsProcessor extends WorkerHost {
         ) {
           throw new SlotFullException();
         }
+        // 낙관적 락 충돌 메트릭
+        this.metricsService.recordOptimisticLockConflict('reservation');
         throw new OptimisticLockException();
-      }
-
-      //  중복 예약 체크
-      const existing = await tx.reservation.findFirst({
-        where: {
-          userId,
-          slotId,
-          status: { in: ['PENDING', 'CONFIRMED'] },
-        },
-      });
-
-      if (existing) {
-        throw new DuplicateReservationException();
       }
 
       // 예약 생성

@@ -49,7 +49,7 @@ describe('EventsService', () => {
 
       expect(result).toEqual(mockEvents);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
-        where: undefined,
+        where: { AND: [{}, {}] },
         orderBy: { startTime: 'asc' },
         select: expect.objectContaining({
           id: true,
@@ -68,7 +68,7 @@ describe('EventsService', () => {
 
       expect(result).toEqual(mockEvents);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
-        where: { track: Track.WEB },
+        where: { AND: [{ track: Track.WEB }, {}] },
         orderBy: { startTime: 'asc' },
         select: expect.any(Object),
       });
@@ -86,7 +86,7 @@ describe('EventsService', () => {
 
       expect(result).toEqual(mockEvents);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
-        where: undefined,
+        where: { AND: [{}, {}] },
         orderBy: { startTime: 'asc' },
         select: expect.any(Object),
       });
@@ -106,7 +106,7 @@ describe('EventsService', () => {
 
       await service.findAll('web');
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
-        where: { track: Track.WEB },
+        where: { AND: [{ track: Track.WEB }, {}] },
         orderBy: { startTime: 'asc' },
         select: expect.any(Object),
       });
@@ -117,7 +117,7 @@ describe('EventsService', () => {
 
       await service.findAll('  android  ');
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
-        where: { track: Track.ANDROID },
+        where: { AND: [{ track: Track.ANDROID }, {}] },
         orderBy: { startTime: 'asc' },
         select: expect.any(Object),
       });
@@ -129,17 +129,39 @@ describe('EventsService', () => {
       const mockEvent = {
         id: 1,
         title: 'Test Event',
-        slots: [{ id: 1, maxCapacity: 10 }],
+        slots: [{ id: 1, maxCapacity: 10, reservations: [] }],
       };
 
       prismaMock.event.findUnique.mockResolvedValue(mockEvent);
 
       const result = await service.findOne(1);
 
-      expect(result).toEqual(mockEvent);
+      expect(result).toEqual({
+        id: 1,
+        title: 'Test Event',
+        slots: [{ id: 1, maxCapacity: 10, reservations: [] }],
+      });
       expect(prismaMock.event.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
-        include: { slots: true },
+        include: {
+          slots: {
+            orderBy: { id: 'asc' },
+            include: {
+              reservations: {
+                where: { status: 'CONFIRMED' },
+                select: {
+                  user: {
+                    select: {
+                      name: true,
+                      username: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
     });
 
@@ -164,7 +186,8 @@ describe('EventsService', () => {
         applicationUnit: ApplicationUnit.INDIVIDUAL,
         startTime: new Date(),
         endTime: new Date(),
-        slotSchema: {},
+        slotSchema: { fields: [] },
+        organizationId: 'org-uuid',
         slots: [{ maxCapacity: 10, extraInfo: {} }],
       };
 
@@ -190,6 +213,7 @@ describe('EventsService', () => {
           endTime: createDto.endTime,
           slotSchema: createDto.slotSchema,
           creatorId: mockAdminUserId,
+          organizationId: createDto.organizationId,
           slots: {
             create: createDto.slots.map((slot) => ({
               maxCapacity: slot.maxCapacity,

@@ -35,6 +35,21 @@ export const createPrismaMock = () => ({
     findFirst: jest.fn(),
     create: jest.fn(),
   },
+  template: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  camperOrganization: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+  },
+  camperPreRegistration: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
   $transaction: jest.fn(),
   $connect: jest.fn(),
   $disconnect: jest.fn(),

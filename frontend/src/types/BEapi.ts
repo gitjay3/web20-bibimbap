@@ -1,3 +1,21 @@
+export type CreateEventRequest = {
+  track: 'ALL' | 'COMMON' | 'WEB' | 'ANDROID' | 'IOS';
+  applicationUnit: 'INDIVIDUAL' | 'TEAM';
+  organizationId: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  slotSchema: {
+    fields: Array<{ id: string; name: string; type: 'text' | 'number' | 'date' | 'time' }>;
+  };
+  slots: Array<Record<string, unknown>>;
+};
+
+export type CreateEventResponse = {
+  id: string;
+};
+
 export interface EventSlotExtraInfo {
   content?: string;
   startTime?: string;
@@ -13,6 +31,11 @@ export interface EventSlotApiResponse {
   remainingSeats: number;
   isAvailable: boolean;
   extraInfo: EventSlotExtraInfo;
+  reservations?: {
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  }[];
 }
 
 export interface EventDetailApiResponse {
@@ -54,6 +77,11 @@ export interface SlotAvailabilityItem {
   currentCount: number;
   remainingSeats: number;
   isAvailable: boolean;
+  reservations?: {
+    name: string;
+    username: string;
+    avatarUrl: string | null;
+  }[];
 }
 
 export interface SlotAvailabilityApiResponse {
@@ -79,6 +107,9 @@ export interface ReservationApiResponse {
     startTime?: string;
     endTime?: string;
     [key: string]: unknown;
+  };
+  slotSchema?: {
+    fields: Array<{ id: string; name: string; type: string }>;
   };
 }
 

@@ -1,82 +1,119 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router';
-import type { EventDetail as EventDetailType } from '@/types/event';
+import type { EventDetail as EventDetailType, EventSlot } from '@/types/event';
 import { getEvent } from '@/api/event';
-import { getSlotAvailability } from '@/api/eventSlot';
+import {
+  getSlotAvailability,
+  updateEventSlot,
+  deleteEventSlot,
+  createEventSlot,
+} from '@/api/eventSlot';
 import { getMyReservationForEvent } from '@/api/reservation';
 import type { ReservationApiResponse } from '@/types/BEapi';
+import useQueue from '@/hooks/useQueue';
+import QueueStatus from '@/components/QueueStatus';
+import { useAuth } from '@/store/AuthContext';
+import ConfirmModal from '@/components/DropdownConfirmModal';
+import SlotEditModal from '@/components/SlotEditModal';
 import EventDetailHeader from './components/EventDetailHeader';
 import ReservationButton from './components/ReservationButton';
 import SlotList from './components/SlotList';
 
-const POLLING_INTERVAL = 1000; // 성능 보면서 ms 단위로 바꿔도?
+const POLLING_INTERVAL = 1000;
 
 function EventDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+
   const [myReservation, setMyReservation] = useState<ReservationApiResponse | null>(null);
   const [event, setEvent] = useState<EventDetailType | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingSlot, setEditingSlot] = useState<EventSlot | null>(null);
+  const [deletingSlot, setDeletingSlot] = useState<EventSlot | null>(null);
+  const [isCreatingSlot, setIsCreatingSlot] = useState(false);
+
+  const isLoggedIn = user !== null;
+  const isAdmin = user?.role === 'ADMIN';
+  const eventId = id ? Number(id) : NaN;
+  const eventStatus = event?.status;
+
+  const {
+    position,
+    totalWaiting,
+    hasToken,
+    tokenExpiresAt,
+    isLoading: isQueueLoading,
+    isNew,
+  } = useQueue({
+    eventId,
+    enabled: eventStatus === 'ONGOING' && isLoggedIn,
+  });
 
   // 이벤트 정보 불러오기
   const fetchEvent = useCallback(async () => {
-    if (!id) return;
+    if (!eventId || Number.isNaN(eventId)) return;
 
     try {
-      const eventData = await getEvent(Number(id));
+      const eventData = await getEvent(eventId);
       setEvent(eventData);
     } catch (error) {
       console.error('이벤트 조회 실패:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [eventId]);
 
-  // 이 이벤트가 내 예약인지 조회
+  // 내 예약 조회
   const fetchMyReservation = useCallback(async () => {
-    if (!id) return;
+    if (!eventId || Number.isNaN(eventId)) return;
 
     try {
-      const reservation = await getMyReservationForEvent(Number(id));
+      const reservation = await getMyReservationForEvent(eventId);
       setMyReservation(reservation);
     } catch {
-      // 로그인 안 된 경우 등 에러 무시 TODO: 로그인, mypage랑 연계
       setMyReservation(null);
     }
-  }, [id]);
+  }, [eventId]);
 
   // 실시간 정원 폴링
   const updateSlotAvailability = useCallback(async () => {
-    if (!id) return;
+    if (!eventId || Number.isNaN(eventId)) return;
 
     try {
-      const availabilityData = await getSlotAvailability(Number(id));
-
-      // TODO : 나중에 정보 비교해서 변경사항 없으면 리렌더링 안되게
+      const availabilityData = await getSlotAvailability(eventId);
 
       setEvent((prevEvent) => {
         if (!prevEvent) return null;
 
-        return {
-          ...prevEvent,
-          slots: prevEvent.slots.map((slot) => {
-            const updatedSlot = availabilityData.slots.find((s) => s.slotId === slot.id);
+        let changed = false;
 
-            if (updatedSlot) {
-              return {
-                ...slot,
-                currentCount: updatedSlot.currentCount,
-              };
-            }
+        const nextSlots = prevEvent.slots.map((slot) => {
+          const updated = availabilityData.slots.find((s) => s.slotId === slot.id);
+          if (!updated) return slot;
 
-            return slot;
-          }),
-        };
+          // 인원수가 변했거나, 예약자 명단(이름 등)이 변한 경우 업데이트
+          const isCountChanged = slot.currentCount !== updated.currentCount;
+          const isReserverChanged = JSON.stringify(slot.reservations) !== JSON.stringify(updated.reservations);
+
+          if (isCountChanged || isReserverChanged) {
+            changed = true;
+            return { 
+              ...slot, 
+              currentCount: updated.currentCount,
+              reservations: updated.reservations 
+            };
+          }
+          return slot;
+        });
+
+        if (!changed) return prevEvent;
+        return { ...prevEvent, slots: nextSlots };
       });
     } catch (error) {
       console.error('실시간 정원 갱신 실패:', error);
     }
-  }, [id]);
+  }, [eventId]);
 
   // 초기 로드
   useEffect(() => {
@@ -84,28 +121,33 @@ function EventDetail() {
     fetchMyReservation();
   }, [fetchEvent, fetchMyReservation]);
 
+  // 탭 비활성 시 폴링 일시 중단
+  const isPageVisibleRef = useRef(true);
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      isPageVisibleRef.current = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
   // 실시간 정원 폴링
   useEffect(() => {
-    if (!event || event.status !== 'ONGOING') {
-      return () => {};
-    }
-    // TODO : 사용자가 다른 탭으로 이동하면 폴링을 일시 중단
+    if (eventStatus !== 'ONGOING') return () => {};
 
+    // 첫 갱신
     updateSlotAvailability();
 
-    // 폴링
     const intervalId = setInterval(() => {
+      if (!isPageVisibleRef.current) return;
       updateSlotAvailability();
     }, POLLING_INTERVAL);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [event, updateSlotAvailability]);
+    return () => clearInterval(intervalId);
+  }, [eventStatus, updateSlotAvailability]);
 
   const handleReservationSuccess = useCallback(() => {
     setSelectedSlotId(null);
-    // 예약 성공 시 이벤트 정보 갱신
     fetchEvent();
     fetchMyReservation();
   }, [fetchEvent, fetchMyReservation]);
@@ -114,6 +156,39 @@ function EventDetail() {
     setMyReservation(null);
     fetchEvent();
   }, [fetchEvent]);
+
+  const handleSaveSlot = useCallback(
+    async (data: { slotId?: number; maxCapacity: number; extraInfo: Record<string, unknown> }) => {
+      if (!data.slotId) return;
+      await updateEventSlot(data.slotId, {
+        maxCapacity: data.maxCapacity,
+        extraInfo: data.extraInfo,
+      });
+      setEditingSlot(null);
+      fetchEvent();
+    },
+    [fetchEvent],
+  );
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingSlot) return;
+    await deleteEventSlot(deletingSlot.id);
+    setDeletingSlot(null);
+    fetchEvent();
+  }, [deletingSlot, fetchEvent]);
+
+  const handleCreateSlot = useCallback(
+    async (data: { eventId?: number; maxCapacity: number; extraInfo: Record<string, unknown> }) => {
+      await createEventSlot({
+        eventId: Number(id),
+        maxCapacity: data.maxCapacity,
+        extraInfo: data.extraInfo,
+      });
+      setIsCreatingSlot(false);
+      fetchEvent();
+    },
+    [id, fetchEvent],
+  );
 
   if (isLoading) {
     return (
@@ -133,7 +208,7 @@ function EventDetail() {
 
   return (
     <div className="flex justify-center">
-      <div className="w-160">
+      <div className={`w-200 ${!isAdmin ? 'pb-24' : ''}`}>
         <div className="flex flex-col gap-6">
           <EventDetailHeader
             category={event.track}
@@ -143,22 +218,79 @@ function EventDetail() {
             applicationUnit={event.applicationUnit}
           />
           <hr className="border-neutral-border-default" />
+
+          {/* 대기열 상태 (ONGOING일 때만 표시, 관리자 제외) */}
+          {!isAdmin &&
+            event.status === 'ONGOING' &&
+            (isLoggedIn ? (
+              <QueueStatus
+                position={position}
+                totalWaiting={totalWaiting}
+                hasToken={hasToken}
+                tokenExpiresAt={tokenExpiresAt}
+                isLoading={isQueueLoading}
+                isNew={isNew}
+              />
+            ) : (
+              <div className="border-neutral-border-default bg-neutral-surface-default rounded-lg border p-4">
+                <p className="text-neutral-text-secondary text-center">
+                  예약하려면 로그인이 필요합니다.
+                </p>
+              </div>
+            ))}
+
           <SlotList
             status={event.status}
             slotSchema={event.slotSchema}
             slots={event.slots}
             selectedSlotId={selectedSlotId}
             setSelectedSlotId={setSelectedSlotId}
+            myReservation={myReservation}
+            disabled={event.status === 'ONGOING' && !hasToken}
+            isAdmin={isAdmin}
+            onEditSlot={setEditingSlot}
+            onDeleteSlot={setDeletingSlot}
+            onAddSlot={() => setIsCreatingSlot(true)}
+          />
+          <SlotEditModal
+            open={!!editingSlot}
+            mode="edit"
+            slot={editingSlot}
+            slotSchema={event?.slotSchema}
+            onClose={() => setEditingSlot(null)}
+            onSave={handleSaveSlot}
+          />
+          <SlotEditModal
+            open={isCreatingSlot}
+            mode="create"
+            eventId={Number(id)}
+            slot={null}
+            slotSchema={event?.slotSchema}
+            onClose={() => setIsCreatingSlot(false)}
+            onSave={handleCreateSlot}
+          />
+          <ConfirmModal
+            open={!!deletingSlot}
+            title="일정 삭제"
+            message="이 일정을 제거하시겠습니까?"
+            confirmText="제거"
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setDeletingSlot(null)}
+            variant="danger"
           />
         </div>
       </div>
-      <ReservationButton
-        isReservable={event.status === 'ONGOING'}
-        selectedSlotId={selectedSlotId}
-        myReservation={myReservation}
-        onReservationSuccess={handleReservationSuccess}
-        onCancelSuccess={handleCancelSuccess}
-      />
+
+      {!isAdmin && (
+        <ReservationButton
+          eventId={eventId}
+          isReservable={event.status === 'ONGOING' && hasToken}
+          selectedSlotId={selectedSlotId}
+          myReservation={myReservation}
+          onReservationSuccess={handleReservationSuccess}
+          onCancelSuccess={handleCancelSuccess}
+        />
+      )}
     </div>
   );
 }

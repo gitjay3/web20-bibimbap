@@ -1,5 +1,5 @@
 import Header from '@/components/Header';
-import { Outlet } from 'react-router';
+import { Outlet, useParams } from 'react-router';
 import { useAuth } from '@/store/AuthContext';
 
 export interface NavItem {
@@ -8,18 +8,19 @@ export interface NavItem {
 }
 
 function Layout() {
+  const { orgId } = useParams<{ orgId: string }>();
   const { user } = useAuth();
-  const role = user?.role || 'USER';
+  const role = user?.role ?? 'USER';
 
   const camperNav: NavItem[] = [
-    { label: '이벤트 예약', to: '/' },
-    { label: '마이페이지', to: '/me' },
+    { label: '이벤트 예약', to: `/orgs/${orgId}` },
+    { label: '마이페이지', to: `/orgs/${orgId}/me` },
   ];
 
   const adminNav: NavItem[] = [
-    { label: '이벤트 관리', to: '/' },
-    { label: '캠퍼 관리', to: '/campers' },
-    { label: '템플릿 관리', to: '/templates' },
+    { label: '이벤트 관리', to: `/orgs/${orgId}` },
+    { label: '캠퍼 관리', to: `/orgs/${orgId}/campers` },
+    { label: '템플릿 관리', to: `/orgs/${orgId}/templates` },
   ];
 
   const navItems = role === 'USER' ? camperNav : adminNav;

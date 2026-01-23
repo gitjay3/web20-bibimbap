@@ -9,5 +9,9 @@ export class ApplyReservationDto {
   })
   @IsInt()
   @IsNotEmpty()
+  eventId: number;
+
+  @IsInt()
+  @IsNotEmpty()
   slotId: number;
 }

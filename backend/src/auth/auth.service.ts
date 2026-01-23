@@ -54,6 +54,7 @@ export class AuthService {
     githubId: string;
     githubLogin: string;
     name: string;
+    avatarUrl?: string;
   }) {
     const authAccount = await this.prisma.authAccount.findUnique({
       where: {
@@ -67,7 +68,7 @@ export class AuthService {
       },
     });
 
-    // 1. 가입된 경우
+    // 1. 가입된 경우 반환
     if (authAccount) {
       return authAccount.user;
     }
@@ -75,9 +76,10 @@ export class AuthService {
     // 2. 가입되지 않은 경우 User 생성
     // 2-1. 사전 등록(PreRegistration) 확인
     // GitHub Username을 기준으로 INVITED 상태인 초대장을 찾는다.
+    // 대소문자 무시 비교 (GitHub username은 대소문자 구분 없음)
     const preRegistrations = await this.prisma.camperPreRegistration.findMany({
       where: {
-        username: data.githubLogin,
+        username: { equals: data.githubLogin, mode: 'insensitive' },
         status: PreRegStatus.INVITED,
       },
     });
@@ -87,7 +89,9 @@ export class AuthService {
       // (1) User & AuthAccount 생성
       const newUser = await tx.user.create({
         data: {
-          name: data.name,
+          username: data.githubLogin, // GitHub username 저장
+          name: preRegistrations[0]?.name || null, // 사전 등록된 실명 (없으면 null)
+          avatarUrl: data.avatarUrl || null, // 프로필 이미지 URL
           role: Role.USER,
           authAccounts: {
             create: {
@@ -105,6 +109,8 @@ export class AuthService {
           data: preRegistrations.map((preReg) => ({
             userId: newUser.id,
             organizationId: preReg.organizationId,
+            camperId: preReg.camperId, // camperId를 CamperOrganization에 저장
+            groupNumber: preReg.groupNumber, // groupNumber 연동
           })),
         });
 
