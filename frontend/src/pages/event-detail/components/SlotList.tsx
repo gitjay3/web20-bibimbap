@@ -19,7 +19,8 @@ interface SlotListProps {
 // 필드 표시 순서 정의 (id 기반)
 const FIELD_ORDER = [
   'content',      // 내용
-  'date',         // 날짜
+  'date',         // 날짜 (대체 id)
+  'eventDate',    // 날짜
   'startTime',    // 시작 시간
   'endTime',      // 종료 시간
   'location',     // 장소
