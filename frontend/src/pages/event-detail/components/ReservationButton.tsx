@@ -42,8 +42,6 @@ function ReservationButton({
         } else if (error.message === 'NO_TOKEN') {
           toast.error('예약 권한이 만료되었습니다. 페이지를 새로고침합니다.');
           window.location.reload();
-        } else {
-          toast.error('예약에 실패했습니다. 다시 시도해주세요.');
         }
       } else {
         toast.error('예약에 실패했습니다. 다시 시도해주세요.');

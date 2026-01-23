@@ -43,7 +43,7 @@ export const createReservation = async (eventId: number, slotId: number) => {
         // 슬롯 마감 - 다른 슬롯 선택 유도
         throw new Error('SLOT_FULL');
       }
-      if (status === 403) {
+      if (status === 40 && message?.includes('토큰')) {
         // 토큰 없음 - 대기열 재진입 필요
         throw new Error('NO_TOKEN');
       }

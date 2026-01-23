@@ -167,7 +167,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return result as number;
   }
 
-  // 현재 재고 조회 (추후 디버깅/모니터링용)
+  // TODO: 현재 재고 조회 (추후 디버깅/모니터링용)
   async getStock(slotId: number): Promise<number> {
     const key = this.getStockKey(slotId);
     const result = await this.client.get(key);

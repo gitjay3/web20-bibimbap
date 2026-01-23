@@ -14,10 +14,14 @@ import {
 import {
   SlotFullException,
   SlotNotFoundException,
+  DuplicateReservationException,
   ReservationNotFoundException,
   UnauthorizedReservationException,
   AlreadyCancelledException,
   OptimisticLockException,
+  ReservationPeriodException,
+  ForbiddenOrganizationException,
+  ForbiddenTrackException,
 } from '../../common/exceptions/api.exception';
 import { MetricsService } from '../metrics/metrics.service';
 
@@ -34,28 +38,41 @@ type ReservationWithRelations = Prisma.ReservationGetPayload<{
 @Injectable()
 export class ReservationsService {
   constructor(
-    private prisma: PrismaService,
-    private redisService: RedisService,
+    private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
     private queueService: QueueService,
     private metricsService: MetricsService,
     @InjectQueue(RESERVATION_QUEUE)
-    private reservationQueue: Queue<ReservationJobData>,
+    private readonly reservationQueue: Queue<ReservationJobData>,
   ) {}
 
   async apply(
     userId: string,
     dto: ApplyReservationDto,
-  ): Promise<{ status: string; message: string }> {
+  ): Promise<{ status: 'PENDING'; message: string }> {
     const startTime = Date.now();
 
-    // 슬롯 정보 조회
+    // 슬롯 + 이벤트 조회
     const slot = await this.prisma.eventSlot.findUnique({
       where: { id: dto.slotId },
+      include: { event: true },
     });
 
-    if (!slot) {
-      throw new SlotNotFoundException();
-    }
+    if (!slot) throw new SlotNotFoundException();
+
+    // 자격 검증
+    await this.validateEligibilityOrThrow(userId, slot);
+
+    // 중복 예약 검증
+    const existing = await this.prisma.reservation.findFirst({
+      where: {
+        userId,
+        slotId: dto.slotId,
+        status: { in: ['PENDING', 'CONFIRMED'] },
+      },
+      select: { id: true },
+    });
+    if (existing) throw new DuplicateReservationException();
 
     // Redis에서 재고 차감 시도
     const success = await this.redisService.decrementStock(dto.slotId);
@@ -70,6 +87,7 @@ export class ReservationsService {
       userId,
       slotId: dto.slotId,
       maxCapacity: slot.maxCapacity,
+      stockDeducted: true,
     });
 
     // 메트릭 기록
@@ -79,13 +97,61 @@ export class ReservationsService {
       (Date.now() - startTime) / 1000,
     );
 
-    // await this.queueService.invalidateToken(dto.eventId, userId); 지금은 수강신청같은 방식. 1인 1예약이라면 토큰 무효화
+    // TODO: await this.queueService.invalidateToken(dto.eventId, userId); 지금은 수강신청같은 방식. 1인 1예약이라면 토큰 무효화
 
-    // 즉시 응답 (비동기 처리)
     return {
       status: 'PENDING',
       message: '예약이 접수되었습니다. 잠시 후 확정됩니다.', // 예약 대기 시간 확인하고 이 메세지 수정 혹은 생략 가능
     };
+  }
+
+  private async validateEligibilityOrThrow(
+    userId: string,
+    slot: Prisma.EventSlotGetPayload<{ include: { event: true } }>,
+  ): Promise<void> {
+    const now = new Date();
+    const event = slot.event;
+
+    // 예약 기간 검증
+    if (now < event.startTime || now > event.endTime) {
+      throw new ReservationPeriodException();
+    }
+
+    // 조직 소속 검증
+    const membership = await this.prisma.camperOrganization.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: event.organizationId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      throw new ForbiddenOrganizationException();
+    }
+
+    // 트랙 검증
+    if (event.track !== 'COMMON') {
+      const preReg = await this.prisma.camperPreRegistration.findFirst({
+        where: {
+          claimedUserId: userId,
+          organizationId: event.organizationId,
+        },
+        select: { track: true, status: true },
+      });
+
+      if (!preReg) {
+        throw new ForbiddenTrackException();
+      }
+
+      if (preReg.track !== event.track) {
+        throw new ForbiddenTrackException();
+      }
+    }
+
+    // TODO: applicationUnit(INDIVIDUAL/TEAM) 관련 검증
   }
 
   async findAllByUser(userId: string): Promise<ReservationWithRelations[]> {
