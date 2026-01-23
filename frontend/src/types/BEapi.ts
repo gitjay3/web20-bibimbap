@@ -31,6 +31,11 @@ export interface EventSlotApiResponse {
   remainingSeats: number;
   isAvailable: boolean;
   extraInfo: EventSlotExtraInfo;
+  reservations?: {
+    name: string;
+    username: string;
+    avatarUrl: string;
+  }[];
 }
 
 export interface EventDetailApiResponse {
@@ -72,6 +77,11 @@ export interface SlotAvailabilityItem {
   currentCount: number;
   remainingSeats: number;
   isAvailable: boolean;
+  reservations?: {
+    name: string;
+    username: string;
+    avatarUrl: string;
+  }[];
 }
 
 export interface SlotAvailabilityApiResponse {

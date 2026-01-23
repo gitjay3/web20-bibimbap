@@ -18,12 +18,13 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   }
 
   async validate(accessToken: string, refreshToken: string, profile: Profile) {
-    const { id, username, displayName } = profile;
+    const { id, username, displayName, photos } = profile;
 
     const user = await this.auth.findOrCreateGithubUser({
       githubId: id,
       githubLogin: username ?? id,
       name: displayName ?? username,
+      avatarUrl: photos?.[0]?.value || (profile as any)._json?.avatar_url,
     });
 
     return user;

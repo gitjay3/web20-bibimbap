@@ -9,6 +9,7 @@ import {
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
+import { ReservationStatus } from '@prisma/client';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -41,6 +42,7 @@ async function main() {
         create: {
           username: 'admin',
           name: '시스템 관리자',
+          avatarUrl: 'https://i.pravatar.cc/150?u=admin',
           role: Role.ADMIN,
         },
       },
@@ -67,6 +69,7 @@ async function main() {
         create: {
           username: 'testuser',
           name: '테스트 사용자',
+          avatarUrl: 'https://i.pravatar.cc/150?u=testuser',
           role: Role.USER,
         },
       },
@@ -75,6 +78,24 @@ async function main() {
   });
 
   console.log('✓ 테스트 사용자 생성:', testUser.user.id);
+
+  // 3-0. 추가 테스트 사용자들 (명단 표시 확인용 - 실제 가입 계정과 겹치지 않게 변경)
+  const extraUsers = await Promise.all([
+    { username: 'testuser1', name: '김코딩', avatar: 'https://i.pravatar.cc/150?u=testuser1' },
+    { username: 'testuser2', name: '박직원', avatar: 'https://i.pravatar.cc/150?u=testuser2' },
+    { username: 'testuser3', name: '이캠퍼', avatar: 'https://i.pravatar.cc/150?u=testuser3' },
+    { username: 'testuser4', name: '최멘토', avatar: 'https://i.pravatar.cc/150?u=testuser4' },
+  ].map(u => 
+    prisma.authAccount.create({
+      data: {
+        provider: AuthProvider.GITHUB,
+        providerId: `mock_${u.username}`,
+        user: { create: { username: u.username, name: u.name, avatarUrl: u.avatar, role: Role.USER } }
+      },
+      include: { user: true }
+    })
+  ));
+  console.log('✓ 추가 테스트 사용자 4명 생성 완료');
 
   // 3-1. 조직(Organization) 생성
   const organization = await prisma.organization.create({
@@ -382,6 +403,28 @@ async function main() {
   await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"EventSlot"', 'id'), coalesce(max(id), 1)) FROM "EventSlot"`;
 
   console.log('✓ 슬롯 데이터 생성 완료');
+
+  // 7. 가짜 예약 데이터 생성 (명단 확인용)
+  console.log('🌱 가짜 예약 데이터 생성 중...');
+  const reserversPool = [testUser.user.id, ...extraUsers.map(a => a.user.id)];
+  
+  for (const slot of slots) {
+    if (slot.currentCount > 0) {
+      // 해당 슬롯의 currentCount만큼 예약 데이터 생성
+      for (let i = 0; i < slot.currentCount; i++) {
+        const userId = reserversPool[i % reserversPool.length];
+        await prisma.reservation.create({
+          data: {
+            userId,
+            slotId: slot.id,
+            status: ReservationStatus.CONFIRMED,
+          }
+        });
+      }
+      console.log(`✓ 슬롯 ${slot.id}번에 대한 ${slot.currentCount}건의 예약 데이터 생성 완료`);
+    }
+  }
+
   console.log('🎉 Seed 완료!');
 }
 

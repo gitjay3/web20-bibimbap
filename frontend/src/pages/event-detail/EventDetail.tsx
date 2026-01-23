@@ -81,9 +81,17 @@ function EventDetail() {
           const updated = availabilityData.slots.find((s) => s.slotId === slot.id);
           if (!updated) return slot;
 
-          if (slot.currentCount !== updated.currentCount) {
+          // 인원수가 변했거나, 예약자 명단(이름 등)이 변한 경우 업데이트
+          const isCountChanged = slot.currentCount !== updated.currentCount;
+          const isReserverChanged = JSON.stringify(slot.reservations) !== JSON.stringify(updated.reservations);
+
+          if (isCountChanged || isReserverChanged) {
             changed = true;
-            return { ...slot, currentCount: updated.currentCount };
+            return { 
+              ...slot, 
+              currentCount: updated.currentCount,
+              reservations: updated.reservations 
+            };
           }
           return slot;
         });
@@ -192,6 +200,7 @@ function EventDetail() {
             slots={event.slots}
             selectedSlotId={selectedSlotId}
             setSelectedSlotId={setSelectedSlotId}
+            myReservation={myReservation}
             disabled={event.status === 'ONGOING' && !hasToken}
           />
         </div>

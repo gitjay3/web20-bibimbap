@@ -1,5 +1,5 @@
-import React from 'react';
 import type { EventSlot, SlotSchema, Status } from '@/types/event';
+import type { ReservationApiResponse } from '@/types/BEapi';
 import Slot from './Slot';
 
 interface SlotListProps {
@@ -8,6 +8,7 @@ interface SlotListProps {
   slots: EventSlot[];
   selectedSlotId: number | null;
   setSelectedSlotId: React.Dispatch<React.SetStateAction<number | null>>;
+  myReservation: ReservationApiResponse | null;
   disabled?: boolean;
 }
 
@@ -17,44 +18,52 @@ function SlotList({
   slots,
   selectedSlotId,
   setSelectedSlotId,
+  myReservation,
   disabled = false,
 }: SlotListProps) {
   const fields = slotSchema.fields ?? [];
 
-  // 그리드 컬럼 (필드 개수 + 상태 열)
+  // 마스터 그리드 설정: 내용에 맞추되 전체 너비를 고려하여 밸런스 조정
   const gridLayout = {
-    gridTemplateColumns: `repeat(${fields.length}, 1fr) 40px`,
+    gridTemplateColumns: `repeat(${fields.length}, minmax(max-content, 1fr)) minmax(100px, 0.8fr) minmax(80px, 0.5fr) 48px`,
   };
 
   return (
-    <div className="flex flex-col gap-1">
-      {/* 테이블 헤더 영역 */}
+    <div 
+      className="grid w-full gap-y-3" 
+      style={gridLayout}
+    >
+      {/* 헤더 */}
       <div
-        className="text-14 text-neutral-text-tertiary grid items-center px-6 py-3 font-bold"
-        style={gridLayout}
+        className="grid col-span-full items-center gap-x-4 px-6 py-4"
+        style={{ gridTemplateColumns: 'subgrid' }}
       >
         {fields.map((field) => (
-          <div key={field.id} className="text-left">
+          <span key={field.id} className="text-14 font-semibold text-neutral-text-secondary text-left">
             {field.name}
-          </div>
+          </span>
         ))}
-        <div className="text-center">상태</div>
+        <span className="text-14 font-semibold text-neutral-text-secondary text-left">
+          예약자
+        </span>
+        <span className="text-14 font-semibold text-neutral-text-secondary text-left">
+          상태
+        </span>
+        <span /> {/* 액션 컬럼용 빈 헤더 */}
       </div>
 
-      {/* 슬롯 리스트 영역 */}
-      <div className="flex flex-col gap-3">
-        {slots.map((slot) => (
-          <Slot
-            key={slot.id}
-            isReservable={status === 'ONGOING' && !disabled}
-            slot={slot}
-            fields={fields}
-            selectedSlotId={selectedSlotId}
-            setSelectedSlotId={setSelectedSlotId}
-            gridLayout={gridLayout}
-          />
-        ))}
-      </div>
+      {/* 슬롯 리스트: 이제 Slot들이 직접 그리드 자식이 되어 subgrid가 동작함 */}
+      {slots.map((slot) => (
+        <Slot
+          key={slot.id}
+          isReservable={status === 'ONGOING' && !disabled}
+          slot={slot}
+          fields={fields}
+          selectedSlotId={selectedSlotId}
+          setSelectedSlotId={setSelectedSlotId}
+          myReservation={myReservation}
+        />
+      ))}
     </div>
   );
 }

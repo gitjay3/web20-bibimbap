@@ -53,12 +53,9 @@ function QueueStatus({
   // 토큰 발급됨 - 예약 가능 상태
   if (hasToken) {
     return (
-      <div className="border-success-500 bg-success-50 rounded-lg border p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-success-600 text-lg">✓</span>
-          <span className="text-success-700 font-bold">예약 가능합니다!</span>
-        </div>
-        <p className="text-success-600 mt-1 text-sm">슬롯을 선택하고 예약을 완료해주세요.</p>
+      <div className="flex flex-col gap-2 border-neutral-border-default bg-white rounded-lg border p-4">
+        <div className="font-bold">현재 예약이 가능합니다!</div>
+        <div className="text-12">슬롯을 선택하고 예약을 진행해주세요.</div>
       </div>
     );
   }
@@ -71,9 +68,9 @@ function QueueStatus({
           <span className="text-lg">🕐</span>
           <span className="font-bold">현재 대기 순번</span>
           {isNew === false && (
-            <p className="text-neutral-text-secondary mt-1 text-center text-sm">
+            <div className="text-neutral-text-secondary mt-1 text-center text-sm">
               이미 대기 중입니다. 순번이 유지됩니다.
-            </p>
+            </div>
           )}
         </div>
         <p className="text-brand-text-default mt-2 text-center text-3xl font-bold">

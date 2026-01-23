@@ -54,6 +54,7 @@ export class AuthService {
     githubId: string;
     githubLogin: string;
     name: string;
+    avatarUrl?: string;
   }) {
     const authAccount = await this.prisma.authAccount.findUnique({
       where: {
@@ -67,7 +68,7 @@ export class AuthService {
       },
     });
 
-    // 1. 가입된 경우
+    // 1. 가입된 경우 반환
     if (authAccount) {
       return authAccount.user;
     }
@@ -89,6 +90,7 @@ export class AuthService {
         data: {
           username: data.githubLogin, // GitHub username 저장
           name: preRegistrations[0]?.name || null, // 사전 등록된 실명 (없으면 null)
+          avatarUrl: data.avatarUrl || null, // 프로필 이미지 URL
           role: Role.USER,
           authAccounts: {
             create: {
@@ -107,6 +109,7 @@ export class AuthService {
             userId: newUser.id,
             organizationId: preReg.organizationId,
             camperId: preReg.camperId, // camperId를 CamperOrganization에 저장
+            groupNumber: preReg.groupNumber, // groupNumber 연동
           })),
         });
 

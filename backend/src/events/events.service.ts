@@ -93,16 +93,38 @@ export class EventsService {
       where: { id },
       include: {
         slots: {
-          orderBy: {
-            id: 'asc',
+          include: {
+            reservations: {
+              where: { status: 'CONFIRMED' },
+              select: {
+                user: {
+                  select: {
+                    name: true,
+                    username: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
           },
+          orderBy: { id: 'asc' },
         },
       },
     });
 
     if (!event) throw new NotFoundException('존재하지 않는 이벤트입니다.');
 
-    return event;
+    // 데이터 구조 평탄화: 이름이 없으면 username을 대신 사용
+    const flattenedSlots = event.slots.map((slot) => ({
+      ...slot,
+      reservations: slot.reservations.map((r) => ({
+        name: r.user.name || r.user.username,
+        username: r.user.username,
+        avatarUrl: r.user.avatarUrl,
+      })),
+    }));
+
+    return { ...event, slots: flattenedSlots };
   }
 
   private parseTrack(track?: string): Track | undefined {

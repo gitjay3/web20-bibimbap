@@ -41,6 +41,16 @@
   --color-gray-900: #111111;
   --color-black: #000000;
 
+  /* Error (Primitive) */
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+
+  /* Success (Primitive) */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+
   /* Brand (Semantic) */
   --color-brand-text-primary: var(--color-brand-500);
   --color-brand-border-default: var(--color-brand-500);
@@ -55,12 +65,13 @@
   --color-neutral-surface-default: var(--color-gray-50);
   --color-neutral-border-default: var(--color-gray-200);
 
-  /* Error (Primitive) */
-  --color-error-500: #ef4444;
-  --color-error-600: #dc2626;
-
   /* Error (Semantic) */
   --color-error-text-primary: var(--color-error-600);
+
+  /* Success (Semantic) */
+  --color-success-text-primary: var(--color-success-600);
+  --color-success-border-default: var(--color-success-500);
+  --color-success-surface-default: var(--color-success-50);
 
   /* 폰트 */
   --font-nanumsquare: 'NanumSquare';
