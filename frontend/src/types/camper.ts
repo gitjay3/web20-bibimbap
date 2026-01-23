@@ -2,7 +2,7 @@ import type { Track } from '@/types/event';
 
 export type { Track };
 
-export type RegistrationStaus = 'INVITED' | 'CLAIMED'
+export type RegistrationStatus = 'INVITED' | 'CLAIMED' | 'REVOKED'
 
 export interface Camper {
   id: string;
@@ -10,7 +10,7 @@ export interface Camper {
   name: string;
   username: string;
   track: Track;
-  status: RegistrationStaus;
+  status: RegistrationStatus;
   groupNumber: number | null;
 }
 

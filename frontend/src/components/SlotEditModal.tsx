@@ -3,6 +3,13 @@ import type { EventSlot, SlotSchema } from '@/types/event';
 
 const FIELD_ORDER = ['content', 'eventDate', 'startTime', 'endTime', 'location', 'mentorName'];
 
+const FIELD_TYPE_TO_INPUT_TYPE: Record<string, string> = {
+  time: 'time',
+  date: 'date',
+  number: 'number',
+  text: 'text',
+};
+
 interface SlotEditModalProps {
   open: boolean;
   mode: 'create' | 'edit';
@@ -42,7 +49,11 @@ export default function SlotEditModal({
   useEffect(() => {
     if (mode === 'edit' && slot) {
       setMaxCapacity(slot.maxCapacity);
-      setExtraInfo(slot.extraInfo || {});
+      // extraInfo 값들을 문자열로 변환 (API에서 unknown 타입으로 올 수 있음)
+      const stringifiedExtraInfo = Object.fromEntries(
+        Object.entries(slot.extraInfo || {}).map(([k, v]) => [k, String(v ?? '')]),
+      );
+      setExtraInfo(stringifiedExtraInfo);
     } else if (mode === 'create') {
       setMaxCapacity(1);
       setExtraInfo({});
@@ -112,7 +123,7 @@ export default function SlotEditModal({
                 </label>
                 <input
                   id={`slot-field-${field.id}`}
-                  type={field.type === 'time' ? 'time' : 'text'}
+                  type={FIELD_TYPE_TO_INPUT_TYPE[field.type] || 'text'}
                   value={extraInfo[field.id] || ''}
                   onChange={(e) => setExtraInfo({ ...extraInfo, [field.id]: e.target.value })}
                   className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-2"

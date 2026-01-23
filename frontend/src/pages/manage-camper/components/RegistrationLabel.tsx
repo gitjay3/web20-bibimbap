@@ -1,13 +1,14 @@
-import type { RegistrationStaus } from '@/types/camper';
+import type { RegistrationStatus } from '@/types/camper';
 import cn from '@/utils/cn';
 
 interface RegistrationLabelProps {
-  status: RegistrationStaus
+  status: RegistrationStatus;
 }
 
-const STATUS_LABEL_TEXT: Record<'INVITED' | 'CLAIMED', string> = {
+const STATUS_LABEL_TEXT: Record<RegistrationStatus, string> = {
   INVITED: '대기',
   CLAIMED: '완료',
+  REVOKED: '철회',
 };
 
 function RegistrationLabel({ status }: RegistrationLabelProps) {
