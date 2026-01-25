@@ -15,7 +15,7 @@ import {
   SlotNotFoundException,
   DuplicateReservationException,
 } from '../../common/exceptions/api.exception';
-import { createMockEventSlot, createMockUser } from '../test/mocks/mock-factory';
+import { createMockEventSlot } from '../test/mocks/mock-factory';
 
 const createRedisMock = () => ({
   incrementStock: jest.fn().mockResolvedValue(1),
@@ -151,7 +151,9 @@ describe('ReservationsProcessor', () => {
       );
 
       // Act & Assert
-      await expect(processor.process(job)).rejects.toThrow(SlotNotFoundException);
+      await expect(processor.process(job)).rejects.toThrow(
+        SlotNotFoundException,
+      );
       expect(redisMock.incrementStock).toHaveBeenCalledWith(
         slotId,
         maxCapacity,
@@ -162,7 +164,10 @@ describe('ReservationsProcessor', () => {
         'failed',
         expect.any(Number),
       );
-      expect(metricsMock.recordReservation).toHaveBeenCalledWith(slotId, 'failed');
+      expect(metricsMock.recordReservation).toHaveBeenCalledWith(
+        slotId,
+        'failed',
+      );
     });
 
     it('중복 예약이면 DuplicateReservationException을 던지고 재고를 복구한다', async () => {
@@ -275,7 +280,9 @@ describe('ReservationsProcessor', () => {
       );
 
       // Act & Assert
-      await expect(processor.process(job)).rejects.toThrow(SlotNotFoundException);
+      await expect(processor.process(job)).rejects.toThrow(
+        SlotNotFoundException,
+      );
       expect(redisMock.incrementStock).not.toHaveBeenCalled();
     });
   });

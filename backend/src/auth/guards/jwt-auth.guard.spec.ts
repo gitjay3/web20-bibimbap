@@ -118,7 +118,7 @@ describe('JwtAuthGuard', () => {
         .mockReturnValue(true);
 
       // Act
-      const result = guard.canActivate(context);
+      guard.canActivate(context);
 
       // Assert
       expect(superCanActivate).toHaveBeenCalled();
