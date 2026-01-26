@@ -270,6 +270,7 @@ export default function SlotOptionsSection() {
                   <span>[엑셀 업로드]를 통해 선택지를 한 번에 등록할 수 있습니다.</span>
                   <span className="text-13 text-neutral-text-tertiary">
                     * 첫 행은 필드 이름, 이후 행은 선택지 데이터로 자동 인식됩니다.
+                    * 필드 이름에 정원이 포함되어 있지 않을 경우 모든 선택지에 대해 정원 1로 설정됩니다.
                   </span>
                 </div>
               </div>
