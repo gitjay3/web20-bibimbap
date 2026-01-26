@@ -12,9 +12,7 @@ import {
 import OrganizationListTable from './components/OrganizationListTable';
 import OrganizationFormModal from './components/OrganizationFormModal';
 
-type ModalState =
-  | { type: 'closed' }
-  | { type: 'form'; organization: Organization | null };
+type ModalState = { type: 'closed' } | { type: 'form'; organization: Organization | null };
 
 function modalReducer(_: ModalState, action: ModalState): ModalState {
   return action;
@@ -47,22 +45,21 @@ function ManageOrganization() {
     setModal({ type: 'closed' });
   };
 
-  const sortOrganizations = (items: Organization[]) =>
-    [...items].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-
   const handleSave = async (data: { name: string }) => {
     if (modal.type !== 'form') return;
 
     try {
       if (modal.organization) {
         const updated = await updateOrganization(modal.organization.id, data);
-        setOrganizations((prev) =>
-          sortOrganizations(prev.map((org) => (org.id === updated.id ? updated : org))),
-        );
+
+        setOrganizations((prev) => prev.map((org) => (org.id === updated.id ? updated : org)));
+
         toast.success('조직 정보가 수정되었습니다.');
       } else {
         const created = await createOrganization(data);
-        setOrganizations((prev) => sortOrganizations([...prev, created]));
+
+        setOrganizations((prev) => [...prev, created]);
+
         toast.success('조직이 성공적으로 추가되었습니다.');
       }
     } catch (error) {
@@ -74,14 +71,18 @@ function ManageOrganization() {
 
   if (isLoading) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <div className="text-neutral-text-tertiary">로딩 중...</div>
+      <div className="flex flex-col gap-4">
+        <div className="h-14 w-1/2 animate-pulse rounded-xl bg-neutral-100" />
+        <div className="h-10 w-full animate-pulse rounded-xl bg-neutral-100" />
+        <div className="h-64 w-full animate-pulse rounded-xl bg-neutral-100" />
       </div>
     );
   }
 
+  const isEmpty = organizations.length === 0;
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="조직 관리"
         description="등록된 조직 목록을 확인하고 관리합니다."
@@ -92,7 +93,23 @@ function ManageOrganization() {
           </Button>
         }
       />
-      <OrganizationListTable organizations={organizations} onEdit={handleEdit} />
+
+      {isEmpty ? (
+        <div className="border-neutral-border-default bg-surface-white flex flex-col items-center justify-center gap-3 rounded-2xl border px-6 py-14 text-center">
+          <div className="text-neutral-text-primary text-18 font-bold">아직 조직이 없습니다</div>
+          <div className="text-neutral-text-secondary text-14">
+            조직을 추가하면 캠퍼/이벤트를 조직 단위로 관리할 수 있어요.
+          </div>
+          <div className="mt-2">
+            <Button type="secondary" onClickHandler={handleCreate}>
+              <PlusIcon className="h-4 w-4" />첫 조직 추가하기
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <OrganizationListTable organizations={organizations} onEdit={handleEdit} />
+      )}
+
       <OrganizationFormModal
         isOpen={modal.type === 'form'}
         organization={modal.type === 'form' ? modal.organization : null}

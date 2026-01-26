@@ -4,8 +4,8 @@ import api from './api';
 export interface Organization {
   id: string;
   name: string;
-  createdAt: string;
-  updatedAt: string;
+  camperCount?: number;
+  eventCount?: number;
 }
 
 export interface CreateOrganizationDto {

@@ -53,12 +53,8 @@ function OrganizationFormModal({
     <Modal isOpen={isOpen} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 pt-4">
         <div>
-          <h2 className="text-20 font-bold">
-            {organization ? '조직 정보 수정' : '조직 추가'}
-          </h2>
-          <p className="text-neutral-text-secondary text-14 mt-1">
-            조직명을 입력해 주세요.
-          </p>
+          <h2 className="text-20 font-bold">{organization ? '조직 정보 수정' : '조직 추가'}</h2>
+          <p className="text-neutral-text-secondary text-14 mt-1">조직명을 입력해 주세요.</p>
         </div>
         <div>
           <label htmlFor={nameId} className="text-16 mb-2 block font-bold">
