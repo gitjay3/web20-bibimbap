@@ -12,6 +12,7 @@ import SelectOrgPage from './pages/auth/select-org/SelectOrgPage';
 import OrgLayout from './OrgLayout';
 import EventCreatePage from './pages/events/create/EventCreatePage';
 import ManageCamper from './pages/manage-camper/ManageCamper';
+import ManageOrganization from './pages/manage-organization/ManageOrganization';
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,7 @@ const router = createBrowserRouter([
                     children: [
                       { path: 'templates', element: <ManageTemplate /> },
                       { path: 'campers', element: <ManageCamper /> },
+                      { path: 'organizations', element: <ManageOrganization /> },
                     ],
                   },
                 ],

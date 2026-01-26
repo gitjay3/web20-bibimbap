@@ -19,6 +19,7 @@ function Layout() {
 
   const adminNav: NavItem[] = [
     { label: '이벤트 관리', to: `/orgs/${orgId}` },
+    { label: '조직 관리', to: `/orgs/${orgId}/organizations` },
     { label: '캠퍼 관리', to: `/orgs/${orgId}/campers` },
     { label: '템플릿 관리', to: `/orgs/${orgId}/templates` },
   ];
