@@ -14,10 +14,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { OrganizationsService } from './organizations.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Auth } from 'src/auth/decorators/auth.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 import { CreateCamperDto } from './dto/create-camper.dto';
 import { UpdateCamperDto } from './dto/update-camper.dto';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { CamperDto } from './dto/camper.dto';
 
 @ApiTags('organizations')
@@ -35,11 +38,30 @@ export class OrganizationsController {
     return this.organizationsService.findMyOrganizations(userId, role);
   }
 
+  @Post()
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '조직 생성' })
+  @ApiResponse({ status: 201, description: '조직 생성 성공' })
+  createOrganization(@Body() dto: CreateOrganizationDto) {
+    return this.organizationsService.createOrganization(dto);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '조직 정보 조회' })
   @ApiResponse({ status: 200, description: '조직 정보 조회 성공' })
   findOne(@Param('id') id: string) {
     return this.organizationsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: '조직 정보 수정' })
+  @ApiResponse({ status: 200, description: '조직 정보 수정 성공' })
+  updateOrganization(
+    @Param('id') id: string,
+    @Body() dto: UpdateOrganizationDto,
+  ) {
+    return this.organizationsService.updateOrganization(id, dto);
   }
 
   @Get(':id/campers')

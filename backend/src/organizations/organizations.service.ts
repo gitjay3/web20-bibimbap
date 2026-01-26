@@ -13,6 +13,8 @@ import {
 } from '@prisma/client';
 import { CreateCamperDto } from './dto/create-camper.dto';
 import { UpdateCamperDto } from './dto/update-camper.dto';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { Workbook } from 'exceljs';
 
 @Injectable()
@@ -29,6 +31,41 @@ export class OrganizationsService {
     }
 
     return organization;
+  }
+
+  async createOrganization(dto: CreateOrganizationDto) {
+    const name = dto.name.trim();
+    if (!name) {
+      throw new BadRequestException('조직명을 입력해주세요.');
+    }
+
+    return this.prisma.organization.create({
+      data: {
+        name,
+      },
+    });
+  }
+
+  async updateOrganization(id: string, dto: UpdateOrganizationDto) {
+    const organization = await this.prisma.organization.findUnique({
+      where: { id },
+    });
+
+    if (!organization) {
+      throw new NotFoundException('조직을 찾을 수 없습니다.');
+    }
+
+    const name = dto.name?.trim();
+    if (!name) {
+      throw new BadRequestException('조직명을 입력해주세요.');
+    }
+
+    return this.prisma.organization.update({
+      where: { id },
+      data: {
+        name,
+      },
+    });
   }
 
   async findMyOrganizations(userId: string, role: Role) {
