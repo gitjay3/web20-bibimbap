@@ -70,3 +70,27 @@ export class SlotNotFoundException extends ApiException {
     super('슬롯을 찾을 수 없습니다', HttpStatus.NOT_FOUND);
   }
 }
+
+export class TeamRequiredException extends ApiException {
+  constructor() {
+    super(
+      '팀 단위 예약입니다. 그룹에 배정된 사용자만 신청할 수 있습니다.',
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+export class TeamMemberIneligibleException extends ApiException {
+  constructor() {
+    super(
+      '팀원 중 예약 조건을 충족하지 못한 멤버가 있습니다.',
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+export class TeamAlreadyReservedException extends ApiException {
+  constructor() {
+    super('이미 팀원이 예약한 일정입니다.', HttpStatus.BAD_REQUEST);
+  }
+}

@@ -1,38 +1,38 @@
-  generator client {
-    provider = "prisma-client-js"
-  }
+generator client {
+  provider = "prisma-client-js"
+}
 
-  datasource db {
-    provider = "postgresql"
-  }
+datasource db {
+  provider = "postgresql"
+}
 
-  enum Track {
-    ANDROID
-    IOS
-    WEB
-    COMMON
-  }
+enum Track {
+  ANDROID
+  IOS
+  WEB
+  COMMON
+}
 
-  enum ReservationStatus {
-    PENDING
-    CONFIRMED
-    CANCELLED
-  }
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
 
-  enum Role {
-    USER
-    ADMIN
-  }
+enum Role {
+  USER
+  ADMIN
+}
 
-  enum AuthProvider {
-    GITHUB
-    INTERNAL
-  }
+enum AuthProvider {
+  GITHUB
+  INTERNAL
+}
 
-  enum ApplicationUnit {
-    INDIVIDUAL
-    TEAM
-  }
+enum ApplicationUnit {
+  INDIVIDUAL
+  TEAM
+}
 
 model Event {
   id              Int             @id @default(autoincrement())
@@ -55,131 +55,134 @@ model Event {
   @@index([organizationId])
 }
 
-  model EventSlot {
-    id           Int  @id @default(autoincrement())
-    eventId      Int
-    maxCapacity  Int  @default(1)
-    currentCount Int  @default(0)
-    extraInfo    Json
-    version      Int  @default(0)
+model EventSlot {
+  id           Int  @id @default(autoincrement())
+  eventId      Int
+  maxCapacity  Int  @default(1)
+  currentCount Int  @default(0)
+  extraInfo    Json
+  version      Int  @default(0)
 
-    event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-    reservations Reservation[]
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
 
-    @@index([eventId])
-  }
+  @@index([eventId])
+}
 
-  model Reservation {
-    id         Int               @id @default(autoincrement())
-    userId     String            @db.Uuid()
-    slotId     Int
-    status     ReservationStatus @default(PENDING)
-    reservedAt DateTime          @default(now())
+model Reservation {
+  id          Int               @id @default(autoincrement())
+  userId      String            @db.Uuid()
+  slotId      Int
+  groupNumber Int?
+  status      ReservationStatus @default(PENDING)
+  reservedAt  DateTime          @default(now())
 
-    user              User               @relation(fields: [userId], references: [id])
-    slot              EventSlot          @relation(fields: [slotId], references: [id])
-    reservationOutbox ReservationOutbox?
-  }
+  user              User               @relation(fields: [userId], references: [id])
+  slot              EventSlot          @relation(fields: [slotId], references: [id])
+  reservationOutbox ReservationOutbox?
 
-  model ReservationOutbox {
-    id            Int      @id @default(autoincrement())
-    reservationId Int      @unique
-    payload       Json
-    status        String   @default("PENDING")
-    createdAt     DateTime @default(now())
+  @@index([slotId, groupNumber])
+}
 
-    reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-  }
+model ReservationOutbox {
+  id            Int      @id @default(autoincrement())
+  reservationId Int      @unique
+  payload       Json
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
 
-  model User {
-    id        String   @id @default(uuid()) @db.Uuid()
-    username  String   @unique     // GitHub username
-    name      String?              // 실명
-    avatarUrl String?              // 프로필 이미지 URL
-    role      Role     @default(USER)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
 
-    events       Event[]
-    reservations Reservation[]
-    authAccounts AuthAccount[]
+model User {
+  id        String   @id @default(uuid()) @db.Uuid()
+  username  String   @unique // GitHub username
+  name      String? // 실명
+  avatarUrl String? // 프로필 이미지 URL
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    organizations    CamperOrganization[]
-    preRegistrations CamperPreRegistration[]
-  }
+  events       Event[]
+  reservations Reservation[]
+  authAccounts AuthAccount[]
 
-  model Template {
-    id          Int      @id @default(autoincrement())
-    title       String
-    description String?
-    slotSchema  Json
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-  }
+  organizations    CamperOrganization[]
+  preRegistrations CamperPreRegistration[]
+}
 
-  model AuthAccount {
-    id           String       @id @default(uuid()) @db.Uuid()
-    provider     AuthProvider
-    providerId   String
-    passwordHash String?
-    userId       String       @db.Uuid()
+model Template {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  slotSchema  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 
-    user User @relation(fields: [userId], references: [id])
+model AuthAccount {
+  id           String       @id @default(uuid()) @db.Uuid()
+  provider     AuthProvider
+  providerId   String
+  passwordHash String?
+  userId       String       @db.Uuid()
 
-    @@unique([provider, providerId])
-  }
+  user User @relation(fields: [userId], references: [id])
 
-  model Organization {
-    id          String   @id @default(uuid()) @db.Uuid()
-    name        String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  @@unique([provider, providerId])
+}
 
-    events              Event[]
-    campers             CamperOrganization[]
-    preRegistrations    CamperPreRegistration[]
-  }
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid()
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  model CamperOrganization {
-    id             String   @id @default(uuid()) @db.Uuid()
-    userId         String   @db.Uuid()
-    organizationId String   @db.Uuid()
-    camperId       String?              // 조직 내 캠퍼 ID (예: J283)
-    groupNumber    Int?                 // 그룹 번호
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+  events           Event[]
+  campers          CamperOrganization[]
+  preRegistrations CamperPreRegistration[]
+}
 
-    user         User         @relation(fields: [userId], references: [id])
-    organization Organization @relation(fields: [organizationId], references: [id])
+model CamperOrganization {
+  id             String   @id @default(uuid()) @db.Uuid()
+  userId         String   @db.Uuid()
+  organizationId String   @db.Uuid()
+  camperId       String? // 조직 내 캠퍼 ID (예: J283)
+  groupNumber    Int? // 그룹 번호
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-    @@unique([userId, organizationId])
-    @@unique([organizationId, camperId])  // 같은 조직 내에서 camperId 중복 방지
-  }
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
-  enum PreRegStatus {
-    INVITED
-    CLAIMED
-    REVOKED
-  }
+  @@unique([userId, organizationId])
+  @@unique([organizationId, camperId]) // 같은 조직 내에서 camperId 중복 방지
+}
 
-  model CamperPreRegistration {
-    id             String       @id @default(uuid()) @db.Uuid()
-    claimedUserId  String?      @db.Uuid()
-    organizationId String       @db.Uuid()
-    
-    camperId       String       // 부스트캠프 ID (교육생 ID)
-    username       String       // GitHub Username (중요 식별자)
-    name           String       // 실명
-    track          Track        // 과정 (분야)
-    groupNumber    Int?         // 그룹 번호
-    
-    status         PreRegStatus @default(INVITED)
-    createdAt      DateTime     @default(now())
-    updatedAt      DateTime     @updatedAt
+enum PreRegStatus {
+  INVITED
+  CLAIMED
+  REVOKED
+}
 
-    claimedUser  User?        @relation(fields: [claimedUserId], references: [id])
-    organization Organization @relation(fields: [organizationId], references: [id])
+model CamperPreRegistration {
+  id             String  @id @default(uuid()) @db.Uuid()
+  claimedUserId  String? @db.Uuid()
+  organizationId String  @db.Uuid()
 
-    @@unique([organizationId, camperId])
-    @@index([username])
-  }
+  camperId    String // 부스트캠프 ID (교육생 ID)
+  username    String // GitHub Username (중요 식별자)
+  name        String // 실명
+  track       Track // 과정 (분야)
+  groupNumber Int? // 그룹 번호
+
+  status    PreRegStatus @default(INVITED)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  claimedUser  User?        @relation(fields: [claimedUserId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, camperId])
+  @@index([username])
+}
