@@ -20,7 +20,7 @@ export class TemplatesService {
 
   async findAll() {
     return this.prisma.template.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'asc' },
     });
   }
 

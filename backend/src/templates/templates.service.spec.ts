@@ -85,10 +85,10 @@ describe('TemplatesService', () => {
   });
 
   describe('findAll', () => {
-    it('모든 템플릿을 최신순으로 반환한다', async () => {
+    it('모든 템플릿을 등록순으로 반환한다', async () => {
       const mockTemplates = [
-        { id: 2, title: 'Template 2', createdAt: new Date('2024-01-02') },
         { id: 1, title: 'Template 1', createdAt: new Date('2024-01-01') },
+        { id: 2, title: 'Template 2', createdAt: new Date('2024-01-02') },
       ];
 
       prismaMock.template.findMany.mockResolvedValue(mockTemplates);
@@ -97,7 +97,7 @@ describe('TemplatesService', () => {
 
       expect(result).toEqual(mockTemplates);
       expect(prismaMock.template.findMany).toHaveBeenCalledWith({
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'asc' },
       });
     });
 
