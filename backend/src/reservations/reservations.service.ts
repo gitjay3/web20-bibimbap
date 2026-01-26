@@ -22,6 +22,9 @@ import {
   ReservationPeriodException,
   ForbiddenOrganizationException,
   ForbiddenTrackException,
+  TeamRequiredException,
+  TeamMemberIneligibleException,
+  TeamAlreadyReservedException,
 } from '../../common/exceptions/api.exception';
 import { MetricsService } from '../metrics/metrics.service';
 
@@ -61,18 +64,32 @@ export class ReservationsService {
     if (!slot) throw new SlotNotFoundException();
 
     // 자격 검증
-    await this.validateEligibilityOrThrow(userId, slot);
+    const eligibility = await this.validateEligibilityOrThrow(userId, slot);
 
     // 중복 예약 검증
-    const existing = await this.prisma.reservation.findFirst({
-      where: {
-        userId,
-        slotId: dto.slotId,
-        status: { in: ['PENDING', 'CONFIRMED'] },
-      },
-      select: { id: true },
-    });
-    if (existing) throw new DuplicateReservationException();
+    if (slot.event.applicationUnit === 'TEAM' && eligibility.groupNumber) {
+      // 팀 단위
+      const existingTeam = await this.prisma.reservation.findFirst({
+        where: {
+          slotId: dto.slotId,
+          groupNumber: eligibility.groupNumber,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+        select: { id: true },
+      });
+      if (existingTeam) throw new TeamAlreadyReservedException();
+    } else {
+      // 개인단위
+      const existing = await this.prisma.reservation.findFirst({
+        where: {
+          userId,
+          slotId: dto.slotId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+        select: { id: true },
+      });
+      if (existing) throw new DuplicateReservationException();
+    }
 
     // Redis에서 재고 차감 시도
     const success = await this.redisService.decrementStock(dto.slotId);
@@ -88,10 +105,13 @@ export class ReservationsService {
       slotId: dto.slotId,
       maxCapacity: slot.maxCapacity,
       stockDeducted: true,
+      groupNumber:
+        slot.event.applicationUnit === 'TEAM' ? eligibility.groupNumber : null,
     });
 
     // 메트릭 기록
     this.metricsService.recordReservation(dto.slotId, 'pending');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     this.metricsService.reservationLatency.observe(
       { operation: 'apply' },
       (Date.now() - startTime) / 1000,
@@ -108,7 +128,7 @@ export class ReservationsService {
   private async validateEligibilityOrThrow(
     userId: string,
     slot: Prisma.EventSlotGetPayload<{ include: { event: true } }>,
-  ): Promise<void> {
+  ): Promise<{ groupNumber: number | null }> {
     const now = new Date();
     const event = slot.event;
 
@@ -125,7 +145,7 @@ export class ReservationsService {
           organizationId: event.organizationId,
         },
       },
-      select: { id: true },
+      select: { id: true, groupNumber: true },
     });
 
     if (!membership) {
@@ -151,7 +171,41 @@ export class ReservationsService {
       }
     }
 
-    // TODO: applicationUnit(INDIVIDUAL/TEAM) 관련 검증
+    //applicationUnit(INDIVIDUAL/TEAM) 관련 검증
+    if (event.applicationUnit === 'TEAM') {
+      if (!membership.groupNumber) {
+        throw new TeamRequiredException();
+      }
+
+      const teamMembers = await this.prisma.camperOrganization.findMany({
+        where: {
+          organizationId: event.organizationId,
+          groupNumber: membership.groupNumber,
+        },
+        select: { userId: true },
+      });
+
+      // 팀원 전원의 트랙 검증 (COMMON이 아닌 경우)
+      if (event.track !== 'COMMON') {
+        const teamPreRegs = await this.prisma.camperPreRegistration.findMany({
+          where: {
+            claimedUserId: { in: teamMembers.map((m) => m.userId) },
+            organizationId: event.organizationId,
+          },
+          select: { claimedUserId: true, track: true },
+        });
+
+        const invalidMembers = teamMembers.filter((m) => {
+          const preReg = teamPreRegs.find((p) => p.claimedUserId === m.userId);
+          return !preReg || preReg.track !== event.track;
+        });
+
+        if (invalidMembers.length > 0) {
+          throw new TeamMemberIneligibleException();
+        }
+      }
+    }
+    return { groupNumber: membership.groupNumber };
   }
 
   async findAllByUser(userId: string): Promise<ReservationWithRelations[]> {
@@ -262,6 +316,7 @@ export class ReservationsService {
 
       // 메트릭 기록
       this.metricsService.recordReservation(result.slotId, 'cancelled');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.metricsService.reservationLatency.observe(
         { operation: 'cancel' },
         (Date.now() - startTime) / 1000,
