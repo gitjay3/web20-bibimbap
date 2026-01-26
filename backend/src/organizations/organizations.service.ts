@@ -70,9 +70,10 @@ export class OrganizationsService {
 
   async findMyOrganizations(userId: string, role: Role) {
     if (role === Role.ADMIN) {
-      return this.prisma.organization.findMany({
+      const organizations = await this.prisma.organization.findMany({
         orderBy: { name: 'asc' },
       });
+      return this.attachOrganizationStats(organizations);
     }
 
     // 1. 이미 CLAIMED 하여 CamperOrganization에 등록된 조직
@@ -114,7 +115,51 @@ export class OrganizationsService {
       });
     }
 
-    return organizations;
+    return this.attachOrganizationStats(organizations);
+  }
+
+  private async attachOrganizationStats(organizations: { id: string }[]) {
+    if (organizations.length === 0) {
+      return [];
+    }
+
+    const organizationIds = organizations.map(
+      (organization) => organization.id,
+    );
+
+    const camperCounts = await this.prisma.camperPreRegistration.groupBy({
+      by: ['organizationId'],
+      where: {
+        organizationId: { in: organizationIds },
+        status: { not: PreRegStatus.REVOKED },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const eventCounts = await this.prisma.event.groupBy({
+      by: ['organizationId'],
+      where: {
+        organizationId: { in: organizationIds },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const camperCountMap = new Map(
+      camperCounts.map((count) => [count.organizationId, count._count._all]),
+    );
+    const eventCountMap = new Map(
+      eventCounts.map((count) => [count.organizationId, count._count._all]),
+    );
+
+    return organizations.map((organization) => ({
+      ...organization,
+      camperCount: camperCountMap.get(organization.id) ?? 0,
+      eventCount: eventCountMap.get(organization.id) ?? 0,
+    }));
   }
 
   async findCampers(organizationId: string) {
