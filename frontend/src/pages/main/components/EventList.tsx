@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import type { Event } from '@/types/event';
 import Dropdown from '@/components/Dropdown';
@@ -38,10 +38,17 @@ function EventList() {
 
   const [selectedStatus, setSelectedStatus] = useState<EventStatusFilter>('ALL');
 
+  const handleDeleted = useCallback(() => {
+    getEvents(orgId).then(setEvents);
+  }, [orgId]);
+
   const filteredEvents = useMemo(
     () =>
       events.filter((event) => {
-        const categoryOk = selectedCategoryTab === 'ALL' || event.track === selectedCategoryTab;
+        const categoryOk =
+          selectedCategoryTab === 'ALL' ||
+          event.track === selectedCategoryTab ||
+          (selectedCategoryTab !== 'COMMON' && event.track === 'COMMON');
         const statusOk = selectedStatus === 'ALL' || event.status === selectedStatus;
         return categoryOk && statusOk;
       }),
@@ -68,9 +75,7 @@ function EventList() {
           <EventCard
             key={item.id}
             event={item}
-            onDeleted={() => {
-              getEvents(orgId).then(setEvents);
-            }}
+            onDeleted={handleDeleted}
           />
         ))}
       </div>
