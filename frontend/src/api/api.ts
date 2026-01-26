@@ -22,8 +22,8 @@ api.interceptors.response.use(
       const { status, data } = error.response;
       const errorMessage = data?.message || '알 수 없는 오류가 발생했습니다.';
 
-      // 401: 인증 만료 시 로그인 페이지로 이동
-      if (status === 401) {
+      // 401: 인증 만료 시 로그인 페이지로 이동 (이미 로그인 페이지면 리다이렉트 안함)
+      if (status === 401 && !window.location.pathname.startsWith('/login')) {
         // TODO: 토큰 재발급
         window.location.href = '/login';
         return Promise.reject(error);
