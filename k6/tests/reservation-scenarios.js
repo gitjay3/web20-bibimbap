@@ -21,6 +21,7 @@ import {
   getReservationIdWithRetry,
 } from '../lib/helpers.js';
 import { scenarioThresholds } from '../lib/thresholds.js';
+import { handleSummaryReport } from '../lib/summary.js';
 
 // ==========================================
 // 테스트 데이터 로드
@@ -263,4 +264,12 @@ export default function () {
   testCancelAndRebook();
   sleep(2);
   testTeamDuplicate();
+}
+
+// ==========================================
+// 결과 요약
+// ==========================================
+
+export function handleSummary(data) {
+  return handleSummaryReport(data);
 }
