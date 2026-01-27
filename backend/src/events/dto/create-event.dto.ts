@@ -52,7 +52,7 @@ export class CreateEventDto {
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsOptional()
   @IsEnum(Track)

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 type SectionCardProps = {
   title: string;
-  description: string;
+  description: ReactNode;
   children: ReactNode;
 };
 
