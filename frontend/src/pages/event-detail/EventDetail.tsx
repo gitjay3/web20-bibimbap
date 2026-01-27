@@ -142,10 +142,11 @@ function EventDetail() {
     const intervalId = setInterval(() => {
       if (!isPageVisibleRef.current) return;
       updateSlotAvailability();
+      fetchMyReservation();
     }, POLLING_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [eventStatus, updateSlotAvailability]);
+  }, [eventStatus, updateSlotAvailability, fetchMyReservation]);
 
   const handleReservationSuccess = useCallback(() => {
     setSelectedSlotId(null);
