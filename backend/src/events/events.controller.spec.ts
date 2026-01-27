@@ -44,6 +44,7 @@ describe('EventsController', () => {
     it('이벤트를 생성한다', async () => {
       const createDto = {
         title: '테스트 이벤트',
+        description: '테스트 이벤트 설명',
         track: Track.WEB,
         organizationId: 'org-123',
         startTime: new Date('2024-01-15T10:00:00Z'),
