@@ -90,11 +90,19 @@ describe('ReservationsService', () => {
       };
       const mockMembership = { userId, organizationId: 'org-123' };
 
+      const mockReservation = {
+        id: 1,
+        userId,
+        slotId: dto.slotId,
+        status: 'PENDING',
+      };
+
       prismaMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
       prismaMock.reservation.findFirst.mockResolvedValue(null); // 중복 예약 없음
       prismaMock.camperOrganization.findUnique.mockResolvedValue(
         mockMembership,
       );
+      prismaMock.reservation.create.mockResolvedValue(mockReservation);
       redisMock.decrementStock.mockResolvedValue(true);
 
       const result = await service.apply(userId, dto);
