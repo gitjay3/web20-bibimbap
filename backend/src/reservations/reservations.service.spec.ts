@@ -257,24 +257,21 @@ describe('ReservationsService', () => {
         },
       ];
 
-      prismaMock.reservation.findMany.mockResolvedValue(mockReservations);
+      prismaMock.camperOrganization.findMany.mockResolvedValue([]);
+      // 첫 번째 호출: 개인 예약 반환
+      // 두 번째 호출: 팀 예약 없음 (빈 배열)
+      prismaMock.reservation.findMany
+        .mockResolvedValueOnce(mockReservations) // 개인 예약
+        .mockResolvedValueOnce([]); // 팀 예약 (없음)
 
       const result = await service.findAllByUser(userId);
 
-      expect(result).toEqual(mockReservations);
-      expect(prismaMock.reservation.findMany).toHaveBeenCalledWith({
-        where: { userId },
-        include: {
-          slot: {
-            include: {
-              event: true,
-            },
-          },
+      expect(result).toEqual([
+        {
+          ...mockReservations[0],
+          isTeamReservation: false,
         },
-        orderBy: {
-          reservedAt: 'desc',
-        },
-      });
+      ]);
     });
   });
 });

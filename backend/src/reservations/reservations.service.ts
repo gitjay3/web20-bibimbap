@@ -115,7 +115,7 @@ export class ReservationsService {
 
     // 메트릭 기록
     this.metricsService.recordReservation(dto.slotId, 'pending');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
     this.metricsService.reservationLatency.observe(
       { operation: 'apply' },
       (Date.now() - startTime) / 1000,
@@ -383,7 +383,7 @@ export class ReservationsService {
 
       // 메트릭 기록
       this.metricsService.recordReservation(result.slotId, 'cancelled');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
       this.metricsService.reservationLatency.observe(
         { operation: 'cancel' },
         (Date.now() - startTime) / 1000,

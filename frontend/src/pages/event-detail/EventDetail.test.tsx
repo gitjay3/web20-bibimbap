@@ -301,13 +301,19 @@ describe('EventDetail', () => {
         expect(screen.getByText('React 멘토링')).toBeInTheDocument();
       });
 
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '예약하기' })).toBeInTheDocument();
+      });
+
       // 슬롯 선택 버튼 클릭
       const slotButton = screen.getByRole('button', { name: '슬롯 선택' });
       await user.click(slotButton);
 
       // 슬롯이 선택되면 예약하기 버튼이 활성화됨
-      const reservationButton = screen.getByRole('button', { name: '예약하기' });
-      expect(reservationButton).not.toBeDisabled();
+      await waitFor(() => {
+        const reservationButton = screen.getByRole('button', { name: '예약하기' });
+        expect(reservationButton).not.toBeDisabled();
+      });
     });
 
     it('이미 예약이 있을 때 예약 취소 버튼을 표시한다', async () => {

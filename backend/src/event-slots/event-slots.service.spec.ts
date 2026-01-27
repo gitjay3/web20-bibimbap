@@ -26,16 +26,18 @@ describe('EventSlotsService', () => {
   });
 
   describe('findByEventWithAvailability', () => {
-    it('이벤트와 슬롯 가용성 정보를 반환한다', async () => {
+    it('이벤트의 슬롯 가용성을 반환한다', async () => {
       const mockEvent = {
         id: 1,
         title: 'Test Event',
         slots: [
+          // 이미 있음 - 문제 없어 보임
           { id: 1, maxCapacity: 10, currentCount: 5, extraInfo: {} },
           { id: 2, maxCapacity: 20, currentCount: 20, extraInfo: {} },
         ],
       };
 
+      // 추가: event mock
       prismaMock.event.findUnique.mockResolvedValue(mockEvent);
 
       const result = await service.findByEventWithAvailability(1);
@@ -98,6 +100,7 @@ describe('EventSlotsService', () => {
         { id: 2, currentCount: 10, maxCapacity: 10, reservations: [] },
       ];
 
+      prismaMock.event.findUnique.mockResolvedValue({ id: 1 });
       prismaMock.eventSlot.findMany.mockResolvedValue(mockSlots);
 
       const result = await service.getAvailabilityByEvent(1);
@@ -122,6 +125,8 @@ describe('EventSlotsService', () => {
     });
 
     it('슬롯이 없으면 NotFoundException을 던진다', async () => {
+      // 이벤트는 존재하지만 슬롯이 없는 경우
+      prismaMock.event.findUnique.mockResolvedValue({ id: 999 });
       prismaMock.eventSlot.findMany.mockResolvedValue([]);
 
       await expect(service.getAvailabilityByEvent(999)).rejects.toThrow(

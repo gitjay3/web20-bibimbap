@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 const createAuthServiceMock = () => ({
   validateInternalUser: jest.fn(),
@@ -40,6 +41,19 @@ describe('AuthController', () => {
       providers: [
         { provide: AuthService, useValue: authServiceMock },
         { provide: ConfigService, useValue: configServiceMock },
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findUnique: jest.fn().mockResolvedValue({
+                id: 'user-123',
+                role: 'USER',
+                name: 'Test User',
+                organizations: [],
+              }),
+            },
+          },
+        },
       ],
     }).compile();
 
@@ -130,12 +144,22 @@ describe('AuthController', () => {
   });
 
   describe('getMe', () => {
-    it('현재 사용자 정보를 반환한다', () => {
+    it('현재 사용자 정보를 반환한다', async () => {
+      // async 추가
       const mockUser = { id: 'user-123', role: 'USER', name: 'Test User' };
+      const fullUser = {
+        id: 'user-123',
+        role: 'USER',
+        name: 'Test User',
+        organizations: [],
+      };
 
-      const result = controller.getMe(mockUser as any);
+      // prisma mock 수정 필요
+      // PrismaService mock이 user.findUnique를 반환하도록 설정되어야 함
 
-      expect(result).toEqual(mockUser);
+      const result = await controller.getMe(mockUser as any); // await 추가
+
+      expect(result).toEqual(fullUser);
     });
   });
 });
