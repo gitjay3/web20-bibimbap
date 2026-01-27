@@ -13,6 +13,8 @@ import {
 } from '@prisma/client';
 import { CreateCamperDto } from './dto/create-camper.dto';
 import { UpdateCamperDto } from './dto/update-camper.dto';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { Workbook } from 'exceljs';
 
 @Injectable()
@@ -31,11 +33,47 @@ export class OrganizationsService {
     return organization;
   }
 
+  async createOrganization(dto: CreateOrganizationDto) {
+    const name = dto.name.trim();
+    if (!name) {
+      throw new BadRequestException('조직명을 입력해주세요.');
+    }
+
+    return this.prisma.organization.create({
+      data: {
+        name,
+      },
+    });
+  }
+
+  async updateOrganization(id: string, dto: UpdateOrganizationDto) {
+    const organization = await this.prisma.organization.findUnique({
+      where: { id },
+    });
+
+    if (!organization) {
+      throw new NotFoundException('조직을 찾을 수 없습니다.');
+    }
+
+    const name = dto.name?.trim();
+    if (!name) {
+      throw new BadRequestException('조직명을 입력해주세요.');
+    }
+
+    return this.prisma.organization.update({
+      where: { id },
+      data: {
+        name,
+      },
+    });
+  }
+
   async findMyOrganizations(userId: string, role: Role) {
     if (role === Role.ADMIN) {
-      return this.prisma.organization.findMany({
-        orderBy: { name: 'asc' },
+      const organizations = await this.prisma.organization.findMany({
+        orderBy: { createdAt: 'desc' },
       });
+      return this.attachOrganizationStats(organizations);
     }
 
     // 1. 이미 CLAIMED 하여 CamperOrganization에 등록된 조직
@@ -77,7 +115,51 @@ export class OrganizationsService {
       });
     }
 
-    return organizations;
+    return this.attachOrganizationStats(organizations);
+  }
+
+  private async attachOrganizationStats(organizations: { id: string }[]) {
+    if (organizations.length === 0) {
+      return [];
+    }
+
+    const organizationIds = organizations.map(
+      (organization) => organization.id,
+    );
+
+    const camperCounts = await this.prisma.camperPreRegistration.groupBy({
+      by: ['organizationId'],
+      where: {
+        organizationId: { in: organizationIds },
+        status: { not: PreRegStatus.REVOKED },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const eventCounts = await this.prisma.event.groupBy({
+      by: ['organizationId'],
+      where: {
+        organizationId: { in: organizationIds },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const camperCountMap = new Map(
+      camperCounts.map((count) => [count.organizationId, count._count._all]),
+    );
+    const eventCountMap = new Map(
+      eventCounts.map((count) => [count.organizationId, count._count._all]),
+    );
+
+    return organizations.map((organization) => ({
+      ...organization,
+      camperCount: camperCountMap.get(organization.id) ?? 0,
+      eventCount: eventCountMap.get(organization.id) ?? 0,
+    }));
   }
 
   async findCampers(organizationId: string) {

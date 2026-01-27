@@ -20,6 +20,10 @@ const createPrismaMock = () => ({
     findUnique: jest.fn(),
     upsert: jest.fn(),
     update: jest.fn(),
+    groupBy: jest.fn(),
+  },
+  event: {
+    groupBy: jest.fn(),
   },
   user: {
     findUnique: jest.fn(),
@@ -76,12 +80,17 @@ describe('OrganizationsService', () => {
         { id: 'org-2', name: 'Org 2' },
       ];
       prismaMock.organization.findMany.mockResolvedValue(mockOrgs);
+      prismaMock.camperPreRegistration.groupBy.mockResolvedValue([]);
+      prismaMock.event.groupBy.mockResolvedValue([]);
 
       const result = await service.findMyOrganizations('admin-123', Role.ADMIN);
 
-      expect(result).toEqual(mockOrgs);
+      expect(result).toEqual([
+        { ...mockOrgs[0], camperCount: 0, eventCount: 0 },
+        { ...mockOrgs[1], camperCount: 0, eventCount: 0 },
+      ]);
       expect(prismaMock.organization.findMany).toHaveBeenCalledWith({
-        orderBy: { name: 'asc' },
+        orderBy: { createdAt: 'desc' },
       });
     });
 
@@ -92,10 +101,12 @@ describe('OrganizationsService', () => {
       ]);
       prismaMock.user.findUnique.mockResolvedValue({ username: 'testuser' });
       prismaMock.camperPreRegistration.findMany.mockResolvedValue([]);
+      prismaMock.camperPreRegistration.groupBy.mockResolvedValue([]);
+      prismaMock.event.groupBy.mockResolvedValue([]);
 
       const result = await service.findMyOrganizations('user-123', Role.USER);
 
-      expect(result).toEqual([mockOrg]);
+      expect(result).toEqual([{ ...mockOrg, camperCount: 0, eventCount: 0 }]);
     });
 
     it('USER는 초대받은 조직도 포함한다', async () => {
@@ -113,12 +124,22 @@ describe('OrganizationsService', () => {
           status: PreRegStatus.INVITED,
         },
       ]);
+      prismaMock.camperPreRegistration.groupBy.mockResolvedValue([]);
+      prismaMock.event.groupBy.mockResolvedValue([]);
 
       const result = await service.findMyOrganizations('user-123', Role.USER);
 
       expect(result).toHaveLength(2);
-      expect(result).toContainEqual(claimedOrg);
-      expect(result).toContainEqual(invitedOrg);
+      expect(result).toContainEqual({
+        ...claimedOrg,
+        camperCount: 0,
+        eventCount: 0,
+      });
+      expect(result).toContainEqual({
+        ...invitedOrg,
+        camperCount: 0,
+        eventCount: 0,
+      });
     });
   });
 
