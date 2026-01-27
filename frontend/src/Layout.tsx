@@ -14,6 +14,7 @@ function Layout() {
 
   const camperNav: NavItem[] = [
     { label: '이벤트 예약', to: `/orgs/${orgId}` },
+    { label: '예약 관리', to: `/orgs/${orgId}/reservations` },
     { label: '마이페이지', to: `/orgs/${orgId}/me` },
   ];
 
