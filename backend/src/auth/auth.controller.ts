@@ -1,15 +1,25 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { User } from '@prisma/client';
 import { AuthService } from './auth.service';
-import type { Response, Request } from 'express';
+import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { JwtUser } from 'src/auth/types/jwt-user.type';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -17,6 +27,7 @@ export class AuthController {
   constructor(
     private readonly config: ConfigService,
     private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Public()
@@ -111,8 +122,22 @@ export class AuthController {
     status: 200,
     description: '내 정보 조회 성공',
   })
-  getMe(@CurrentUser() user: User) {
-    return user;
+  async getMe(@CurrentUser() user: JwtUser) {
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        organizations: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!fullUser) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+    return fullUser;
   }
 
   private setTokenCookie(res: Response, accessToken: string) {

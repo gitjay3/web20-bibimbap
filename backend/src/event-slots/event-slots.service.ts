@@ -51,12 +51,22 @@ export class EventSlotsService {
   }
 
   async getAvailabilityByEvent(eventId: number) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { applicationUnit: true, organizationId: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException('이벤트를 찾을 수 없습니다');
+    }
+
     const slots = await this.prisma.eventSlot.findMany({
       where: { eventId },
       include: {
         reservations: {
           where: { status: 'CONFIRMED' },
           select: {
+            groupNumber: true,
             user: {
               select: {
                 name: true,
@@ -74,19 +84,68 @@ export class EventSlotsService {
       throw new NotFoundException('해당 이벤트의 슬롯을 찾을 수 없습니다');
     }
 
+    // 팀 단위 이벤트인 경우 팀원 정보 조회
+    let teamMembersMap: Map<
+      number,
+      Array<{ name: string; username: string; avatarUrl: string | null }>
+    > | null = null;
+
+    if (event.applicationUnit === 'TEAM') {
+      const groupNumbers = [
+        ...new Set(
+          slots.flatMap((s) =>
+            s.reservations
+              .map((r) => r.groupNumber)
+              .filter((g): g is number => g !== null),
+          ),
+        ),
+      ];
+
+      if (groupNumbers.length > 0) {
+        const members = await this.prisma.camperOrganization.findMany({
+          where: {
+            organizationId: event.organizationId,
+            groupNumber: { in: groupNumbers },
+          },
+          include: {
+            user: {
+              select: { name: true, username: true, avatarUrl: true },
+            },
+          },
+        });
+
+        teamMembersMap = new Map();
+        for (const m of members) {
+          if (!m.groupNumber) continue;
+          if (!teamMembersMap.has(m.groupNumber)) {
+            teamMembersMap.set(m.groupNumber, []);
+          }
+          teamMembersMap.get(m.groupNumber)!.push({
+            name: m.user.name ?? m.user.username ?? '',
+            username: m.user.username,
+            avatarUrl: m.user.avatarUrl,
+          });
+        }
+      }
+    }
+
     return {
+      applicationUnit: event.applicationUnit,
       slots: slots.map((slot) => ({
         slotId: slot.id,
         currentCount: slot.currentCount,
         remainingSeats: Math.max(0, slot.maxCapacity - slot.currentCount),
         isAvailable: slot.currentCount < slot.maxCapacity,
-        reservations: (slot.reservations as unknown as ReservationUser[]).map(
-          (r: ReservationUser) => ({
-            name: r.user.name || r.user.username,
-            username: r.user.username,
-            avatarUrl: r.user.avatarUrl,
-          }),
-        ),
+        reservations: slot.reservations.map((r) => ({
+          name: r.user.name || r.user.username,
+          username: r.user.username,
+          avatarUrl: r.user.avatarUrl,
+          groupNumber: r.groupNumber,
+          teamMembers:
+            r.groupNumber && teamMembersMap
+              ? (teamMembersMap.get(r.groupNumber) ?? [])
+              : undefined,
+        })),
       })),
       timestamp: new Date().toISOString(),
     };

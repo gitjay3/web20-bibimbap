@@ -80,21 +80,46 @@ async function main() {
   console.log('✓ 테스트 사용자 생성:', testUser.user.id);
 
   // 3-0. 추가 테스트 사용자들 (명단 표시 확인용 - 실제 가입 계정과 겹치지 않게 변경)
-  const extraUsers = await Promise.all([
-    { username: 'testuser1', name: '김코딩', avatar: 'https://i.pravatar.cc/150?u=testuser1' },
-    { username: 'testuser2', name: '박직원', avatar: 'https://i.pravatar.cc/150?u=testuser2' },
-    { username: 'testuser3', name: '이캠퍼', avatar: 'https://i.pravatar.cc/150?u=testuser3' },
-    { username: 'testuser4', name: '최멘토', avatar: 'https://i.pravatar.cc/150?u=testuser4' },
-  ].map(u => 
-    prisma.authAccount.create({
-      data: {
-        provider: AuthProvider.GITHUB,
-        providerId: `mock_${u.username}`,
-        user: { create: { username: u.username, name: u.name, avatarUrl: u.avatar, role: Role.USER } }
+  const extraUsers = await Promise.all(
+    [
+      {
+        username: 'testuser1',
+        name: '김코딩',
+        avatar: 'https://i.pravatar.cc/150?u=testuser1',
       },
-      include: { user: true }
-    })
-  ));
+      {
+        username: 'testuser2',
+        name: '박직원',
+        avatar: 'https://i.pravatar.cc/150?u=testuser2',
+      },
+      {
+        username: 'testuser3',
+        name: '이캠퍼',
+        avatar: 'https://i.pravatar.cc/150?u=testuser3',
+      },
+      {
+        username: 'testuser4',
+        name: '최멘토',
+        avatar: 'https://i.pravatar.cc/150?u=testuser4',
+      },
+    ].map((u) =>
+      prisma.authAccount.create({
+        data: {
+          provider: AuthProvider.GITHUB,
+          providerId: `mock_${u.username}`,
+          user: {
+            create: {
+              username: u.username,
+              name: u.name,
+              avatarUrl: u.avatar,
+              role: Role.USER,
+            },
+          },
+        },
+        include: { user: true },
+      }),
+    ),
+  );
   console.log('✓ 추가 테스트 사용자 4명 생성 완료');
 
   // 3-1. 조직(Organization) 생성
@@ -106,7 +131,9 @@ async function main() {
   console.log('✓ 조직 생성:', organization.name);
 
   // 3-2. 사전 등록(PreRegistration) 데이터 생성
-  // (1) 미가입 유저 (INVITED)
+  // (1) 미가입 유저 (INVITED) - 그룹 번호 포함
+  // 그룹 1: hanpengbutt, wfs0502
+  // 그룹 2: gitjay3, RainWhales
   await prisma.camperPreRegistration.create({
     data: {
       organizationId: organization.id,
@@ -114,6 +141,7 @@ async function main() {
       name: '한지은',
       username: 'hanpengbutt',
       track: Track.WEB,
+      groupNumber: 1,
       status: PreRegStatus.INVITED,
     },
   });
@@ -125,6 +153,7 @@ async function main() {
       name: '김시영',
       username: 'wfs0502',
       track: Track.WEB,
+      groupNumber: 1,
       status: PreRegStatus.INVITED,
     },
   });
@@ -136,6 +165,7 @@ async function main() {
       name: '박재성',
       username: 'gitjay3',
       track: Track.WEB,
+      groupNumber: 2,
       status: PreRegStatus.INVITED,
     },
   });
@@ -147,19 +177,23 @@ async function main() {
       name: '정희재',
       username: 'RainWhales',
       track: Track.WEB,
+      groupNumber: 2,
       status: PreRegStatus.INVITED,
     },
   });
 
   // (2) 탈퇴/재가입 시나리오 등을 위한 가입 유저 (CLAIMED) - 시드에서는 테스트용으로 미리 연결해둘 수도 있음
   // 여기서는 로직 테스트를 위해 'testuser'를 위한 사전등록 데이터를 생성해둡니다.
+  // 그룹 3: testuser (팀장), testuser1, testuser2
+  // 그룹 4: testuser3, testuser4
   await prisma.camperPreRegistration.create({
     data: {
       organizationId: organization.id,
       camperId: 'J999',
       name: '테스트 사용자',
       username: 'testuser',
-      track: Track.ANDROID,
+      track: Track.WEB,
+      groupNumber: 3,
       status: PreRegStatus.CLAIMED,
       claimedUserId: testUser.user.id,
     },
@@ -171,8 +205,24 @@ async function main() {
       userId: testUser.user.id,
       organizationId: organization.id,
       camperId: 'J999',
+      groupNumber: 3,
     },
   });
+
+  // 추가 테스트 유저들도 CamperOrganization에 그룹과 함께 등록
+  // 그룹 3: testuser1, testuser2
+  // 그룹 4: testuser3, testuser4
+  const extraUserGroups = [3, 3, 4, 4]; // testuser1, testuser2는 그룹3 / testuser3, testuser4는 그룹4
+  for (let i = 0; i < extraUsers.length; i++) {
+    await prisma.camperOrganization.create({
+      data: {
+        userId: extraUsers[i].user.id,
+        organizationId: organization.id,
+        camperId: `J00${i + 1}`,
+        groupNumber: extraUserGroups[i],
+      },
+    });
+  }
 
   console.log('✓ 사전 등록 데이터 생성 완료');
 
@@ -267,12 +317,14 @@ async function main() {
   console.log('✓ 이벤트 4 생성:', event4.title);
 
   // 5. 이벤트 슬롯 생성
+  // 팀 이벤트(슬롯 1~4): 그룹 3, 4가 예약 → currentCount: 2
+  // 개인 이벤트(슬롯 5~10): 개인별 예약
   const slots = [
     {
       id: 1,
       eventId: 1,
       maxCapacity: 5,
-      currentCount: 5,
+      currentCount: 2, // 2팀 예약 (그룹 3, 4)
       extraInfo: {
         f1: 'A팀 멘토링',
         f2: '2026-02-15',
@@ -286,7 +338,7 @@ async function main() {
       id: 2,
       eventId: 1,
       maxCapacity: 5,
-      currentCount: 3,
+      currentCount: 2, // 2팀 예약 (그룹 3, 4)
       extraInfo: {
         f1: 'B팀 멘토링',
         f2: '2026-02-15',
@@ -300,7 +352,7 @@ async function main() {
       id: 3,
       eventId: 1,
       maxCapacity: 5,
-      currentCount: 1,
+      currentCount: 1, // 1팀만 예약 (그룹 3만)
       extraInfo: {
         f1: 'C팀 멘토링',
         f2: '2026-02-15',
@@ -314,7 +366,7 @@ async function main() {
       id: 4,
       eventId: 1,
       maxCapacity: 5,
-      currentCount: 2,
+      currentCount: 2, // 2팀 예약 (그룹 3, 4)
       extraInfo: {
         f1: 'D팀 멘토링',
         f2: '2026-02-15',
@@ -455,22 +507,55 @@ async function main() {
 
   // 7. 가짜 예약 데이터 생성 (명단 확인용)
   console.log('🌱 가짜 예약 데이터 생성 중...');
-  const reserversPool = [testUser.user.id, ...extraUsers.map(a => a.user.id)];
-  
+  const reserversPool = [testUser.user.id, ...extraUsers.map((a) => a.user.id)];
+
+  // 이벤트 1 (팀 이벤트)의 슬롯들 (id: 1~4)은 팀 단위 예약
+  // 이벤트 2, 3 (개인 이벤트)의 슬롯들 (id: 5~10)은 개인 단위 예약
+  const teamEventSlotIds = [1, 2, 3, 4];
+
   for (const slot of slots) {
     if (slot.currentCount > 0) {
-      // 해당 슬롯의 currentCount만큼 예약 데이터 생성
-      for (let i = 0; i < slot.currentCount; i++) {
-        const userId = reserversPool[i % reserversPool.length];
-        await prisma.reservation.create({
-          data: {
-            userId,
-            slotId: slot.id,
-            status: ReservationStatus.CONFIRMED,
-          }
-        });
+      const isTeamSlot = teamEventSlotIds.includes(slot.id);
+
+      if (isTeamSlot) {
+        // 팀 이벤트: 그룹 단위로 예약 (한 그룹 = 1 capacity)
+        // 그룹 3과 그룹 4가 예약
+        const teamGroups = [3, 4];
+        const reserveCount = Math.min(slot.currentCount, teamGroups.length);
+        for (let i = 0; i < reserveCount; i++) {
+          const groupNumber = teamGroups[i];
+          // 해당 그룹의 대표자(첫 번째 멤버)로 예약 생성
+          // 그룹 3: testUser, 그룹 4: testuser3 (extraUsers[2])
+          const representativeUserId =
+            groupNumber === 3 ? testUser.user.id : extraUsers[2].user.id;
+          await prisma.reservation.create({
+            data: {
+              userId: representativeUserId,
+              slotId: slot.id,
+              groupNumber,
+              status: ReservationStatus.CONFIRMED,
+            },
+          });
+        }
+        console.log(
+          `✓ 슬롯 ${slot.id}번 (팀 이벤트)에 대한 ${reserveCount}개 그룹 예약 생성 완료`,
+        );
+      } else {
+        // 개인 이벤트: 개인 단위로 예약
+        for (let i = 0; i < slot.currentCount; i++) {
+          const userId = reserversPool[i % reserversPool.length];
+          await prisma.reservation.create({
+            data: {
+              userId,
+              slotId: slot.id,
+              status: ReservationStatus.CONFIRMED,
+            },
+          });
+        }
+        console.log(
+          `✓ 슬롯 ${slot.id}번 (개인 이벤트)에 대한 ${slot.currentCount}건의 예약 생성 완료`,
+        );
       }
-      console.log(`✓ 슬롯 ${slot.id}번에 대한 ${slot.currentCount}건의 예약 데이터 생성 완료`);
     }
   }
 

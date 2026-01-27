@@ -243,30 +243,36 @@ export class MetricsService implements OnModuleInit {
     config: CounterConfiguration<T>,
   ): Counter<T> {
     const existing = register.getSingleMetric(config.name);
-    if (existing) {
-      return existing as Counter<T>;
+    if (existing !== undefined && existing !== null) {
+      const typed = existing as unknown as Counter<T>;
+      return typed;
     }
-    return new Counter(config);
+    const created = new Counter(config);
+    return created;
   }
 
   private getOrCreateHistogram<T extends string>(
     config: HistogramConfiguration<T>,
   ): Histogram<T> {
     const existing = register.getSingleMetric(config.name);
-    if (existing) {
-      return existing as Histogram<T>;
+    if (existing !== undefined && existing !== null) {
+      const typed = existing as unknown as Histogram<T>;
+      return typed;
     }
-    return new Histogram(config);
+    const created = new Histogram(config);
+    return created;
   }
 
   private getOrCreateGauge<T extends string>(
     config: GaugeConfiguration<T>,
   ): Gauge<T> {
     const existing = register.getSingleMetric(config.name);
-    if (existing) {
-      return existing as Gauge<T>;
+    if (existing !== undefined && existing !== null) {
+      const typed = existing as unknown as Gauge<T>;
+      return typed;
     }
-    return new Gauge(config);
+    const created = new Gauge(config);
+    return created;
   }
 
   // ========================================

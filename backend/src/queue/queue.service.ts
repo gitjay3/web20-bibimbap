@@ -170,10 +170,6 @@ export class QueueService {
     const queueKey = this.getQueueKey(eventId);
     const heartbeatKey = this.getHeartbeatKey(eventId);
 
-    // 이미 토큰이 있는지 확인
-    const existing = await client.get(tokenKey);
-    if (existing) return existing;
-
     // 새 토큰 생성
     const token = randomUUID();
 
@@ -186,23 +182,26 @@ export class QueueService {
       'NX',
     );
 
-    if (setResult !== 'OK') {
-      const t = await client.get(tokenKey);
-      if (t) return t;
-      await client.set(tokenKey, token, 'EX', this.TOKEN_TTL);
+    if (setResult === 'OK') {
+      // 최초 발급 성공 → 대기열에서 제거
+      await client.zrem(queueKey, userId);
+      await client.zrem(heartbeatKey, userId);
+
+      this.metricsService.recordTokenIssued(eventId);
+      const totalWaiting = await client.zcard(queueKey);
+      this.metricsService.updateQueueStatus(eventId, totalWaiting);
+
+      return token;
     }
 
-    await client.zrem(queueKey, userId);
-    await client.zrem(heartbeatKey, userId);
+    // SET NX 실패 → 이미 토큰이 있음 → 기존 토큰 반환
+    const existingToken = await client.get(tokenKey);
+    if (existingToken) {
+      return existingToken;
+    }
 
-    // 메트릭: 토큰 발급
-    this.metricsService.recordTokenIssued(eventId);
-
-    // 대기열 인원 업데이트
-    const totalWaiting = await client.zcard(queueKey);
-    this.metricsService.updateQueueStatus(eventId, totalWaiting);
-
-    return token;
+    // 토큰이 그 사이에 만료됨 → 재시도
+    return this.issueToken(eventId, userId);
   }
 
   async hasValidToken(eventId: number, userId: string): Promise<boolean> {

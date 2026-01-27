@@ -68,21 +68,9 @@ export default function EventCreatePage() {
             closeDate: endDate,
             openTime: startTimeStr,
             closeTime: endTimeStr,
-            slotSchema: event.slotSchema as unknown as EventFormValues['slotSchema'], // TODO: slotSchema 구조 적용하고 as~ 부분 지워야함
+            slotSchema: event.slotSchema,
             slots: convertedSlots,
           });
-        } else {
-          // TODO: 실제 API 호출
-          const mockFieldsFromBackend: EventFormValues['slotSchema']['fields'] = [
-            { id: 'f_1', name: '시간', type: 'time' },
-            { id: 'f_2', name: '장소', type: 'text' },
-            { id: 'f_3', name: '멘토', type: 'text' },
-          ];
-
-          methods.reset((prev) => ({
-            ...prev,
-            slotSchema: { fields: mockFieldsFromBackend },
-          }));
         }
       } finally {
         setIsLoading(false);
@@ -108,48 +96,6 @@ export default function EventCreatePage() {
         endTime,
         slotSchema: data.slotSchema,
       });
-
-      // TODO: 추후 SchemaSlot 일괄 수정 후 처리
-      // // 슬롯 처리
-      // const allowedFieldIds = new Set(data.slotSchema.fields.map((f) => f.id));
-
-      // // 현재 폼의 슬롯 ID 목록
-      // const currentSlotIds = new Set(
-      //   data.slots
-      //     .map((slot) => (slot as Record<string, unknown>).slotId as number | undefined)
-      //     .filter((id): id is number => id !== undefined),
-      // );
-
-      // // 1. 삭제된 슬롯 처리 (원본에는 있지만 현재에는 없는 슬롯)
-      // const deletePromises = originalSlots
-      //   .filter((original) => !currentSlotIds.has(original.id))
-      //   .map((slot) => deleteEventSlot(slot.id));
-
-      // // 2. 업데이트 및 생성 처리
-      // const upsertPromises = data.slots.map((slot) => {
-      //   const extraInfo: Record<string, unknown> = {};
-      //   Object.entries(slot).forEach(([k, v]) => {
-      //     if (allowedFieldIds.has(k)) extraInfo[k] = v;
-      //   });
-
-      //   const capacityRaw = (slot as Record<string, unknown>).capacity;
-      //   const maxCapacity = Number(capacityRaw ?? 1);
-      //   const slotId = (slot as Record<string, unknown>).slotId as number | undefined;
-
-      //   if (slotId) {
-      //     // 기존 슬롯 업데이트
-      //     return updateEventSlot(slotId, { maxCapacity, extraInfo });
-      //   }
-      //   // 새 슬롯 생성
-      //   return createEventSlot({
-      //     eventId: Number(eventId),
-      //     maxCapacity,
-      //     extraInfo,
-      //   });
-      // });
-
-      // await Promise.all([...deletePromises, ...upsertPromises]);
-
       navigate(`/orgs/${orgId}/events/${eventId}`);
     } else {
       // 생성 모드

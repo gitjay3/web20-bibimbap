@@ -61,6 +61,7 @@ export const createPrismaMock = () => ({
   camperOrganization: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
+    findMany: jest.fn(),
   },
   camperPreRegistration: {
     findFirst: jest.fn(),

@@ -22,6 +22,9 @@ import {
   ReservationPeriodException,
   ForbiddenOrganizationException,
   ForbiddenTrackException,
+  TeamRequiredException,
+  TeamMemberIneligibleException,
+  TeamAlreadyReservedException,
 } from '../../common/exceptions/api.exception';
 import { MetricsService } from '../metrics/metrics.service';
 import { isUserEligibleForTrack } from '../../common/utils/track.util';
@@ -35,6 +38,10 @@ type ReservationWithRelations = Prisma.ReservationGetPayload<{
     };
   };
 }>;
+
+type ReservationWithTeamInfo = ReservationWithRelations & {
+  isTeamReservation: boolean;
+};
 
 @Injectable()
 export class ReservationsService {
@@ -62,18 +69,32 @@ export class ReservationsService {
     if (!slot) throw new SlotNotFoundException();
 
     // 자격 검증
-    await this.validateEligibilityOrThrow(userId, slot);
+    const eligibility = await this.validateEligibilityOrThrow(userId, slot);
 
     // 중복 예약 검증
-    const existing = await this.prisma.reservation.findFirst({
-      where: {
-        userId,
-        slotId: dto.slotId,
-        status: { in: ['PENDING', 'CONFIRMED'] },
-      },
-      select: { id: true },
-    });
-    if (existing) throw new DuplicateReservationException();
+    if (slot.event.applicationUnit === 'TEAM' && eligibility.groupNumber) {
+      // 팀 단위
+      const existingTeam = await this.prisma.reservation.findFirst({
+        where: {
+          slotId: dto.slotId,
+          groupNumber: eligibility.groupNumber,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+        select: { id: true },
+      });
+      if (existingTeam) throw new TeamAlreadyReservedException();
+    } else {
+      // 개인단위
+      const existing = await this.prisma.reservation.findFirst({
+        where: {
+          userId,
+          slotId: dto.slotId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+        select: { id: true },
+      });
+      if (existing) throw new DuplicateReservationException();
+    }
 
     // Redis에서 재고 차감 시도
     const success = await this.redisService.decrementStock(dto.slotId);
@@ -89,10 +110,13 @@ export class ReservationsService {
       slotId: dto.slotId,
       maxCapacity: slot.maxCapacity,
       stockDeducted: true,
+      groupNumber:
+        slot.event.applicationUnit === 'TEAM' ? eligibility.groupNumber : null,
     });
 
     // 메트릭 기록
     this.metricsService.recordReservation(dto.slotId, 'pending');
+
     this.metricsService.reservationLatency.observe(
       { operation: 'apply' },
       (Date.now() - startTime) / 1000,
@@ -109,7 +133,7 @@ export class ReservationsService {
   private async validateEligibilityOrThrow(
     userId: string,
     slot: Prisma.EventSlotGetPayload<{ include: { event: true } }>,
-  ): Promise<void> {
+  ): Promise<{ groupNumber: number | null }> {
     const now = new Date();
     const event = slot.event;
 
@@ -126,7 +150,7 @@ export class ReservationsService {
           organizationId: event.organizationId,
         },
       },
-      select: { id: true },
+      select: { id: true, groupNumber: true },
     });
 
     if (!membership) {
@@ -144,23 +168,84 @@ export class ReservationsService {
       throw new ForbiddenTrackException();
     }
 
-    // TODO: applicationUnit(INDIVIDUAL/TEAM) 관련 검증
+    //applicationUnit(INDIVIDUAL/TEAM) 관련 검증
+    if (event.applicationUnit === 'TEAM') {
+      if (!membership.groupNumber) {
+        throw new TeamRequiredException();
+      }
+
+      const teamMembers = await this.prisma.camperOrganization.findMany({
+        where: {
+          organizationId: event.organizationId,
+          groupNumber: membership.groupNumber,
+        },
+        select: { userId: true },
+      });
+
+      // 팀원 전원의 트랙 검증 (COMMON이 아닌 경우)
+      if (event.track !== 'COMMON') {
+        const teamPreRegs = await this.prisma.camperPreRegistration.findMany({
+          where: {
+            claimedUserId: { in: teamMembers.map((m) => m.userId) },
+            organizationId: event.organizationId,
+          },
+          select: { claimedUserId: true, track: true },
+        });
+
+        const invalidMembers = teamMembers.filter((m) => {
+          const preReg = teamPreRegs.find((p) => p.claimedUserId === m.userId);
+          return !preReg || preReg.track !== event.track;
+        });
+
+        if (invalidMembers.length > 0) {
+          throw new TeamMemberIneligibleException();
+        }
+      }
+    }
+    return { groupNumber: membership.groupNumber };
   }
 
-  async findAllByUser(userId: string): Promise<ReservationWithRelations[]> {
-    return this.prisma.reservation.findMany({
+  async findAllByUser(userId: string): Promise<ReservationWithTeamInfo[]> {
+    //사용자의 그룹 번호 조회
+    const memberships = await this.prisma.camperOrganization.findMany({
       where: { userId },
+      select: { organizationId: true, groupNumber: true },
+    });
+
+    // 개인 예약 조회
+    const personalReservations = await this.prisma.reservation.findMany({
+      where: { userId, status: 'CONFIRMED' },
       include: {
+        slot: { include: { event: true } },
+      },
+    });
+
+    // 팀 예약 조회 (내가 대표자가 아닌 경우)
+    const teamReservations = await this.prisma.reservation.findMany({
+      where: {
+        userId: { not: userId }, // 내가 대표자가 아닌 예약
+        status: 'CONFIRMED',
+        groupNumber: {
+          in: memberships
+            .map((m) => m.groupNumber)
+            .filter((g): g is number => g !== null),
+        },
         slot: {
-          include: {
-            event: true,
+          event: {
+            organizationId: { in: memberships.map((m) => m.organizationId) },
+            applicationUnit: 'TEAM',
           },
         },
       },
-      orderBy: {
-        reservedAt: 'desc',
+      include: {
+        slot: { include: { event: true } },
       },
-    }) as Promise<ReservationWithRelations[]>;
+    });
+
+    return [
+      ...personalReservations.map((r) => ({ ...r, isTeamReservation: false })),
+      ...teamReservations.map((r) => ({ ...r, isTeamReservation: true })),
+    ];
   }
 
   async findOne(id: number): Promise<ReservationWithRelations | null> {
@@ -176,18 +261,54 @@ export class ReservationsService {
     }) as Promise<ReservationWithRelations | null>;
   }
 
-  async findByUserAndEvent(
-    userId: string,
-    eventId: number,
-  ): Promise<ReservationWithRelations | null> {
-    return this.prisma.reservation.findFirst({
+  async findByUserAndEvent(userId: string, eventId: number) {
+    //  이벤트 정보 조회
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { applicationUnit: true, organizationId: true },
+    });
+
+    if (!event) return null;
+
+    //  개인 예약 확인
+    const personalReservation = await this.prisma.reservation.findFirst({
       where: {
         userId,
         slot: { eventId },
         status: { in: ['PENDING', 'CONFIRMED'] },
       },
-      include: { slot: { include: { event: true } } },
-    }) as Promise<ReservationWithRelations | null>;
+      include: { slot: true },
+    });
+
+    if (personalReservation) return personalReservation;
+
+    // 팀 이벤트인 경우, 팀원의 예약도 확인
+    if (event.applicationUnit === 'TEAM') {
+      const membership = await this.prisma.camperOrganization.findUnique({
+        where: {
+          userId_organizationId: {
+            userId,
+            organizationId: event.organizationId,
+          },
+        },
+        select: { groupNumber: true },
+      });
+
+      if (membership?.groupNumber) {
+        const teamReservation = await this.prisma.reservation.findFirst({
+          where: {
+            groupNumber: membership.groupNumber,
+            slot: { eventId },
+            status: { in: ['PENDING', 'CONFIRMED'] },
+          },
+          include: { slot: true },
+        });
+
+        if (teamReservation) return teamReservation;
+      }
+    }
+
+    return null;
   }
 
   async cancel(id: number, userId: string): Promise<Reservation> {
@@ -255,6 +376,7 @@ export class ReservationsService {
 
       // 메트릭 기록
       this.metricsService.recordReservation(result.slotId, 'cancelled');
+
       this.metricsService.reservationLatency.observe(
         { operation: 'cancel' },
         (Date.now() - startTime) / 1000,

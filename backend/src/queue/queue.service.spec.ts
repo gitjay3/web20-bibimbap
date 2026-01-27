@@ -258,12 +258,14 @@ describe('QueueService', () => {
 
     it('기존 토큰이 있으면 그 토큰을 반환한다', async () => {
       const { clientMock } = redisMock;
+      clientMock.set.mockResolvedValue(null);
       clientMock.get.mockResolvedValue('existing-token');
 
       const token = await service.issueToken(eventId, userId);
 
       expect(token).toBe('existing-token');
-      expect(clientMock.set).not.toHaveBeenCalled();
+      expect(clientMock.set).toHaveBeenCalled(); // set은 호출됨 (NX로 실패)
+      expect(clientMock.get).toHaveBeenCalled(); // 기존 토큰 조회
     });
   });
 

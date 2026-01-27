@@ -1,4 +1,9 @@
-import type { EventSlot, SlotSchema, Status } from '@/types/event';
+import type {
+  EventSlot,
+  SlotSchema,
+  Status,
+  ApplicationUnit,
+} from '@/types/event';
 import type { ReservationApiResponse } from '@/types/BEapi';
 import { sortSlotFields } from '@/constants/slot-field';
 import Slot from './Slot';
@@ -8,6 +13,7 @@ interface SlotListProps {
   slotSchema: SlotSchema;
   slots: EventSlot[];
   selectedSlotId: number | null;
+  applicationUnit: ApplicationUnit;
   setSelectedSlotId: React.Dispatch<React.SetStateAction<number | null>>;
   myReservation: ReservationApiResponse | null;
   disabled?: boolean;
@@ -24,6 +30,7 @@ function SlotList({
   selectedSlotId,
   setSelectedSlotId,
   myReservation,
+  applicationUnit,
   disabled = false,
   isAdmin = false,
   onEditSlot,
@@ -54,26 +61,24 @@ function SlotList({
       </div>
 
       {/* 그리드 레이아웃 */}
-      <div
-        className="grid w-full gap-y-3"
-        style={gridLayout}
-      >
+      <div className="grid w-full gap-y-3" style={gridLayout}>
         {/* 헤더 */}
         <div
-          className="grid col-span-full items-center gap-x-4 px-6 py-4"
+          className="col-span-full grid items-center gap-x-4 px-6 py-4"
           style={{ gridTemplateColumns: 'subgrid' }}
         >
           {fields.map((field) => (
-            <span key={field.id} className="text-14 font-semibold text-neutral-text-secondary text-left">
+            <span
+              key={field.id}
+              className="text-14 text-neutral-text-secondary text-left font-semibold"
+            >
               {field.name}
             </span>
           ))}
-          <span className="text-14 font-semibold text-neutral-text-secondary text-left">
+          <span className="text-14 text-neutral-text-secondary text-left font-semibold">
             예약자
           </span>
-          <span className="text-14 font-semibold text-neutral-text-secondary text-left">
-            상태
-          </span>
+          <span className="text-14 text-neutral-text-secondary text-left font-semibold">상태</span>
           <span /> {/* 액션 컬럼용 빈 헤더 */}
         </div>
 
@@ -87,6 +92,7 @@ function SlotList({
             selectedSlotId={selectedSlotId}
             setSelectedSlotId={setSelectedSlotId}
             myReservation={myReservation}
+            applicationUnit={applicationUnit}
             isAdmin={isAdmin}
             onEdit={onEditSlot}
             onDelete={onDeleteSlot}

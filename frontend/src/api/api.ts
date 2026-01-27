@@ -22,15 +22,14 @@ api.interceptors.response.use(
       const { status, data } = error.response;
       const errorMessage = data?.message || '알 수 없는 오류가 발생했습니다.';
 
-      // HTTP 상태 코드별 처리
-      switch (status) {
-        case 400:
-          // TODO: 임시 에러 처리. 나중에 전역에러 필터 등으로 수정요함
-          toast.error(errorMessage);
-          break;
-        default:
-          toast.error(errorMessage);
+      // 401: 인증 만료 시 로그인 페이지로 이동 (이미 로그인 페이지면 리다이렉트 안함)
+      if (status === 401 && !window.location.pathname.startsWith('/login')) {
+        // TODO: 토큰 재발급
+        window.location.href = '/login';
+        return Promise.reject(error);
       }
+
+      toast.error(errorMessage);
     }
 
     return Promise.reject(error);

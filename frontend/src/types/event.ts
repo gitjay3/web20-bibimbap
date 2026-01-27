@@ -25,6 +25,8 @@ export interface EventSlot {
     name: string;
     username: string;
     avatarUrl: string | null;
+    groupNumber?: number;
+    teamMembers?: TeamMember[];
   }[];
 }
 
@@ -42,4 +44,10 @@ export interface EventDetail extends Event {
   slotSchema: SlotSchema;
   slots: EventSlot[];
   canReserveByTrack?: boolean;
+}
+
+export interface TeamMember {
+  name: string;
+  username: string;
+  avatarUrl: string | null;
 }

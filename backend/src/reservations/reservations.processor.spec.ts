@@ -76,6 +76,7 @@ describe('ReservationsProcessor', () => {
       slotId,
       maxCapacity,
       stockDeducted: true,
+      groupNumber: null,
     };
 
     it('알 수 없는 job 이름이면 처리하지 않고 반환한다', async () => {
@@ -125,6 +126,7 @@ describe('ReservationsProcessor', () => {
           userId,
           slotId,
           status: 'CONFIRMED',
+          groupNumber: null,
         },
       });
       expect(metricsMock.recordQueueJobComplete).toHaveBeenCalledWith(
