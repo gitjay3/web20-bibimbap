@@ -130,7 +130,16 @@ export function handleSummaryReport(data) {
   const result = generateSummary(data);
   printSummary(result);
 
-  return {
+  const output = {
     stdout: JSON.stringify(result, null, 2),
   };
+
+  // TEST_ID가 있으면 JSON 파일로 저장
+  const testId = __ENV.TEST_ID;
+  if (testId) {
+    output[`k6/results/${testId}.json`] = JSON.stringify(result, null, 2);
+    console.log(`\n📁 결과 저장: k6/results/${testId}.json\n`);
+  }
+
+  return output;
 }
