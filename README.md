@@ -24,6 +24,8 @@
     - [Backend \& Database](#backend--database)
     - [Infrastructure](#infrastructure)
   - [설치 및 실행](#설치-및-실행)
+    - [모니터링](#모니터링-prometheus--grafana)
+    - [부하 테스트](#부하-테스트-k6)
   - [라이선스](#라이선스)
 
 <br>
@@ -141,6 +143,30 @@ pnpm docker:local:down
 
 - Grafana: http://localhost:3000 (admin / admin)
 - Prometheus: http://localhost:9090
+
+### 부하 테스트 (k6)
+
+> k6 설치 필요: https://grafana.com/docs/k6/latest/set-up/install-k6/
+
+```bash
+# 경쟁 테스트 (200 VU → 정원 5명)
+pnpm k6:competition
+
+# 스트레스 테스트 (1000 VU)
+pnpm k6:stress
+
+# 스파이크 테스트 (5000 VU)
+pnpm k6:spike
+
+# 팀 예약 테스트
+pnpm k6:team
+
+# 예약 로직 테스트 (중복 방지, 취소 후 재예약 등)
+pnpm k6:logic
+
+# 테스트 데이터 초기화
+pnpm k6:reset
+```
 
 <br>
 
