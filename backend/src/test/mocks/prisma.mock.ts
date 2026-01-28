@@ -79,6 +79,7 @@ export const createPrismaMock = () => ({
     update: jest.fn(),
     upsert: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   $transaction: jest.fn(),
   $connect: jest.fn(),

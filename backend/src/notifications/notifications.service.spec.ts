@@ -137,4 +137,33 @@ describe('NotificationsService', () => {
       expect(prismaMock.eventNotification.delete).toHaveBeenCalled();
     });
   });
+
+  describe('handleCleanupOldNotifications', () => {
+    it('should call deleteMany with correct threshold', async () => {
+      prismaMock.eventNotification.deleteMany.mockResolvedValue({ count: 5 });
+
+      await service.handleCleanupOldNotifications();
+
+      expect(prismaMock.eventNotification.deleteMany).toHaveBeenCalledWith({
+        where: {
+          event: {
+            endTime: {
+              lt: expect.any(Date),
+            },
+          },
+        },
+      });
+    });
+
+    it('should handle errors gracefully', async () => {
+      prismaMock.eventNotification.deleteMany.mockRejectedValue(
+        new Error('DB Error'),
+      );
+
+      // Should not throw
+      await expect(
+        service.handleCleanupOldNotifications(),
+      ).resolves.not.toThrow();
+    });
+  });
 });
