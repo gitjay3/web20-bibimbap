@@ -8,15 +8,15 @@ export const SCENARIO = __ENV.SCENARIO || 'competition';
 export const SLOT_ID = parseInt(__ENV.SLOT_ID) || 100;
 export const EVENT_ID = parseInt(__ENV.EVENT_ID) || 100;
 
-// 환경별 설정
+// 환경별 설정 (vCPU 2개, RAM 8GB 서버 기준)
 const environments = {
   local: {
     baseUrl: 'http://localhost:80',
-    timeout: '10s',
+    timeout: '60s', // 10s → 60s (Connection Pool 15개 기준 처리 시간 고려)
   },
   production: {
     baseUrl: 'https://bookstcamp.duckdns.org',
-    timeout: '20s',
+    timeout: '30s', // 20s → 30s (프로덕션 여유 확보)
   },
 };
 
@@ -39,27 +39,27 @@ export const scenarios = {
     tags: { scenario_type: 'competition' },
   },
 
-  // 스트레스 테스트: 1000 VU 고부하
+  // 스트레스 테스트: 5000 VU 고부하
   stress: {
     executor: 'ramping-vus',
     startVUs: 0,
     stages: [
-      { duration: '10s', target: 500 },
-      { duration: '10s', target: 1000 },
-      { duration: '30s', target: 1000 },
+      { duration: '10s', target: 2500 },
+      { duration: '10s', target: 5000 },
+      { duration: '30s', target: 5000 },
       { duration: '10s', target: 0 },
     ],
     tags: { scenario_type: 'stress' },
   },
 
-  // 스파이크 테스트: 순간 폭주
+  // 스파이크 테스트: 10000 VU 순간 폭주
   spike: {
     executor: 'ramping-vus',
     startVUs: 0,
     stages: [
       { duration: '2s', target: 100 },
-      { duration: '3s', target: 5000 },
-      { duration: '10s', target: 5000 },
+      { duration: '3s', target: 10000 },
+      { duration: '10s', target: 10000 },
       { duration: '5s', target: 100 },
       { duration: '5s', target: 0 },
     ],
