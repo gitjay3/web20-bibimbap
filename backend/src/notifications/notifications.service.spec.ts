@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { NotificationsService } from './notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlackService } from '../slack/slack.service';
@@ -11,10 +12,15 @@ const createSlackServiceMock = () => ({
   getDmChannelId: jest.fn(),
 });
 
+const createConfigServiceMock = () => ({
+  getOrThrow: jest.fn().mockReturnValue('https://bookstcamp.duckdns.org'),
+});
+
 describe('NotificationsService', () => {
   let service: NotificationsService;
   let prismaMock: ReturnType<typeof createPrismaMock>;
   let slackMock: ReturnType<typeof createSlackServiceMock>;
+  let configMock: ReturnType<typeof createConfigServiceMock>;
 
   const userId = 'user-123';
   const eventId = 1;
@@ -22,12 +28,14 @@ describe('NotificationsService', () => {
   beforeEach(async () => {
     prismaMock = createPrismaMock();
     slackMock = createSlackServiceMock();
+    configMock = createConfigServiceMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationsService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: SlackService, useValue: slackMock },
+        { provide: ConfigService, useValue: configMock },
       ],
     }).compile();
 
