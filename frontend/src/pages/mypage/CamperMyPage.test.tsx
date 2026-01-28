@@ -47,6 +47,7 @@ const mockProfile = {
   groupNumber: 20,
   slackMemberId: null,
   profileUrl: 'https://example.com/avatar.jpg',
+  isSlackEnabled: true,
 };
 
 describe('CamperMyPage', () => {
