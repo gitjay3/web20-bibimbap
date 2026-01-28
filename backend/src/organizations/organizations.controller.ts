@@ -98,6 +98,7 @@ export class OrganizationsController {
   }
 
   @Post(':id/campers')
+  @Auth(Role.ADMIN)
   @ApiOperation({ summary: '조직 캠퍼 추가' })
   @ApiResponse({
     status: 201,
@@ -134,6 +135,7 @@ export class OrganizationsController {
   }
 
   @Patch(':orgId/campers/:id')
+  @Auth(Role.ADMIN)
   @ApiOperation({ summary: '캠퍼 정보 수정' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '캠퍼를 찾을 수 없음' })
@@ -147,6 +149,7 @@ export class OrganizationsController {
   }
 
   @Delete(':orgId/campers/:id')
+  @Auth(Role.ADMIN)
   @ApiOperation({ summary: '캠퍼 정보 삭제' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '캠퍼를 찾을 수 없음' })
@@ -155,6 +158,7 @@ export class OrganizationsController {
   }
 
   @Post(':id/campers/upload')
+  @Auth(Role.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: '캠퍼 일괄 업로드 (엑셀)' })
   @ApiResponse({ status: 201, description: '업로드 및 Upsert 성공' })
