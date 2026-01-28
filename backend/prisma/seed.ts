@@ -341,6 +341,67 @@ async function main() {
   });
   console.log('✓ 이벤트 5 (알림 테스트) 생성, 시작 시간:', tenMinutesLater.toLocaleString());
 
+  // ========================================
+  // K6 부하 테스트용 이벤트 (ID 100~)
+  // ========================================
+
+  // K6 시나리오 1: 소규모 정원 경쟁 (정원 5명, 동시 50명 요청)
+  const k6Event1 = await prisma.event.upsert({
+    where: { id: 100 },
+    update: {},
+    create: {
+      id: 100,
+      title: '[K6] 소규모 경쟁 테스트',
+      description: '정원 5명 슬롯에 50명이 동시 요청하는 시나리오',
+      track: Track.COMMON, // 모든 트랙 허용
+      applicationUnit: ApplicationUnit.INDIVIDUAL,
+      creatorId: adminUserId,
+      organizationId: organization.id,
+      startTime: new Date('2025-01-01T00:00:00+09:00'),
+      endTime: new Date('2030-12-31T23:59:59+09:00'),
+      slotSchema: defaultSlotSchema,
+    },
+  });
+  console.log('✓ K6 이벤트 100 생성:', k6Event1.title);
+
+  // K6 시나리오 2: 대규모 처리량 테스트 (정원 100명)
+  const k6Event2 = await prisma.event.upsert({
+    where: { id: 101 },
+    update: {},
+    create: {
+      id: 101,
+      title: '[K6] 대규모 처리량 테스트',
+      description: '정원 100명 슬롯에 대한 처리량 테스트',
+      track: Track.COMMON,
+      applicationUnit: ApplicationUnit.INDIVIDUAL,
+      creatorId: adminUserId,
+      organizationId: organization.id,
+      startTime: new Date('2025-01-01T00:00:00+09:00'),
+      endTime: new Date('2030-12-31T23:59:59+09:00'),
+      slotSchema: defaultSlotSchema,
+    },
+  });
+  console.log('✓ K6 이벤트 101 생성:', k6Event2.title);
+
+  // K6 시나리오 3: 팀 단위 예약 테스트
+  const k6Event3 = await prisma.event.upsert({
+    where: { id: 102 },
+    update: {},
+    create: {
+      id: 102,
+      title: '[K6] 팀 예약 테스트',
+      description: '팀 단위 예약 동시성 테스트',
+      track: Track.COMMON,
+      applicationUnit: ApplicationUnit.TEAM,
+      creatorId: adminUserId,
+      organizationId: organization.id,
+      startTime: new Date('2025-01-01T00:00:00+09:00'),
+      endTime: new Date('2030-12-31T23:59:59+09:00'),
+      slotSchema: defaultSlotSchema,
+    },
+  });
+  console.log('✓ K6 이벤트 102 생성:', k6Event3.title);
+
   // 5. 이벤트 슬롯 생성
   // 팀 이벤트(슬롯 1~4): 그룹 3, 4가 예약 → currentCount: 2
   // 개인 이벤트(슬롯 5~10): 개인별 예약
@@ -527,6 +588,54 @@ async function main() {
         f4: '지금+70분',
         f5: '제페토',
         f6: '테스터',
+      },
+    },
+    // ========================================
+    // K6 테스트용 슬롯 (ID 100~)
+    // ========================================
+    // K6 이벤트 100: 소규모 경쟁 (정원 5명)
+    {
+      id: 100,
+      eventId: 100,
+      maxCapacity: 5,
+      currentCount: 0,
+      extraInfo: {
+        f1: '소규모 경쟁 슬롯',
+        f2: '2026-06-01',
+        f3: '10:00',
+        f4: '11:00',
+        f5: '테스트룸',
+        f6: 'K6봇',
+      },
+    },
+    // K6 이벤트 101: 대규모 처리량 (정원 100명)
+    {
+      id: 101,
+      eventId: 101,
+      maxCapacity: 100,
+      currentCount: 0,
+      extraInfo: {
+        f1: '대규모 처리량 슬롯',
+        f2: '2026-06-01',
+        f3: '10:00',
+        f4: '11:00',
+        f5: '테스트룸',
+        f6: 'K6봇',
+      },
+    },
+    // K6 이벤트 102: 팀 예약 (정원 10팀)
+    {
+      id: 102,
+      eventId: 102,
+      maxCapacity: 10,
+      currentCount: 0,
+      extraInfo: {
+        f1: '팀 예약 슬롯',
+        f2: '2026-06-01',
+        f3: '10:00',
+        f4: '11:00',
+        f5: '테스트룸',
+        f6: 'K6봇',
       },
     },
   ];

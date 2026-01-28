@@ -94,6 +94,10 @@ temp/
 .firebase/
 .terraform/
 
+# k6 테스트 생성 파일
+k6/test-tokens*.json
+k6/results/*.json
+
 CLAUDE.md
 .claude/
 .agents/

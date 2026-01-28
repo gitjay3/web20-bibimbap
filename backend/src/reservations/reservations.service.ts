@@ -277,7 +277,7 @@ export class ReservationsService {
         slot: { eventId },
         status: { in: ['PENDING', 'CONFIRMED'] },
       },
-      include: { slot: true },
+      include: { slot: { include: { event: true } } },
     });
 
     if (personalReservation) return personalReservation;
@@ -301,7 +301,7 @@ export class ReservationsService {
             slot: { eventId },
             status: { in: ['PENDING', 'CONFIRMED'] },
           },
-          include: { slot: true },
+          include: { slot: { include: { event: true } } },
         });
 
         if (teamReservation) return teamReservation;

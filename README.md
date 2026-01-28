@@ -24,6 +24,8 @@
     - [Backend \& Database](#backend--database)
     - [Infrastructure](#infrastructure)
   - [설치 및 실행](#설치-및-실행)
+    - [모니터링 (Prometheus + Grafana)](#모니터링-prometheus--grafana)
+    - [부하 테스트 (k6)](#부하-테스트-k6)
   - [라이선스](#라이선스)
 
 <br>
@@ -129,6 +131,8 @@ pnpm db:seed:local
 - 로컬 확인: http://localhost
 - API 문서(Swagger): http://localhost/api-docs
 
+<br>
+
 ### 모니터링 (Prometheus + Grafana)
 
 ```bash
@@ -144,5 +148,44 @@ pnpm docker:local:down
 
 <br>
 
+### 부하 테스트 (k6)
+
+> k6 설치 필요: https://grafana.com/docs/k6/latest/set-up/install-k6/
+
+```bash
+# 선착순 경쟁 테스트 (200 VU → 정원 5명)
+pnpm k6:competition
+
+# 스트레스 테스트 (5,000 VU → 정원 5명)
+pnpm k6:stress
+
+# 스파이크 테스트 (10,000 VU → 정원 5명)
+pnpm k6:spike
+
+# 팀 예약 테스트 (200 VU → 정원 10팀)
+pnpm k6:team
+
+# 비즈니스 로직 테스트 (중복 방지, 취소 후 재예약)
+pnpm k6:logic
+
+# 팀 비즈니스 로직 테스트 (팀 중복 예약 방지)
+pnpm k6:logic:team
+
+# 테스트 데이터 초기화
+pnpm k6:reset
+```
+
+| 테스트 | 동시 사용자 | 정원 | 검증 목적 |
+| ------ | ---------- | ---- | -------- |
+| competition | 200명 | 5명 | 선착순 경쟁 상황에서 동시성 제어 정확도 검증. 정확히 5명만 성공해야 함 |
+| stress | 5,000명 | 5명 | 60초간 지속적 고부하에서 시스템 안정성 및 응답 시간(p99) 측정 |
+| spike | 10,000명 | 5명 | 이벤트 오픈 직후 순간 트래픽 폭주 상황 대응 능력 검증 |
+| team | 200명 | 10팀 | 팀 단위 예약에서 동시성 제어 검증. 같은 팀원 중복 예약 방지 |
+| logic | 3명 | 5명 | 중복 예약 방지, 예약 취소 후 재예약, 개인 이벤트 로직 검증 |
+| logic:team | 3명 | 10팀 | 팀 중복 예약 방지 로직 검증. 팀원A 예약 시 팀원B 예약 거절 |
+
+<br>
+
 ## 라이선스
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
