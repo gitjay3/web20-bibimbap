@@ -30,6 +30,32 @@ export function generateSummary(data) {
   const duplicateCount = getValues('reservation_duplicate').count || 0;
   const serverErrorCount = getValues('server_errors').count || 0;
 
+  // 대기열 결과
+  const queueEnterSuccessCount = getValues('queue_enter_success').count || 0;
+  const queueEnterFailedCount = getValues('queue_enter_failed').count || 0;
+  const queueTokenAcquiredCount = getValues('queue_token_acquired').count || 0;
+
+  // 대기열 응답 시간
+  const queueEnterDur = getValues('queue_enter_duration');
+  const queueEnterLatency = {
+    min: queueEnterDur.min || 0,
+    p50: queueEnterDur.med || 0,
+    p95: queueEnterDur['p(95)'] || 0,
+    p99: queueEnterDur['p(99)'] || 0,
+    max: queueEnterDur.max || 0,
+    avg: queueEnterDur.avg || 0,
+  };
+
+  const queueStatusDur = getValues('queue_status_duration');
+  const queueStatusLatency = {
+    min: queueStatusDur.min || 0,
+    p50: queueStatusDur.med || 0,
+    p95: queueStatusDur['p(95)'] || 0,
+    p99: queueStatusDur['p(99)'] || 0,
+    max: queueStatusDur.max || 0,
+    avg: queueStatusDur.avg || 0,
+  };
+
   // 응답 시간 (커스텀 메트릭)
   const duration = getValues('reservation_duration');
   const latency = {
@@ -102,6 +128,27 @@ export function generateSummary(data) {
       duplicate: duplicateCount,
       serverError: serverErrorCount,
     },
+    queue: {
+      enterSuccess: queueEnterSuccessCount,
+      enterFailed: queueEnterFailedCount,
+      tokenAcquired: queueTokenAcquiredCount,
+    },
+    queueEnterLatency: {
+      min: toFixed(queueEnterLatency.min),
+      p50: toFixed(queueEnterLatency.p50),
+      p95: toFixed(queueEnterLatency.p95),
+      p99: toFixed(queueEnterLatency.p99),
+      max: toFixed(queueEnterLatency.max),
+      avg: toFixed(queueEnterLatency.avg),
+    },
+    queueStatusLatency: {
+      min: toFixed(queueStatusLatency.min),
+      p50: toFixed(queueStatusLatency.p50),
+      p95: toFixed(queueStatusLatency.p95),
+      p99: toFixed(queueStatusLatency.p99),
+      max: toFixed(queueStatusLatency.max),
+      avg: toFixed(queueStatusLatency.avg),
+    },
     latency: {
       min: toFixed(latency.min),
       p50: toFixed(latency.p50),
@@ -134,7 +181,7 @@ export function generateSummary(data) {
  * @param {object} result - generateSummary 결과
  */
 export function printSummary(result) {
-  const { summary, reservation, latency, httpTiming, quality } = result;
+  const { summary, reservation, latency, httpTiming, quality, queue } = result;
 
   console.log('\n');
   console.log('╔════════════════════════════════════════════════════════════════════╗');
@@ -158,6 +205,26 @@ export function printSummary(result) {
   console.log(`║      - 정원 초과: ${String(reservation.slotFull).padEnd(50)}║`);
   console.log(`║      - 중복 예약: ${String(reservation.duplicate).padEnd(50)}║`);
   console.log(`║      - 서버 에러: ${String(reservation.serverError).padEnd(50)}║`);
+  // 대기열 결과 (대기열 테스트에서만 출력)
+  if (queue && (queue.enterSuccess > 0 || queue.enterFailed > 0)) {
+    console.log('╠════════════════════════════════════════════════════════════════════╣');
+    console.log('║  [대기열 결과]                                                     ║');
+    console.log(`║    진입 성공: ${String(queue.enterSuccess).padEnd(54)}║`);
+    console.log(`║    진입 실패: ${String(queue.enterFailed).padEnd(54)}║`);
+    console.log(`║    토큰 획득: ${String(queue.tokenAcquired).padEnd(54)}║`);
+    console.log('╠════════════════════════════════════════════════════════════════════╣');
+    console.log('║  [응답 시간 - 대기열 진입 API (ms)]                               ║');
+    console.log(`║    p50: ${result.queueEnterLatency.p50.toFixed(0).padEnd(60)}║`);
+    console.log(`║    p95: ${result.queueEnterLatency.p95.toFixed(0).padEnd(60)}║`);
+    console.log(`║    p99: ${result.queueEnterLatency.p99.toFixed(0).padEnd(60)}║`);
+    console.log(`║    최소/최대: ${result.queueEnterLatency.min.toFixed(0)} / ${result.queueEnterLatency.max.toFixed(0)}`.padEnd(68) + '║');
+    console.log('╠════════════════════════════════════════════════════════════════════╣');
+    console.log('║  [응답 시간 - 대기열 상태 조회 API (ms)]                           ║');
+    console.log(`║    p50: ${result.queueStatusLatency.p50.toFixed(0).padEnd(60)}║`);
+    console.log(`║    p95: ${result.queueStatusLatency.p95.toFixed(0).padEnd(60)}║`);
+    console.log(`║    p99: ${result.queueStatusLatency.p99.toFixed(0).padEnd(60)}║`);
+    console.log(`║    최소/최대: ${result.queueStatusLatency.min.toFixed(0)} / ${result.queueStatusLatency.max.toFixed(0)}`.padEnd(68) + '║');
+  }
   console.log('╠════════════════════════════════════════════════════════════════════╣');
   console.log('║  [응답 시간 - 예약 API (ms)]                                       ║');
   console.log(`║    p50: ${latency.p50.toFixed(0).padEnd(60)}║`);

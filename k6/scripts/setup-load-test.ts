@@ -24,35 +24,35 @@
  *   - 101: 대규모 처리량 (정원 100명, 개인)
  *   - 102: 팀 예약 (정원 10팀, 팀)
  */
-import 'dotenv/config';
-import { PrismaClient, Track, ApplicationUnit } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import * as jwt from 'jsonwebtoken';
-import * as fs from 'fs';
-import * as path from 'path';
-import { execSync } from 'child_process';
+import "dotenv/config";
+import { PrismaClient, Track, ApplicationUnit } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import * as jwt from "jsonwebtoken";
+import * as fs from "fs";
+import * as path from "path";
+import { execSync } from "child_process";
 
 // 환경 변수
 const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_URL_LOCAL;
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL 환경변수가 필요합니다');
+  throw new Error("DATABASE_URL 환경변수가 필요합니다");
 }
 
 const pool = new PrismaPg({ connectionString: databaseUrl });
 const prisma = new PrismaClient({ adapter: pool });
 
-const REDIS_CONTAINER = process.env.REDIS_CONTAINER || 'bookstcamp-redis';
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD || 'redis123';
+const REDIS_CONTAINER = process.env.REDIS_CONTAINER || "bookstcamp-redis";
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || "redis123";
 
 // Docker exec를 통한 Redis 명령 실행
 function redisExec(command: string): string {
   try {
     return execSync(
       `docker exec ${REDIS_CONTAINER} redis-cli -a ${REDIS_PASSWORD} ${command}`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
     ).trim();
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -63,11 +63,13 @@ function redisPipeline(commands: string[]): void {
   const BATCH_SIZE = 1000;
   for (let i = 0; i < commands.length; i += BATCH_SIZE) {
     const batch = commands.slice(i, i + BATCH_SIZE);
-    const pipelineCmd = batch.map((cmd) => `redis-cli -a ${REDIS_PASSWORD} ${cmd}`).join(' && ');
+    const pipelineCmd = batch
+      .map((cmd) => `redis-cli -a ${REDIS_PASSWORD} ${cmd}`)
+      .join(" && ");
     try {
       execSync(`docker exec ${REDIS_CONTAINER} sh -c '${pipelineCmd}'`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
       });
     } catch {
       // 개별 실행 fallback
@@ -76,16 +78,17 @@ function redisPipeline(commands: string[]): void {
   }
 }
 
-const USER_COUNT = parseInt(process.env.USER_COUNT || '200');
-const EVENT_ID = parseInt(process.env.EVENT_ID || '100');
-const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-key-not-for-production';
-const JWT_EXPIRES_IN = '24h';
+const USER_COUNT = parseInt(process.env.USER_COUNT || "200");
+const EVENT_ID = parseInt(process.env.EVENT_ID || "100");
+const JWT_SECRET =
+  process.env.JWT_SECRET || "development-secret-key-not-for-production";
+const JWT_EXPIRES_IN = "24h";
 const QUEUE_TOKEN_TTL = 3600; // 1시간
 const BATCH_SIZE = 100; // DB 배치 크기
 
-const OUTPUT_DIR = path.join(__dirname, '..');
-const TOKENS_FILE = path.join(OUTPUT_DIR, 'test-tokens.json');
-const USERS_FILE = path.join(OUTPUT_DIR, 'test-tokens-users.json');
+const OUTPUT_DIR = path.join(__dirname, "..");
+const TOKENS_FILE = path.join(OUTPUT_DIR, "test-tokens.json");
+const USERS_FILE = path.join(OUTPUT_DIR, "test-tokens-users.json");
 
 interface TestUser {
   id: string;
@@ -96,17 +99,21 @@ interface TestUser {
 // 진행률 표시
 function showProgress(current: number, total: number, label: string): void {
   const percent = Math.round((current / total) * 100);
-  const bar = '█'.repeat(Math.floor(percent / 5)) + '░'.repeat(20 - Math.floor(percent / 5));
-  process.stdout.write(`\r  [${bar}] ${percent}% (${current}/${total}) ${label}`);
+  const bar =
+    "█".repeat(Math.floor(percent / 5)) +
+    "░".repeat(20 - Math.floor(percent / 5));
+  process.stdout.write(
+    `\r  [${bar}] ${percent}% (${current}/${total}) ${label}`,
+  );
   if (current === total) console.log();
 }
 
 async function main() {
   const startTime = Date.now();
 
-  console.log('\n╔══════════════════════════════════════════════════════════╗');
-  console.log('║           k6 부하 테스트 환경 셋업                        ║');
-  console.log('╚══════════════════════════════════════════════════════════╝\n');
+  console.log("\n╔══════════════════════════════════════════════════════════╗");
+  console.log("║           k6 부하 테스트 환경 셋업                        ║");
+  console.log("╚══════════════════════════════════════════════════════════╝\n");
 
   // 1. 이벤트 정보 조회
   console.log(`[1/6] 이벤트 정보 조회 (EVENT_ID=${EVENT_ID})...`);
@@ -125,9 +132,11 @@ async function main() {
 
   console.log(`  - 이벤트: ${event.title}`);
   console.log(`  - 트랙: ${track}`);
-  console.log(`  - 신청 단위: ${isTeamEvent ? '팀' : '개인'}`);
+  console.log(`  - 신청 단위: ${isTeamEvent ? "팀" : "개인"}`);
   console.log(`  - 조직 ID: ${organizationId}`);
-  console.log(`  - 슬롯: ${event.slots.map((s: { id: number; maxCapacity: number }) => `#${s.id}(정원${s.maxCapacity})`).join(', ')}`);
+  console.log(
+    `  - 슬롯: ${event.slots.map((s: { id: number; maxCapacity: number }) => `#${s.id}(정원${s.maxCapacity})`).join(", ")}`,
+  );
 
   // 2. 테스트 사용자 생성 (배치 처리)
   console.log(`\n[2/6] 테스트 사용자 생성 (${USER_COUNT}명)...`);
@@ -139,33 +148,46 @@ async function main() {
   const existingUsers = await prisma.user.findMany({
     where: {
       username: {
-        startsWith: 'k6_test_user_',
+        startsWith: "k6_test_user_",
       },
     },
   });
-  const existingUserMap = new Map(existingUsers.map((u: { id: string; username: string; role: string }) => [u.username, u]));
+  const existingUserMap = new Map(
+    existingUsers.map((u: { id: string; username: string; role: string }) => [
+      u.username,
+      u,
+    ]),
+  );
 
   // 배치 단위로 처리
   for (let batch = 0; batch < Math.ceil(USER_COUNT / BATCH_SIZE); batch++) {
     const start = batch * BATCH_SIZE + 1;
     const end = Math.min((batch + 1) * BATCH_SIZE, USER_COUNT);
-    const usersToCreate: { username: string; name: string; role: 'USER' | 'ADMIN' }[] = [];
+    const usersToCreate: {
+      username: string;
+      name: string;
+      role: "USER" | "ADMIN";
+    }[] = [];
 
     for (let i = start; i <= end; i++) {
-      const username = `k6_test_user_${i.toString().padStart(5, '0')}`;
+      const username = `k6_test_user_${i.toString().padStart(5, "0")}`;
       const existing = existingUserMap.get(username);
 
       if (!existing) {
         usersToCreate.push({
           username,
           name: `Test User ${i}`,
-          role: 'USER',
+          role: "USER",
         });
       } else {
         const token = jwt.sign(
-          { sub: existing.id, username: existing.username, role: existing.role },
+          {
+            sub: existing.id,
+            username: existing.username,
+            role: existing.role,
+          },
           JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
+          { expiresIn: JWT_EXPIRES_IN },
         );
         testUsers.push({ id: existing.id, username: existing.username, token });
         existingCount++;
@@ -190,14 +212,14 @@ async function main() {
         const token = jwt.sign(
           { sub: user.id, username: user.username, role: user.role },
           JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
+          { expiresIn: JWT_EXPIRES_IN },
         );
         testUsers.push({ id: user.id, username: user.username, token });
         createdCount++;
       }
     }
 
-    showProgress(end, USER_COUNT, '사용자 생성');
+    showProgress(end, USER_COUNT, "사용자 생성");
   }
 
   // 순서 정렬 (username 기준)
@@ -220,9 +242,20 @@ async function main() {
       userId: { in: testUsers.map((u) => u.id) },
     },
   });
-  const membershipMap = new Map(existingMemberships.map((m: { id: number; userId: string; groupNumber: number | null }) => [m.userId, m]));
+  const membershipMap = new Map(
+    existingMemberships.map(
+      (m: { id: number; userId: string; groupNumber: number | null }) => [
+        m.userId,
+        m,
+      ],
+    ),
+  );
 
-  for (let batch = 0; batch < Math.ceil(testUsers.length / BATCH_SIZE); batch++) {
+  for (
+    let batch = 0;
+    batch < Math.ceil(testUsers.length / BATCH_SIZE);
+    batch++
+  ) {
     const start = batch * BATCH_SIZE;
     const end = Math.min((batch + 1) * BATCH_SIZE, testUsers.length);
     const toCreate: {
@@ -235,12 +268,17 @@ async function main() {
 
     for (let i = start; i < end; i++) {
       const user = testUsers[i];
-      const camperId = `K${(900 + i).toString().padStart(5, '0')}`;
+      const camperId = `K${(900 + i).toString().padStart(5, "0")}`;
       const groupNumber = isTeamEvent ? 100 + Math.floor(i / TEAM_SIZE) : null;
       const existing = membershipMap.get(user.id);
 
       if (!existing) {
-        toCreate.push({ userId: user.id, organizationId, camperId, groupNumber });
+        toCreate.push({
+          userId: user.id,
+          organizationId,
+          camperId,
+          groupNumber,
+        });
       } else if (existing.groupNumber !== groupNumber) {
         toUpdate.push({ id: existing.id, groupNumber });
       }
@@ -262,14 +300,16 @@ async function main() {
       membershipUpdated++;
     }
 
-    showProgress(end, testUsers.length, '멤버십 등록');
+    showProgress(end, testUsers.length, "멤버십 등록");
   }
 
   console.log(`  - 새로 등록: ${membershipCreated}명`);
   console.log(`  - 그룹 업데이트: ${membershipUpdated}명`);
   if (isTeamEvent) {
     const numTeams = Math.ceil(testUsers.length / TEAM_SIZE);
-    console.log(`  - 그룹 번호: 100 ~ ${99 + numTeams} (${TEAM_SIZE}명씩 ${numTeams}팀)`);
+    console.log(
+      `  - 그룹 번호: 100 ~ ${99 + numTeams} (${TEAM_SIZE}명씩 ${numTeams}팀)`,
+    );
   }
 
   // 4. 캠퍼 사전등록 (CamperPreRegistration)
@@ -281,13 +321,26 @@ async function main() {
     where: {
       organizationId,
       camperId: {
-        startsWith: 'K',
+        startsWith: "K",
       },
     },
   });
-  const preRegMap = new Map(existingPreRegs.map((p: { id: number; camperId: string; track: Track; groupNumber: number | null }) => [p.camperId, p]));
+  const preRegMap = new Map(
+    existingPreRegs.map(
+      (p: {
+        id: number;
+        camperId: string;
+        track: Track;
+        groupNumber: number | null;
+      }) => [p.camperId, p],
+    ),
+  );
 
-  for (let batch = 0; batch < Math.ceil(testUsers.length / BATCH_SIZE); batch++) {
+  for (
+    let batch = 0;
+    batch < Math.ceil(testUsers.length / BATCH_SIZE);
+    batch++
+  ) {
     const start = batch * BATCH_SIZE;
     const end = Math.min((batch + 1) * BATCH_SIZE, testUsers.length);
     const toCreate: {
@@ -298,12 +351,12 @@ async function main() {
       name: string;
       track: Track;
       groupNumber: number | null;
-      status: 'CLAIMED';
+      status: "CLAIMED";
     }[] = [];
 
     for (let i = start; i < end; i++) {
       const user = testUsers[i];
-      const camperId = `K${(900 + i).toString().padStart(5, '0')}`;
+      const camperId = `K${(900 + i).toString().padStart(5, "0")}`;
       const groupNumber = isTeamEvent ? 100 + Math.floor(i / TEAM_SIZE) : null;
       const existing = preRegMap.get(camperId);
 
@@ -316,9 +369,12 @@ async function main() {
           name: `Test User ${i + 1}`,
           track,
           groupNumber,
-          status: 'CLAIMED',
+          status: "CLAIMED",
         });
-      } else if (existing.track !== track || existing.groupNumber !== groupNumber) {
+      } else if (
+        existing.track !== track ||
+        existing.groupNumber !== groupNumber
+      ) {
         await prisma.camperPreRegistration.update({
           where: { id: existing.id },
           data: { track, groupNumber },
@@ -334,20 +390,45 @@ async function main() {
       preRegCreated += toCreate.length;
     }
 
-    showProgress(end, testUsers.length, '사전등록');
+    showProgress(end, testUsers.length, "사전등록");
   }
 
   console.log(`  - 새로 등록: ${preRegCreated}명`);
 
-  // 5. 대기열 토큰 생성 (Redis)
-  console.log(`\n[5/6] 대기열 토큰 생성 (Redis, TTL=${QUEUE_TOKEN_TTL}초)...`);
+  // 5. 대기열 토큰 생성 (Redis) - 예약 테스트용
+  // SKIP_QUEUE_TOKENS=true이면 토큰 생성 건너뜀 + 이전 대기열 잔여 상태 초기화
+  const SKIP_QUEUE_TOKENS = process.env.SKIP_QUEUE_TOKENS === "true";
+  if (!SKIP_QUEUE_TOKENS) {
+    console.log(
+      `\n[5/6] 대기열 토큰 생성 (Redis, TTL=${QUEUE_TOKEN_TTL}초)...`,
+    );
 
-  const redisCommands: string[] = [];
-  for (const user of testUsers) {
-    redisCommands.push(`SET event:${EVENT_ID}:user:${user.id}:token load-test-token EX ${QUEUE_TOKEN_TTL}`);
+    const redisCommands: string[] = [];
+    for (const user of testUsers) {
+      redisCommands.push(
+        `SET event:${EVENT_ID}:user:${user.id}:token load-test-token EX ${QUEUE_TOKEN_TTL}`,
+      );
+    }
+    redisPipeline(redisCommands);
+    console.log(`  - ${testUsers.length}개 토큰 생성 완료`);
+  } else {
+    console.log(
+      `\n[5/6] 대기열 테스트용: 토큰 생성 건너뛰기 + 이전 대기열 상태 초기화...`,
+    );
+
+    // 대기열 정렬 집합 및 하트비트 초기화
+    redisExec(`DEL event:${EVENT_ID}:queue`);
+    redisExec(`DEL event:${EVENT_ID}:heartbeat`);
+
+    // 유저별 대기열 상태/토큰 초기화 (이전 실행 잔여 방지)
+    const queueCleanupCmds: string[] = [];
+    for (const user of testUsers) {
+      queueCleanupCmds.push(`DEL event:${EVENT_ID}:user:${user.id}:status`);
+      queueCleanupCmds.push(`DEL event:${EVENT_ID}:user:${user.id}:token`);
+    }
+    redisPipeline(queueCleanupCmds);
+    console.log(`  - 대기열 상태 초기화 완료 (${testUsers.length}명)`);
   }
-  redisPipeline(redisCommands);
-  console.log(`  - ${testUsers.length}개 토큰 생성 완료`);
 
   // 6. 슬롯 재고 초기화 + 기존 예약 삭제
   console.log(`\n[6/6] 슬롯 초기화...`);
@@ -389,7 +470,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('\n에러:', e.message);
+    console.error("\n에러:", e.message);
     process.exit(1);
   })
   .finally(async () => {
