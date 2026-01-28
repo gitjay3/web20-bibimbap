@@ -17,6 +17,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsModule } from './metrics/metrics.module';
 
+import { ScheduleModule } from '@nestjs/schedule';
 import { SlackModule } from './slack/slack.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
@@ -25,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true,
