@@ -71,10 +71,6 @@ services:
       options:
         max-size: "${LOG_MAX_SIZE}"
         max-file: "${LOG_MAX_FILE}"
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
 
   backend:
     image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:production-latest

@@ -28,21 +28,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    /**
-     * vCPU 2개, RAM 8GB 서버 기준 Redis 연결 설정
-     * - connectTimeout: 10초 (초기 연결 타임아웃)
-     * - commandTimeout: 5초 (명령 실행 타임아웃)
-     * - maxRetriesPerRequest: 3회 (요청당 최대 재시도)
-     * - enableReadyCheck: true (연결 준비 상태 확인)
-     */
     this.client = new Redis({
       host: this.configService.get<string>('REDIS_HOST', 'localhost'),
       port: this.configService.get<number>('REDIS_PORT', 6379),
       password: this.configService.get<string>('REDIS_PASSWORD'),
-      connectTimeout: 10000,
-      commandTimeout: 5000,
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
       retryStrategy: (times) => {
         if (times > 10) {
           this.logger.error('Redis 재연결 최대 횟수 초과');
@@ -52,6 +41,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(`Redis 재연결 시도 ${times}회, ${delay}ms 후 재시도`);
         return delay;
       },
+      maxRetriesPerRequest: 3,
     });
 
     this.client.on('error', (err) => {
