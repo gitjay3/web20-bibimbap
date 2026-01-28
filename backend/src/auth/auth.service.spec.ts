@@ -154,17 +154,19 @@ describe('AuthService', () => {
       };
 
       prismaMock.authAccount.findUnique.mockResolvedValue(mockAuthAccount);
+      prismaMock.adminInvitation.findFirst.mockResolvedValue(null);
+      prismaMock.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await service.findOrCreateGithubUser(githubData);
 
       expect(result).toEqual(mockUser);
-      expect(prismaMock.$transaction).not.toHaveBeenCalled();
     });
 
     it('새 GitHub 사용자를 생성한다 (사전등록 없음)', async () => {
       const mockNewUser = { id: 'new-user-123', role: 'USER' };
 
       prismaMock.authAccount.findUnique.mockResolvedValue(null);
+      prismaMock.user.findFirst.mockResolvedValue(null);
       prismaMock.camperPreRegistration.findMany.mockResolvedValue([]);
       prismaMock.$transaction.mockImplementation(async (callback) => {
         const txMock = {
@@ -176,6 +178,10 @@ describe('AuthService', () => {
           },
           camperPreRegistration: {
             updateMany: jest.fn(),
+          },
+          adminInvitation: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            update: jest.fn(),
           },
         };
         return callback(txMock);
@@ -199,6 +205,7 @@ describe('AuthService', () => {
       };
 
       prismaMock.authAccount.findUnique.mockResolvedValue(null);
+      prismaMock.user.findFirst.mockResolvedValue(null);
       prismaMock.camperPreRegistration.findMany.mockResolvedValue([
         mockPreRegistration,
       ]);
@@ -212,6 +219,10 @@ describe('AuthService', () => {
         },
         camperPreRegistration: {
           updateMany: jest.fn(),
+        },
+        adminInvitation: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          update: jest.fn(),
         },
       };
 
