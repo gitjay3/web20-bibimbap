@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithRouter, userEvent } from '@/test/utils';
-import CamperMyPage from './CamperMyPage';
+import ManageReservationPage from './ManageReservationPage';
 
 // SVG 모킹
 vi.mock('@/assets/icons/user.svg?react', () => ({
@@ -17,18 +17,18 @@ vi.mock('@/api/reservation', () => ({
   getMyReservations: vi.fn(() => Promise.resolve([])),
 }));
 
-describe('CamperMyPage', () => {
+describe('ManageReservationPage', () => {
   describe('페이지 헤더', () => {
     it('페이지 제목을 렌더링한다', async () => {
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('마이페이지')).toBeInTheDocument();
+        expect(screen.getByText('예약 관리')).toBeInTheDocument();
       });
     });
 
     it('페이지 설명을 렌더링한다', async () => {
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
         expect(
@@ -40,7 +40,7 @@ describe('CamperMyPage', () => {
 
   describe('뷰 모드 토글', () => {
     it('토글 버튼들을 렌더링한다', async () => {
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
         expect(
@@ -54,7 +54,7 @@ describe('CamperMyPage', () => {
 
     it('나의 예약 현황 버튼 클릭 시 그리드 뷰로 전환된다', async () => {
       const user = userEvent.setup();
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '나의 예약 현황' })).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('CamperMyPage', () => {
 
     it('다가오는 일정 버튼 클릭 시 티켓 뷰로 전환된다', async () => {
       const user = userEvent.setup();
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '나의 예약 현황' })).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('CamperMyPage', () => {
 
   describe('티켓 뷰', () => {
     it('전체 예약 내역 섹션을 렌더링한다', async () => {
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
         expect(screen.getByText('전체 예약 내역')).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe('CamperMyPage', () => {
   describe('그리드 뷰', () => {
     it('나의 예약 현황 제목을 렌더링한다', async () => {
       const user = userEvent.setup();
-      renderWithRouter(<CamperMyPage />);
+      renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '나의 예약 현황' })).toBeInTheDocument();

@@ -21,6 +21,7 @@ import { CreateCamperDto } from './dto/create-camper.dto';
 import { UpdateCamperDto } from './dto/update-camper.dto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { UpdateMyCamperProfileDto } from './dto/update-my-camper-profile.dto';
 import { CamperDto } from './dto/camper.dto';
 
 @ApiTags('organizations')
@@ -106,6 +107,27 @@ export class OrganizationsController {
     @Body() dto: CreateCamperDto,
   ): Promise<CamperDto> {
     return this.organizationsService.createCamper(id, dto);
+  }
+
+  @Get(':orgId/campers/me')
+  @ApiOperation({ summary: '내 캠퍼 프로필 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  getMyCamperProfile(
+    @Param('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.organizationsService.getMyCamperProfile(userId, orgId);
+  }
+
+  @Patch(':orgId/campers/me')
+  @ApiOperation({ summary: '내 캠퍼 프로필 수정 (슬랙 ID 등)' })
+  @ApiResponse({ status: 200, description: '수정 성공' })
+  updateMyCamperProfile(
+    @Param('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateMyCamperProfileDto,
+  ) {
+    return this.organizationsService.updateMyCamperProfile(userId, orgId, dto);
   }
 
   @Patch(':orgId/campers/:id')

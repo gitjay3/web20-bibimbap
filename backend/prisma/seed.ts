@@ -316,6 +316,31 @@ async function main() {
   });
   console.log('✓ 이벤트 4 생성:', event4.title);
 
+  // 4-5. 알림 테스트용 이벤트 (Web, Individual, 10분 뒤 오픈)
+  const tenMinutesLater = new Date(Date.now() + 10 * 60 * 1000); // 현재 시간 + 10분
+  const oneHourLater = new Date(tenMinutesLater.getTime() + 60 * 60 * 1000); // 1시간 뒤 종료
+
+  const event5 = await prisma.event.upsert({
+    where: { id: 5 },
+    update: {
+        startTime: tenMinutesLater,
+        endTime: oneHourLater,
+    },
+    create: {
+      id: 5,
+      title: '[TEST] 알림 테스트용 이벤트 (10분 뒤 오픈)',
+      description: '알림 기능 테스트를 위한 이벤트입니다. 예약 오픈 10분 전입니다.',
+      track: Track.WEB,
+      applicationUnit: ApplicationUnit.INDIVIDUAL,
+      creatorId: adminUserId,
+      organizationId: organization.id,
+      startTime: tenMinutesLater,
+      endTime: oneHourLater,
+      slotSchema: defaultSlotSchema,
+    },
+  });
+  console.log('✓ 이벤트 5 (알림 테스트) 생성, 시작 시간:', tenMinutesLater.toLocaleString());
+
   // 5. 이벤트 슬롯 생성
   // 팀 이벤트(슬롯 1~4): 그룹 3, 4가 예약 → currentCount: 2
   // 개인 이벤트(슬롯 5~10): 개인별 예약
@@ -487,6 +512,21 @@ async function main() {
         f4: '17:30',
         f5: '대강당',
         f6: '취업 멘토',
+      },
+    },
+    // event5 (알림 테스트) 슬롯
+    {
+      id: 13,
+      eventId: 5,
+      maxCapacity: 10,
+      currentCount: 0,
+      extraInfo: {
+        f1: '알림 테스트 슬롯',
+        f2: '오늘',
+        f3: '지금+10분',
+        f4: '지금+70분',
+        f5: '제페토',
+        f6: '테스터',
       },
     },
   ];

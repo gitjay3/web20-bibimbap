@@ -17,6 +17,9 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsModule } from './metrics/metrics.module';
 
+import { SlackModule } from './slack/slack.module';
+import { NotificationsModule } from './notifications/notifications.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -48,7 +51,10 @@ import { MetricsModule } from './metrics/metrics.module';
     AuthModule,
     QueueModule,
     TemplatesModule,
+    TemplatesModule,
     OrganizationsModule,
+    SlackModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

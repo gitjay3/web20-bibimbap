@@ -75,3 +75,29 @@ export async function uploadCampers(orgId: string, formData: FormData): Promise<
     },
   });
 }
+
+export interface CamperProfile {
+  camperId: string | null;
+  name?: string;
+  username?: string;
+  track?: Camper['track'];
+  groupNumber?: number | null;
+  slackMemberId: string | null;
+  profileUrl: string | null;
+}
+
+export async function getMyCamperProfile(orgId: string): Promise<CamperProfile> {
+  const { data } = await api.get<CamperProfile>(`/organizations/${orgId}/campers/me`);
+  return data;
+}
+
+export async function updateMyCamperProfile(
+  orgId: string,
+  dto: { slackMemberId: string },
+): Promise<CamperProfile> {
+  const { data } = await api.patch<CamperProfile>(
+    `/organizations/${orgId}/campers/me`,
+    dto,
+  );
+  return data;
+}

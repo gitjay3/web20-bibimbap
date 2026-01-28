@@ -15,6 +15,7 @@ import { CreateCamperDto } from './dto/create-camper.dto';
 import { UpdateCamperDto } from './dto/update-camper.dto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { UpdateMyCamperProfileDto } from './dto/update-my-camper-profile.dto';
 import { Workbook } from 'exceljs';
 
 @Injectable()
@@ -552,5 +553,100 @@ export class OrganizationsService {
       }
       return results;
     });
+  }
+  async getMyCamperProfile(userId: string, orgId: string) {
+    const camperOrg = await this.prisma.camperOrganization.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: orgId,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!camperOrg) {
+      throw new NotFoundException('해당 조직의 캠퍼 정보를 찾을 수 없습니다.');
+    }
+
+    let preReg: CamperPreRegistration | null = null;
+    if (camperOrg.camperId) {
+      preReg = await this.prisma.camperPreRegistration.findUnique({
+        where: {
+          organizationId_camperId: {
+            organizationId: orgId,
+            camperId: camperOrg.camperId,
+          },
+        },
+      });
+    }
+
+    return {
+      camperId: camperOrg.camperId,
+      name: preReg?.name,
+      username: preReg?.username,
+      track: preReg?.track,
+      groupNumber: camperOrg.groupNumber,
+      slackMemberId: camperOrg.slackMemberId,
+      profileUrl: camperOrg.user.avatarUrl,
+    };
+  }
+
+  async updateMyCamperProfile(
+    userId: string,
+    orgId: string,
+    dto: UpdateMyCamperProfileDto,
+  ) {
+    const camperOrg = await this.prisma.camperOrganization.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: orgId,
+        },
+      },
+    });
+
+    if (!camperOrg) {
+      throw new NotFoundException('해당 조직의 캠퍼 정보를 찾을 수 없습니다.');
+    }
+
+    const updated = await this.prisma.camperOrganization.update({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: orgId,
+        },
+      },
+      data: {
+        slackMemberId: dto.slackMemberId,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    let preReg: CamperPreRegistration | null = null;
+    if (updated.camperId) {
+      preReg = await this.prisma.camperPreRegistration.findUnique({
+        where: {
+          organizationId_camperId: {
+            organizationId: orgId,
+            camperId: updated.camperId,
+          },
+        },
+      });
+    }
+
+    return {
+      camperId: updated.camperId,
+      name: preReg?.name,
+      username: preReg?.username,
+      track: preReg?.track,
+      groupNumber: updated.groupNumber,
+      slackMemberId: updated.slackMemberId,
+      profileUrl: updated.user.avatarUrl,
+    };
   }
 }
