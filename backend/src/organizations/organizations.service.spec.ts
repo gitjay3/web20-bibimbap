@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SlackService } from '../slack/slack.service';
+import { EncryptionService } from '../slack/encryption.service';
 import { Role, PreRegStatus, Track } from '@prisma/client';
 
 const createPrismaMock = () => ({
@@ -33,17 +35,33 @@ const createPrismaMock = () => ({
   $transaction: jest.fn(),
 });
 
+const createSlackServiceMock = () => ({
+  validateTokenAndGetWorkspaceId: jest.fn(),
+  getUserProfile: jest.fn(),
+});
+
+const createEncryptionServiceMock = () => ({
+  encrypt: jest.fn(),
+  decrypt: jest.fn(),
+});
+
 describe('OrganizationsService', () => {
   let service: OrganizationsService;
   let prismaMock: ReturnType<typeof createPrismaMock>;
+  let slackMock: ReturnType<typeof createSlackServiceMock>;
+  let encryptionMock: ReturnType<typeof createEncryptionServiceMock>;
 
   beforeEach(async () => {
     prismaMock = createPrismaMock();
+    slackMock = createSlackServiceMock();
+    encryptionMock = createEncryptionServiceMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganizationsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: SlackService, useValue: slackMock },
+        { provide: EncryptionService, useValue: encryptionMock },
       ],
     }).compile();
 
@@ -86,8 +104,20 @@ describe('OrganizationsService', () => {
       const result = await service.findMyOrganizations('admin-123', Role.ADMIN);
 
       expect(result).toEqual([
-        { ...mockOrgs[0], camperCount: 0, eventCount: 0 },
-        { ...mockOrgs[1], camperCount: 0, eventCount: 0 },
+        {
+          ...mockOrgs[0],
+          camperCount: 0,
+          eventCount: 0,
+          isSlackEnabled: false,
+          slackWorkspaceId: undefined,
+        },
+        {
+          ...mockOrgs[1],
+          camperCount: 0,
+          eventCount: 0,
+          isSlackEnabled: false,
+          slackWorkspaceId: undefined,
+        },
       ]);
       expect(prismaMock.organization.findMany).toHaveBeenCalledWith({
         orderBy: { createdAt: 'desc' },
@@ -106,7 +136,15 @@ describe('OrganizationsService', () => {
 
       const result = await service.findMyOrganizations('user-123', Role.USER);
 
-      expect(result).toEqual([{ ...mockOrg, camperCount: 0, eventCount: 0 }]);
+      expect(result).toEqual([
+        {
+          ...mockOrg,
+          camperCount: 0,
+          eventCount: 0,
+          isSlackEnabled: false,
+          slackWorkspaceId: undefined,
+        },
+      ]);
     });
 
     it('USER는 초대받은 조직도 포함한다', async () => {
@@ -134,11 +172,15 @@ describe('OrganizationsService', () => {
         ...claimedOrg,
         camperCount: 0,
         eventCount: 0,
+        isSlackEnabled: false,
+        slackWorkspaceId: undefined,
       });
       expect(result).toContainEqual({
         ...invitedOrg,
         camperCount: 0,
         eventCount: 0,
+        isSlackEnabled: false,
+        slackWorkspaceId: undefined,
       });
     });
   });

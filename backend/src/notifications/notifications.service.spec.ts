@@ -61,7 +61,7 @@ describe('NotificationsService', () => {
 
       await service.setNotification(userId, eventId, { notificationTime: 30 });
 
-      expect(slackMock.getDmChannelId).toHaveBeenCalledWith('U123456');
+      expect(slackMock.getDmChannelId).toHaveBeenCalledWith('org-1', 'U123456');
       expect(slackMock.scheduleReminder).toHaveBeenCalled();
       expect(prismaMock.eventNotification.upsert).toHaveBeenCalled();
     });
@@ -81,6 +81,7 @@ describe('NotificationsService', () => {
       await service.setNotification(userId, eventId, { notificationTime: 10 });
 
       expect(slackMock.deleteScheduledMessage).toHaveBeenCalledWith(
+        'org-1',
         'D123456', // Expect DM Channel ID
         'old-msg-id',
       );
@@ -111,6 +112,7 @@ describe('NotificationsService', () => {
       await expect(
         service.setNotification(userId, eventId, { notificationTime: 30 }),
       ).rejects.toThrow(BadRequestException);
+      expect(slackMock.getDmChannelId).toHaveBeenCalledWith('org-1', 'U123456');
     });
   });
 
@@ -128,6 +130,7 @@ describe('NotificationsService', () => {
       await service.deleteNotification(userId, eventId);
 
       expect(slackMock.deleteScheduledMessage).toHaveBeenCalledWith(
+        'org-1',
         'D123456',
         'msg-id-123',
       );

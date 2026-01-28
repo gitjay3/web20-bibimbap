@@ -39,15 +39,28 @@ describe('EventsService', () => {
   describe('findAll', () => {
     it('track 필터 없이 모든 이벤트를 반환한다', async () => {
       const mockEvents = [
-        { id: 1, title: 'Event 1', track: Track.WEB },
-        { id: 2, title: 'Event 2', track: Track.ANDROID },
+        {
+          id: 1,
+          title: 'Event 1',
+          track: Track.WEB,
+          organization: { slackBotToken: 'token' },
+        },
+        {
+          id: 2,
+          title: 'Event 2',
+          track: Track.ANDROID,
+          organization: { slackBotToken: null },
+        },
       ];
 
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
 
       const result = await service.findAll();
 
-      expect(result).toEqual(mockEvents);
+      expect(result).toEqual([
+        { ...mockEvents[0], isSlackEnabled: true, organization: undefined },
+        { ...mockEvents[1], isSlackEnabled: false, organization: undefined },
+      ]);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
         where: { AND: [{}, {}] },
         orderBy: { startTime: 'asc' },
@@ -60,13 +73,22 @@ describe('EventsService', () => {
     });
 
     it('track이 제공되면 해당 track의 이벤트만 반환한다', async () => {
-      const mockEvents = [{ id: 1, title: 'Web Event', track: Track.WEB }];
+      const mockEvents = [
+        {
+          id: 1,
+          title: 'Web Event',
+          track: Track.WEB,
+          organization: { slackBotToken: 'token' },
+        },
+      ];
 
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
 
       const result = await service.findAll('WEB');
 
-      expect(result).toEqual(mockEvents);
+      expect(result).toEqual([
+        { ...mockEvents[0], isSlackEnabled: true, organization: undefined },
+      ]);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
         where: { AND: [{ track: Track.WEB }, {}] },
         orderBy: { startTime: 'asc' },
@@ -76,15 +98,28 @@ describe('EventsService', () => {
 
     it('track이 COMMON이면 모든 이벤트를 반환한다', async () => {
       const mockEvents = [
-        { id: 1, title: 'Event 1', track: Track.WEB },
-        { id: 2, title: 'Event 2', track: Track.ANDROID },
+        {
+          id: 1,
+          title: 'Event 1',
+          track: Track.WEB,
+          organization: { slackBotToken: 'token' },
+        },
+        {
+          id: 2,
+          title: 'Event 2',
+          track: Track.ANDROID,
+          organization: { slackBotToken: null },
+        },
       ];
 
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
 
       const result = await service.findAll('COMMON');
 
-      expect(result).toEqual(mockEvents);
+      expect(result).toEqual([
+        { ...mockEvents[0], isSlackEnabled: true, organization: undefined },
+        { ...mockEvents[1], isSlackEnabled: false, organization: undefined },
+      ]);
       expect(prismaMock.event.findMany).toHaveBeenCalledWith({
         where: { AND: [{}, {}] },
         orderBy: { startTime: 'asc' },
@@ -129,6 +164,8 @@ describe('EventsService', () => {
       const mockEvent = {
         id: 1,
         title: 'Test Event',
+        organizationId: 'org-1',
+        organization: { slackBotToken: 'token' },
         slots: [{ id: 1, maxCapacity: 10, reservations: [] }],
       };
 
@@ -139,12 +176,20 @@ describe('EventsService', () => {
       expect(result).toEqual({
         id: 1,
         title: 'Test Event',
+        organizationId: 'org-1',
+        organization: { slackBotToken: 'token' },
         slots: [{ id: 1, maxCapacity: 10, reservations: [] }],
         canReserveByTrack: true,
+        isSlackEnabled: true,
       });
       expect(prismaMock.event.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
         include: {
+          organization: {
+            select: {
+              slackBotToken: true,
+            },
+          },
           slots: {
             orderBy: { id: 'asc' },
             include: {
@@ -181,6 +226,7 @@ describe('EventsService', () => {
         title: 'WEB Event',
         track: Track.WEB,
         organizationId: 'org-1',
+        organization: { slackBotToken: 'token' },
         slots: [],
       };
 
@@ -192,6 +238,7 @@ describe('EventsService', () => {
       const result = await service.findOne(1, 'user-123');
 
       expect(result.canReserveByTrack).toBe(true);
+      expect(result.isSlackEnabled).toBe(true);
       expect(prismaMock.camperPreRegistration.findFirst).toHaveBeenCalledWith({
         where: {
           claimedUserId: 'user-123',
@@ -207,6 +254,7 @@ describe('EventsService', () => {
         title: 'ANDROID Event',
         track: Track.ANDROID,
         organizationId: 'org-1',
+        organization: { slackBotToken: 'token' },
         slots: [],
       };
 
@@ -226,6 +274,7 @@ describe('EventsService', () => {
         title: 'Common Event',
         track: Track.COMMON,
         organizationId: 'org-1',
+        organization: { slackBotToken: 'token' },
         slots: [],
       };
 
@@ -234,6 +283,7 @@ describe('EventsService', () => {
       const result = await service.findOne(1, 'user-123');
 
       expect(result.canReserveByTrack).toBe(true);
+      expect(result.isSlackEnabled).toBe(true);
       expect(prismaMock.camperPreRegistration.findFirst).not.toHaveBeenCalled();
     });
 
@@ -243,6 +293,7 @@ describe('EventsService', () => {
         title: 'WEB Event',
         track: Track.WEB,
         organizationId: 'org-1',
+        organization: { slackBotToken: 'token' },
         slots: [],
       };
 
