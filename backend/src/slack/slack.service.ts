@@ -4,17 +4,18 @@ import { WebClient } from '@slack/web-api';
 
 @Injectable()
 export class SlackService {
-  private client: WebClient;
+  private readonly client: WebClient;
+  private readonly token: string | undefined;
   private readonly logger = new Logger(SlackService.name);
 
   constructor(private configService: ConfigService) {
-    const token = this.configService.get<string>('SLACK_BOT_TOKEN');
-    if (!token) {
+    this.token = this.configService.get<string>('SLACK_BOT_TOKEN');
+    if (!this.token) {
       this.logger.warn(
         'SLACK_BOT_TOKEN is not defined. Slack notifications will be disabled.',
       );
     }
-    this.client = new WebClient(token);
+    this.client = new WebClient(this.token);
   }
 
   async scheduleReminder(
@@ -23,7 +24,7 @@ export class SlackService {
     text: string,
   ): Promise<string | undefined> {
     try {
-      if (!this.client.token) {
+      if (!this.token) {
         this.logger.warn('Slack client not initialized with token');
         return undefined;
       }
@@ -51,7 +52,7 @@ export class SlackService {
     scheduledMessageId: string,
   ): Promise<boolean> {
     try {
-      if (!this.client.token) {
+      if (!this.token) {
         this.logger.warn('Slack client not initialized with token');
         return false;
       }
@@ -79,7 +80,7 @@ export class SlackService {
   }
   async getDmChannelId(userId: string): Promise<string | undefined> {
     try {
-      if (!this.client.token) {
+      if (!this.token) {
         this.logger.warn('Slack client not initialized with token');
         return undefined;
       }
