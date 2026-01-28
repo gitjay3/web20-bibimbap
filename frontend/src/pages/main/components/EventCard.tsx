@@ -40,12 +40,12 @@ function EventCard({ event, onDeleted }: EventCardProps) {
   const isUpcoming = status === 'UPCOMING' || (new Date(startTime) > new Date());
 
   useEffect(() => {
-    if (isUser && isUpcoming && orgId) {
+    if (isUser && isUpcoming && event.isSlackEnabled && orgId) {
       getMyNotification(orgId, id).then((data) => {
         setHasNotification(!!data);
       });
     }
-  }, [isUser, isUpcoming, orgId, id, isNotificationModalOpen]); // Modal 닫힐 때 최신 상태 반영을 위해 의존성 추가
+  }, [isUser, isUpcoming, event.isSlackEnabled, orgId, id, isNotificationModalOpen]); // Modal 닫힐 때 최신 상태 반영을 위해 의존성 추가
 
   const handleEdit = () => {
     navigate(`/orgs/${orgId}/events/${id}/edit`);
@@ -84,7 +84,7 @@ function EventCard({ event, onDeleted }: EventCardProps) {
           </div>
         )}
         
-        {isUser && isUpcoming && (
+        {isUser && isUpcoming && event.isSlackEnabled && (
           <button
             type="button"
             onClick={(e) => {
@@ -128,7 +128,7 @@ function EventCard({ event, onDeleted }: EventCardProps) {
         variant="danger"
       />
 
-      {isUser && isUpcoming && (
+      {isUser && isUpcoming && event.isSlackEnabled && (
         <EventNotificationModal
           isOpen={isNotificationModalOpen}
           onClose={() => setIsNotificationModalOpen(false)}
