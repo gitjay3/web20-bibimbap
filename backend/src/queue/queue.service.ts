@@ -24,6 +24,7 @@ export class QueueService {
   private readonly USER_STATUS_TTL = 60;
   private readonly TOKEN_TTL = 300; // 토큰 유효
   private readonly BATCH_SIZE = 100; // 동시 처리 가능 인원
+  private readonly MAX_TOKEN_RETRY = 3; // 토큰 발급 최대 재시도 횟수
 
   private getQueueKey(eventId: number): string {
     return `event:${eventId}:queue`;
@@ -164,7 +165,11 @@ export class QueueService {
   }
 
   // 토큰 발급
-  async issueToken(eventId: number, userId: string): Promise<string> {
+  async issueToken(
+    eventId: number,
+    userId: string,
+    retryCount = 0,
+  ): Promise<string> {
     const client = this.redisService.getClient();
     const tokenKey = this.getTokenKey(eventId, userId);
     const queueKey = this.getQueueKey(eventId);
@@ -200,8 +205,13 @@ export class QueueService {
       return existingToken;
     }
 
-    // 토큰이 그 사이에 만료됨 → 재시도
-    return this.issueToken(eventId, userId);
+    // 토큰이 그 사이에 만료됨 → 재시도 (최대 횟수 제한)
+    if (retryCount >= this.MAX_TOKEN_RETRY) {
+      throw new Error(
+        `토큰 발급 실패: 최대 재시도 횟수(${this.MAX_TOKEN_RETRY}) 초과`,
+      );
+    }
+    return this.issueToken(eventId, userId, retryCount + 1);
   }
 
   async hasValidToken(eventId: number, userId: string): Promise<boolean> {
