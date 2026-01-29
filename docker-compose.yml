@@ -41,7 +41,7 @@ services:
 
   # Nginx 리버스 프록시
   nginx:
-    image: nginx:alpine
+    image: nginx:1.28.1-alpine
     container_name: bookstcamp-nginx
     restart: unless-stopped
     ports:
@@ -188,7 +188,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.5.1
     container_name: bookstcamp-prometheus
     restart: unless-stopped
     profiles:
@@ -213,7 +213,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.9.0
     container_name: bookstcamp-node-exporter
     restart: unless-stopped
     profiles:
@@ -233,7 +233,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   redis-exporter:
-    image: oliver006/redis_exporter:latest
+    image: oliver006/redis_exporter:v1.75.0
     container_name: bookstcamp-redis-exporter
     restart: unless-stopped
     environment:
@@ -252,7 +252,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.3.1
     container_name: bookstcamp-grafana
     restart: unless-stopped
     profiles:

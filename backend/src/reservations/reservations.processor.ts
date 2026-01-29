@@ -79,12 +79,6 @@ export class ReservationsProcessor extends WorkerHost {
       );
       this.metricsService.recordReservation(slotId, 'failed');
 
-      // PENDING 레코드를 CANCELLED로 변경
-      await this.prisma.reservation.update({
-        where: { id: job.data.reservationId },
-        data: { status: 'CANCELLED' },
-      });
-
       // 보상 트랜잭션: Redis 선차감된 경우에만 재고 복구
       if (stockDeducted) {
         await this.redisService.incrementStock(

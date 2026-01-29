@@ -2,7 +2,7 @@ name: bookstcamp-monitoring
 
 services:
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.5.1
     container_name: bookstcamp-prometheus
     restart: unless-stopped
     command:
@@ -22,7 +22,7 @@ services:
         max-file: "3"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.3.1
     container_name: bookstcamp-grafana
     restart: unless-stopped
     environment:

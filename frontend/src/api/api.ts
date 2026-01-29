@@ -30,6 +30,15 @@ api.interceptors.response.use(
       }
 
       toast.error(errorMessage);
+    } else if (error.code === 'ECONNABORTED') {
+      // 타임아웃 에러
+      toast.error('요청 시간이 초과되었습니다. 다시 시도해주세요.');
+    } else if (error.request) {
+      // 네트워크 에러 (요청은 보냈지만 응답 없음)
+      toast.error('네트워크 연결을 확인해주세요.');
+    } else {
+      // 요청 설정 중 에러
+      toast.error('요청 중 오류가 발생했습니다.');
     }
 
     return Promise.reject(error);

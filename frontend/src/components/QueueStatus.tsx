@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface QueueStatusProps {
   position: number | null;
@@ -27,14 +28,14 @@ function QueueStatus({
 
     if (remainingMs <= 0) {
       // 이미 만료됨
-      alert('장시간 반응이 없어 새로고침합니다.');
+      toast.info('예약 토큰이 만료되어 새로고침합니다.');
       window.location.reload();
       return undefined;
     }
 
     // 만료 시점에 새로고침 예약
     const timeoutId = setTimeout(() => {
-      alert('장시간 반응이 없어 새로고침합니다.');
+      toast.info('예약 토큰이 만료되어 새로고침합니다.');
       window.location.reload();
     }, remainingMs);
 
