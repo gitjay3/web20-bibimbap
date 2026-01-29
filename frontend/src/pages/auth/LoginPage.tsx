@@ -2,6 +2,8 @@ import { useState } from 'react';
 import GithubIcon from '@/assets/icons/github.svg?react';
 import { adminLogin } from '@/api/auth';
 
+const SHOW_INTERNAL_LOGIN = import.meta.env.VITE_SHOW_INTERNAL_LOGIN === 'true';
+// TODO : 나중에 로그인 방식 확정되면 지우고 github으로 수정
 export default function LoginPage() {
   const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [id, setId] = useState('');
@@ -62,19 +64,23 @@ export default function LoginPage() {
               GitHub로 계속하기
             </button>
 
-            <div className="flex w-80 items-center gap-2.5">
-              <div className="bg-neutral-text-tertiary h-px flex-1" />
-              <span className="text-neutral-text-tertiary text-xs font-medium">OR</span>
-              <div className="bg-neutral-text-tertiary h-px flex-1" />
-            </div>
+            {SHOW_INTERNAL_LOGIN && (
+              <>
+                <div className="flex w-80 items-center gap-2.5">
+                  <div className="bg-neutral-text-tertiary h-px flex-1" />
+                  <span className="text-neutral-text-tertiary text-xs font-medium">OR</span>
+                  <div className="bg-neutral-text-tertiary h-px flex-1" />
+                </div>
 
-            <button
-              type="button"
-              onClick={handleAdminLogin}
-              className="border-neutral-border-default text-neutral-text-secondary hover:bg-neutral-surface-default h-12 w-80 rounded-lg border bg-white text-sm font-bold"
-            >
-              운영진 로그인
-            </button>
+                <button
+                  type="button"
+                  onClick={handleAdminLogin}
+                  className="border-neutral-border-default text-neutral-text-secondary hover:bg-neutral-surface-default h-12 w-80 rounded-lg border bg-white text-sm font-bold"
+                >
+                  운영진 로그인
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <form onSubmit={handleAdminSubmit} className="flex w-80 flex-col gap-3">

@@ -23,6 +23,7 @@ function Layout() {
     { label: '조직 관리', to: `/orgs/${orgId}/organizations` },
     { label: '캠퍼 관리', to: `/orgs/${orgId}/campers` },
     { label: '템플릿 관리', to: `/orgs/${orgId}/templates` },
+    { label: '운영진 관리', to: `/orgs/${orgId}/admins` },
   ];
 
   const navItems = role === 'USER' ? camperNav : adminNav;

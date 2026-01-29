@@ -16,7 +16,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsModule } from './metrics/metrics.module';
-
+import { AdminModule } from './admin/admin.module';
 import { SlackModule } from './slack/slack.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
@@ -54,6 +54,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     OrganizationsModule,
     SlackModule,
     NotificationsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

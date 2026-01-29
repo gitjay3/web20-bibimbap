@@ -34,6 +34,12 @@ enum ApplicationUnit {
   TEAM
 }
 
+enum AdminInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
 model Event {
   id              Int             @id @default(autoincrement())
   title           String
@@ -48,9 +54,9 @@ model Event {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  creator      User         @relation(fields: [creatorId], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id])
-  slots        EventSlot[]
+  creator       User                @relation(fields: [creatorId], references: [id])
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  slots         EventSlot[]
   notifications EventNotification[]
 
   @@index([organizationId])
@@ -108,9 +114,12 @@ model User {
   reservations Reservation[]
   authAccounts AuthAccount[]
 
-  organizations    CamperOrganization[]
-  preRegistrations CamperPreRegistration[]
-  eventNotifications EventNotification[]
+  organizations           CamperOrganization[]
+  preRegistrations        CamperPreRegistration[]
+  eventNotifications      EventNotification[]
+  adminInvitations        AdminInvitation[]
+  sentAdminInvitations    AdminInvitation[]       @relation("AdminInviter")
+  receivedAdminInvitation AdminInvitation?        @relation("AdminAccepted")
 }
 
 model Template {
@@ -195,7 +204,7 @@ model EventNotification {
   userId             String   @db.Uuid()
   eventId            Int
   scheduledMessageId String?
-  notificationTime   Int      // 5, 10, 30, 60 (분)
+  notificationTime   Int // 5, 10, 30, 60 (분)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -203,4 +212,23 @@ model EventNotification {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
+}
+
+model AdminInvitation {
+  id             String            @id @default(uuid()) @db.Uuid()
+  githubUsername String // 초대할 GitHub username
+  status         AdminInviteStatus @default(PENDING)
+
+  invitedById String   @db.Uuid()
+  invitedAt   DateTime @default(now())
+
+  acceptedAt     DateTime?
+  acceptedUserId String?   @unique @db.Uuid()
+
+  inviter      User    @relation("AdminInviter", fields: [invitedById], references: [id])
+  acceptedUser User?   @relation("AdminAccepted", fields: [acceptedUserId], references: [id])
+  user         User?   @relation(fields: [userId], references: [id])
+  userId       String? @db.Uuid()
+
+  @@index([githubUsername, status])
 }

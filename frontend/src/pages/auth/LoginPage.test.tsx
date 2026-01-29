@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import * as authApi from '@/api/auth';
 import { customRender, userEvent } from '@/test/utils';
-import LoginPage from './LoginPage';
+
+// 환경변수 모킹 - LoginPage import 전에 설정해야 함
+vi.stubEnv('VITE_SHOW_INTERNAL_LOGIN', 'true');
+
+// 동적 import로 환경변수 적용 후 모듈 로드
+const { default: LoginPage } = await import('./LoginPage');
 
 // SVG 모킹
 vi.mock('@/assets/icons/github.svg?react', () => ({

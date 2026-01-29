@@ -80,6 +80,13 @@ export const createPrismaMock = () => ({
     upsert: jest.fn(),
     delete: jest.fn(),
   },
+  adminInvitation: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
   $transaction: jest.fn(),
   $connect: jest.fn(),
   $disconnect: jest.fn(),

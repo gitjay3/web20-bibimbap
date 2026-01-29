@@ -14,6 +14,7 @@ import EventCreatePage from './pages/events/create/EventCreatePage';
 import ManageCamper from './pages/manage-camper/ManageCamper';
 import ManageOrganization from './pages/manage-organization/ManageOrganization';
 import CamperMyPage from './pages/mypage/CamperMyPage';
+import ManageAdmin from './pages/manage-admin/ManageAdmin';
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
                       { path: 'templates', element: <ManageTemplate /> },
                       { path: 'campers', element: <ManageCamper /> },
                       { path: 'organizations', element: <ManageOrganization /> },
+                      { path: 'admins', element: <ManageAdmin /> },
                     ],
                   },
                 ],

@@ -4,6 +4,7 @@ import { AuthProvider, Role, PreRegStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import bcrypt from 'bcrypt';
+import { AdminInviteStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -68,13 +69,50 @@ export class AuthService {
       },
     });
 
-    // 1. 가입된 경우 반환
+    // 1. GitHub AuthAccount가 이미 존재하는 경우 반환
     if (authAccount) {
-      return authAccount.user;
+      await this.processAdminInvitation(data.githubLogin, authAccount.user.id);
+
+      // 업데이트된 사용자 정보 반환 (role이 변경됐을 수 있음)
+      return this.prisma.user.findUnique({
+        where: { id: authAccount.user.id },
+      });
     }
 
-    // 2. 가입되지 않은 경우 User 생성
-    // 2-1. 사전 등록(PreRegistration) 확인
+    // 2. AuthAccount가 없는 경우
+    // 2-1. 같은 username의 User가 이미 존재하는지 확인 (seed로 생성된 GitHub admin 등)
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        username: { equals: data.githubLogin, mode: 'insensitive' },
+      },
+    });
+
+    if (existingUser) {
+      // 기존 User에 GitHub AuthAccount 연결
+      await this.prisma.authAccount.create({
+        data: {
+          provider: AuthProvider.GITHUB,
+          providerId: data.githubId,
+          userId: existingUser.id,
+        },
+      });
+
+      // 프로필 이미지 업데이트 (없는 경우에만)
+      if (!existingUser.avatarUrl && data.avatarUrl) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { avatarUrl: data.avatarUrl },
+        });
+      }
+
+      await this.processAdminInvitation(data.githubLogin, existingUser.id);
+
+      return this.prisma.user.findUnique({
+        where: { id: existingUser.id },
+      });
+    }
+
+    // 2-2. 사전 등록(PreRegistration) 확인
     // GitHub Username을 기준으로 INVITED 상태인 초대장을 찾는다.
     // 대소문자 무시 비교 (GitHub username은 대소문자 구분 없음)
     const preRegistrations = await this.prisma.camperPreRegistration.findMany({
@@ -126,7 +164,64 @@ export class AuthService {
         });
       }
 
+      await this.processAdminInvitationInTx(tx, data.githubLogin, newUser.id);
+
       return newUser;
+    });
+  }
+
+  private async processAdminInvitation(githubUsername: string, userId: string) {
+    const invitation = await this.prisma.adminInvitation.findFirst({
+      where: {
+        githubUsername: { equals: githubUsername, mode: 'insensitive' },
+        status: AdminInviteStatus.PENDING,
+      },
+    });
+
+    if (!invitation) return;
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { role: Role.ADMIN },
+      }),
+      this.prisma.adminInvitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: AdminInviteStatus.ACCEPTED,
+          acceptedAt: new Date(),
+          acceptedUserId: userId,
+        },
+      }),
+    ]);
+  }
+
+  private async processAdminInvitationInTx(
+    tx: Prisma.TransactionClient,
+    githubUsername: string,
+    userId: string,
+  ) {
+    const invitation = await tx.adminInvitation.findFirst({
+      where: {
+        githubUsername: { equals: githubUsername, mode: 'insensitive' },
+        status: AdminInviteStatus.PENDING,
+      },
+    });
+
+    if (!invitation) return;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { role: Role.ADMIN },
+    });
+
+    await tx.adminInvitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: AdminInviteStatus.ACCEPTED,
+        acceptedAt: new Date(),
+        acceptedUserId: userId,
+      },
     });
   }
 }

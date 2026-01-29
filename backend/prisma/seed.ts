@@ -53,6 +53,25 @@ async function main() {
   const adminUserId = admin.user.id;
   console.log('✓ 관리자 계정 생성:', adminUserId);
 
+  // 실제 운영진 GitHub username
+  const githubAdminUsernames = [
+    'RainWhales', //여기에 실제 GitHub username 입력
+    // 초기 운영진 계정 더 필요할 시
+  ];
+
+  for (const username of githubAdminUsernames) {
+    const githubAdmin = await prisma.user.upsert({
+      where: { username },
+      update: { role: Role.ADMIN },
+      create: {
+        username,
+        name: `운영진 (${username})`,
+        role: Role.ADMIN,
+      },
+    });
+    console.log('✓ GitHub 기반 ADMIN 생성:', githubAdmin.username);
+  }
+
   // 3. 테스트 사용자 생성 (예약 테스트용)
   const testUser = await prisma.authAccount.upsert({
     where: {
@@ -170,17 +189,17 @@ async function main() {
     },
   });
 
-  await prisma.camperPreRegistration.create({
-    data: {
-      organizationId: organization.id,
-      camperId: 'J248',
-      name: '정희재',
-      username: 'RainWhales',
-      track: Track.WEB,
-      groupNumber: 2,
-      status: PreRegStatus.INVITED,
-    },
-  });
+  // await prisma.camperPreRegistration.create({
+  //   data: {
+  //     organizationId: organization.id,
+  //     camperId: 'J248',
+  //     name: '정희재',
+  //     username: 'RainWhales',
+  //     track: Track.WEB,
+  //     groupNumber: 2,
+  //     status: PreRegStatus.INVITED,
+  //   },
+  // });
 
   // (2) 탈퇴/재가입 시나리오 등을 위한 가입 유저 (CLAIMED) - 시드에서는 테스트용으로 미리 연결해둘 수도 있음
   // 여기서는 로직 테스트를 위해 'testuser'를 위한 사전등록 데이터를 생성해둡니다.
@@ -323,13 +342,14 @@ async function main() {
   const event5 = await prisma.event.upsert({
     where: { id: 5 },
     update: {
-        startTime: tenMinutesLater,
-        endTime: oneHourLater,
+      startTime: tenMinutesLater,
+      endTime: oneHourLater,
     },
     create: {
       id: 5,
       title: '[TEST] 알림 테스트용 이벤트 (10분 뒤 오픈)',
-      description: '알림 기능 테스트를 위한 이벤트입니다. 예약 오픈 10분 전입니다.',
+      description:
+        '알림 기능 테스트를 위한 이벤트입니다. 예약 오픈 10분 전입니다.',
       track: Track.WEB,
       applicationUnit: ApplicationUnit.INDIVIDUAL,
       creatorId: adminUserId,
@@ -339,7 +359,10 @@ async function main() {
       slotSchema: defaultSlotSchema,
     },
   });
-  console.log('✓ 이벤트 5 (알림 테스트) 생성, 시작 시간:', tenMinutesLater.toLocaleString());
+  console.log(
+    '✓ 이벤트 5 (알림 테스트) 생성, 시작 시간:',
+    tenMinutesLater.toLocaleString(),
+  );
 
   // ========================================
   // K6 부하 테스트용 이벤트 (ID 100~)
