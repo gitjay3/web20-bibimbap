@@ -45,7 +45,6 @@ export default function EventCreatePage() {
         if (isEditMode) {
           // 수정 모드: 기존 이벤트 데이터 로드
           const event = await getEvent(Number(eventId));
-          console.log('Backend slotSchema:', event.slotSchema);
           const startDate = event.startTime.toISOString().split('T')[0];
           const startTimeStr = event.startTime.toTimeString().slice(0, 5);
           const endDate = event.endTime.toISOString().split('T')[0];
@@ -136,10 +135,7 @@ export default function EventCreatePage() {
     // eslint-disable-next-line react/jsx-props-no-spreading
     <FormProvider {...methods}>
       <form
-        onSubmit={methods.handleSubmit(onSubmit, (errors) => {
-          console.log('Form validation errors:', errors);
-          console.log('Current form values:', methods.getValues());
-        })}
+        onSubmit={methods.handleSubmit(onSubmit)}
         className="mx-auto flex max-w-300 flex-col gap-8"
       >
         <PageHeader

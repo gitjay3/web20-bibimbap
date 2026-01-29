@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlackService } from '../slack/slack.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -15,6 +16,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly slackService: SlackService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getNotification(userId: string, eventId: number) {
@@ -106,7 +108,7 @@ export class NotificationsService {
     }
 
     // 6. 새로운 Slack 메시지 예약
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
     const reservationUrl = `${frontendUrl}/orgs/${event.organizationId}/events/${event.id}`;
 
     const message = `[알림] <${reservationUrl}|'${event.title}'> 예약이 ${notificationTime}분 뒤에 시작됩니다! ⏳`;

@@ -4,7 +4,7 @@
 FROM node:20.19.6-alpine3.23 AS deps
 
 # pnpm 설치
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 # ========================================
 FROM node:20.19.6-alpine3.23 AS builder
 
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 WORKDIR /app
 

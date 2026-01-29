@@ -51,7 +51,6 @@ import { NotificationsModule } from './notifications/notifications.module';
     AuthModule,
     QueueModule,
     TemplatesModule,
-    TemplatesModule,
     OrganizationsModule,
     SlackModule,
     NotificationsModule,

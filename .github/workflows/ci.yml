@@ -56,6 +56,11 @@ jobs:
         working-directory: ${{ matrix.workspace }}
         run: pnpm test
 
+      - name: Run integration tests (backend only)
+        if: matrix.workspace == 'backend'
+        working-directory: backend
+        run: pnpm test:integration
+
       - name: Run build (${{ matrix.workspace }})
         working-directory: ${{ matrix.workspace }}
         run: pnpm build

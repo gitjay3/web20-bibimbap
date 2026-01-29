@@ -32,6 +32,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       host: this.configService.get<string>('REDIS_HOST', 'localhost'),
       port: this.configService.get<number>('REDIS_PORT', 6379),
       password: this.configService.get<string>('REDIS_PASSWORD'),
+      retryStrategy: (times) => {
+        if (times > 10) {
+          this.logger.error('Redis 재연결 최대 횟수 초과');
+          return null; // 재연결 중단
+        }
+        const delay = Math.min(times * 100, 3000); // 최대 3초
+        this.logger.warn(`Redis 재연결 시도 ${times}회, ${delay}ms 후 재시도`);
+        return delay;
+      },
+      maxRetriesPerRequest: 3,
     });
 
     this.client.on('error', (err) => {
@@ -43,7 +53,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     // lua script 로드
-    await this.loadScripts();
+    try {
+      await this.loadScripts();
+    } catch (error) {
+      this.logger.error('Lua 스크립트 로드 실패:', error);
+      throw error;
+    }
   }
 
   onModuleDestroy() {

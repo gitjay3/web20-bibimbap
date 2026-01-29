@@ -14,7 +14,8 @@ services:
     deploy: !override
       resources:
         limits:
-          memory: 1024M
+          memory: 1536M
+          cpus: "1.5"
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
@@ -52,5 +53,6 @@ services:
     deploy: !override
       resources:
         limits:
-          memory: 256M
+          memory: 512M
+          cpus: "0.5"
 

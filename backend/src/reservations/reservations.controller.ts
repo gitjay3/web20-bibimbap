@@ -7,6 +7,7 @@ import {
   Delete,
   ParseIntPipe,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -104,11 +105,18 @@ export class ReservationsController {
     description: '예약을 찾을 수 없음',
     type: ErrorResponseDto,
   })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     const reservation = await this.reservationsService.findOne(id);
 
     if (!reservation) {
       throw new NotFoundException(`Reservation with ID ${id} not found`);
+    }
+
+    if (reservation.userId !== userId) {
+      throw new ForbiddenException('이 예약을 조회할 권한이 없습니다.');
     }
 
     return new ReservationResponseDto(reservation);

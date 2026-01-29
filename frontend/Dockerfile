@@ -4,7 +4,7 @@
 FROM node:20.19.6-alpine3.23 AS deps
 
 # pnpm 설치
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 WORKDIR /app
 
@@ -32,7 +32,7 @@ ARG VITE_ENV=production
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_ENV=$VITE_ENV
 
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 WORKDIR /app
 

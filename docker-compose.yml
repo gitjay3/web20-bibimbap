@@ -33,11 +33,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${POSTGRES_CPU_LIMIT:-0.5}"
-          memory: ${POSTGRES_MEMORY_LIMIT:-512M}
+          cpus: "${POSTGRES_CPU_LIMIT:-1}"
+          memory: ${POSTGRES_MEMORY_LIMIT:-1024M}
         reservations:
-          cpus: "${POSTGRES_CPU_RESERVATION:-0.25}"
-          memory: ${POSTGRES_MEMORY_RESERVATION:-256M}
+          cpus: "${POSTGRES_CPU_RESERVATION:-0.5}"
+          memory: ${POSTGRES_MEMORY_RESERVATION:-512M}
 
   # Nginx 리버스 프록시
   nginx:
@@ -260,6 +260,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_CONTENT_SECURITY_POLICY: "true"
       GF_INSTALL_PLUGINS: ""
     ports:
       - "${GRAFANA_PORT}:3000"

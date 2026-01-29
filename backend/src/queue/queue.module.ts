@@ -11,6 +11,15 @@ import { QUEUE_CLEANUP_QUEUE } from './queue.constants';
   imports: [
     BullModule.registerQueue({
       name: QUEUE_CLEANUP_QUEUE,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000, // 1초 → 2초 → 4초
+        },
+        removeOnComplete: true,
+        removeOnFail: false, // 실패한 작업은 디버깅을 위해 유지
+      },
     }),
   ],
   controllers: [QueueController],
