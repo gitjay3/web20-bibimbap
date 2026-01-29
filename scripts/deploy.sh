@@ -164,21 +164,35 @@ else
     exit 1
 fi
 
-# 7. 컨테이너 재시작
-log_info "Step 8: 컨테이너 재시작"
+# 7. 무중단 롤링 업데이트
+log_info "Step 8: 무중단 롤링 업데이트"
 
-run_with_env docker compose -f "$COMPOSE_FILE" down
-run_with_env docker compose -f "$COMPOSE_FILE" up -d
+# Redis, Nginx 등 인프라 서비스는 먼저 업데이트 (down 없이)
+log_info "인프라 서비스 업데이트..."
+run_with_env docker compose -f "$COMPOSE_FILE" up -d redis
 
-if [ $? -ne 0 ]; then
-    log_error "컨테이너 시작 실패"
+# Backend 롤링 업데이트
+if ! rolling_update "backend" "$COMPOSE_FILE" 60; then
+    log_error "Backend 롤링 업데이트 실패"
     bash "$SCRIPT_DIR/rollback.sh" "$ENVIRONMENT"
     exit 1
 fi
 
-# 8. 컨테이너 시작 대기
-log_info "Step 9: 컨테이너 시작 대기 (5초)"
-sleep 5
+# Frontend 롤링 업데이트
+if ! rolling_update "frontend" "$COMPOSE_FILE" 60; then
+    log_error "Frontend 롤링 업데이트 실패"
+    bash "$SCRIPT_DIR/rollback.sh" "$ENVIRONMENT"
+    exit 1
+fi
+
+# Nginx 재시작 (설정 리로드)
+log_info "Nginx 설정 리로드..."
+run_with_env docker compose -f "$COMPOSE_FILE" up -d nginx
+docker exec bookstcamp-nginx nginx -s reload 2>/dev/null || true
+
+# 8. 헬스체크 대기
+log_info "Step 9: 전체 서비스 헬스체크 대기 (10초)"
+sleep 10
 
 # 9. 완료
 log_info "=== 배포 완료 ==="

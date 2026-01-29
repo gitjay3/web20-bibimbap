@@ -21,7 +21,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-@Controller(':orgId/events/:eventId/notifications')
+@Controller('organizations/:orgId/events/:eventId/notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

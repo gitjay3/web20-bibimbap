@@ -9,7 +9,7 @@ export const getMyNotification = async (
   eventId: number,
 ): Promise<NotificationResponse | null> => {
   const { data } = await api.get<NotificationResponse | null>(
-    `/${orgId}/events/${eventId}/notifications/me`,
+    `/organizations/${orgId}/events/${eventId}/notifications/me`,
   );
   return data;
 };
@@ -20,7 +20,7 @@ export const setNotification = async (
   notificationTime: number,
 ): Promise<NotificationResponse> => {
   const { data } = await api.post<NotificationResponse>(
-    `/${orgId}/events/${eventId}/notifications`,
+    `/organizations/${orgId}/events/${eventId}/notifications`,
     { notificationTime },
   );
   return data;
@@ -30,6 +30,6 @@ export const deleteNotification = async (
   orgId: string,
   eventId: number,
 ): Promise<void> => {
-  await api.delete(`/${orgId}/events/${eventId}/notifications`);
+  await api.delete(`/organizations/${orgId}/events/${eventId}/notifications`);
 };
 

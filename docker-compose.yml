@@ -77,7 +77,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: bookstcamp-backend
+    # container_name 제거 - 롤링 업데이트를 위해 여러 인스턴스 허용
     restart: unless-stopped
     environment:
       - NODE_ENV=${NODE_ENV}
@@ -92,8 +92,15 @@ services:
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
-    ports:
-      - "3001:3001"
+    # ports 대신 expose 사용 - 호스트 포트 충돌 방지
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD-SHELL", "test ! -f /tmp/drain && wget -q -O /dev/null http://127.0.0.1:3001/api/metrics || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     depends_on:
       - redis
     networks:
@@ -117,10 +124,16 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    container_name: bookstcamp-frontend
+    # container_name 제거 - 롤링 업데이트를 위해 여러 인스턴스 허용
     restart: unless-stopped
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "test ! -f /tmp/drain && wget -q -O /dev/null http://127.0.0.1:8080 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     networks:
       - bookstcamp-network
     deploy:
