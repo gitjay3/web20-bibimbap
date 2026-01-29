@@ -172,3 +172,79 @@ export function getTokenForVU(tokens, vuId) {
   }
   return tokens[(vuId - 1) % tokens.length];
 }
+
+// ==========================================
+// 대기열 API 헬퍼
+// ==========================================
+
+/**
+ * 대기열 진입 요청
+ * @param {string} token - JWT 토큰
+ * @param {number} eventId - 이벤트 ID
+ * @param {object} tags - 추가 태그
+ * @returns {object} HTTP 응답
+ */
+export function enterQueue(token, eventId, tags = {}) {
+  const url = `${config.baseUrl}/api/queue/${eventId}/enter`;
+
+  const params = {
+    headers: createAuthHeaders(token),
+    tags: {
+      name: 'POST /api/queue/:eventId/enter',
+      endpoint: 'queue_enter',
+      ...defaultParams.tags,
+      ...tags,
+    },
+    timeout: defaultParams.timeout,
+  };
+
+  return http.post(url, null, params);
+}
+
+/**
+ * 대기열 상태 조회 요청
+ * @param {string} token - JWT 토큰
+ * @param {number} eventId - 이벤트 ID
+ * @param {object} tags - 추가 태그
+ * @returns {object} HTTP 응답
+ */
+export function getQueueStatus(token, eventId, tags = {}) {
+  const url = `${config.baseUrl}/api/queue/${eventId}/status`;
+
+  const params = {
+    headers: createAuthHeaders(token),
+    tags: {
+      name: 'GET /api/queue/:eventId/status',
+      endpoint: 'queue_status',
+      ...defaultParams.tags,
+      ...tags,
+    },
+    timeout: defaultParams.timeout,
+  };
+
+  return http.get(url, params);
+}
+
+/**
+ * 대기열 토큰 획득 대기 (폴링)
+ * 대기열 진입 후 토큰이 발급될 때까지 상태를 반복 조회
+ * @param {string} token - JWT 토큰
+ * @param {number} eventId - 이벤트 ID
+ * @param {number} maxRetries - 최대 재시도 횟수
+ * @param {number} delayMs - 재시도 간격 (ms)
+ * @returns {object|null} 토큰 획득 시 상태 객체, 실패 시 null
+ */
+export function waitForQueueToken(token, eventId, maxRetries = 20, delayMs = 500) {
+  for (let i = 0; i < maxRetries; i++) {
+    // high cardinality 방지: 고정 태그 사용
+    const res = getQueueStatus(token, eventId, { step: 'wait_token' });
+    if (res.status === 200) {
+      const body = safeParseJSON(res.body);
+      if (body?.data?.hasToken) {
+        return body.data;
+      }
+    }
+    sleep(delayMs / 1000);
+  }
+  return null;
+}

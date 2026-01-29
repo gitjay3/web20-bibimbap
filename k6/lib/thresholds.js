@@ -51,6 +51,32 @@ export const scenarioThresholds = {
 };
 
 // ==========================================
+// 대기열 시나리오별 임계값
+// ==========================================
+
+export const queueThresholds = {
+  // HTTP 응답 시간
+  http_req_duration: ['p(95)<2000'],
+
+  // 서버 에러율 (1% 미만)
+  error_rate: ['rate<0.01'],
+
+  // 대기열 진입 응답 시간
+  queue_enter_duration: ['p(95)<500'],
+
+  // 대기열 상태 조회 응답 시간
+  queue_status_duration: ['p(95)<300'],
+
+  // 대기열 진입 최소 1건 성공
+  queue_enter_success: ['count>0'],
+};
+
+export const queueScenarioThresholds = {
+  // 대기열 시나리오 테스트: 체크 기반
+  checks: ['rate>0.9'],
+};
+
+// ==========================================
 // 임계값 선택 함수
 // ==========================================
 
@@ -66,6 +92,8 @@ export function getThresholdsForScenario(scenario) {
     spike: spikeThresholds,
     soak: stressThresholds,
     scenarios: scenarioThresholds,
+    queue: queueThresholds,
+    queue_scenarios: queueScenarioThresholds,
   };
 
   return thresholdMap[scenario] || defaultThresholds;

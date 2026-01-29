@@ -53,6 +53,28 @@ export const apdexTolerating = new Counter('apdex_tolerating'); // <= 4T (800ms)
 export const apdexFrustrated = new Counter('apdex_frustrated'); // > 4T
 
 // ==========================================
+// 대기열 결과 메트릭
+// ==========================================
+
+// 대기열 진입 성공/실패 카운터
+export const queueEnterSuccess = new Counter('queue_enter_success');
+export const queueEnterFailed = new Counter('queue_enter_failed');
+
+// 대기열 토큰 획득
+export const queueTokenAcquired = new Counter('queue_token_acquired');
+export const queueTokenAcquireRate = new Rate('queue_token_acquire_rate');
+
+// ==========================================
+// 대기열 응답 시간 메트릭
+// ==========================================
+
+// 대기열 진입 요청 응답 시간
+export const queueEnterDuration = new Trend('queue_enter_duration');
+
+// 대기열 상태 조회 응답 시간
+export const queueStatusDuration = new Trend('queue_status_duration');
+
+// ==========================================
 // 메트릭 기록 헬퍼 함수
 // ==========================================
 
@@ -112,4 +134,73 @@ export function recordReservationMetrics(response, duration) {
   }
 
   return { isSuccess, isServerError, isSlotFull, isDuplicate };
+}
+
+/**
+ * 대기열 진입 응답 분석 및 메트릭 기록
+ * @param {object} response - HTTP 응답 객체
+ * @param {number} duration - 요청 소요 시간 (ms)
+ */
+export function recordQueueEnterMetrics(response, duration) {
+  // 응답 시간 기록
+  queueEnterDuration.add(duration);
+
+  // Apdex 기록
+  recordApdex(duration);
+
+  // 응답 분석
+  const isSuccess = response.status === 200 || response.status === 201;
+  const isServerError = response.status >= 500;
+
+  // 에러율 기록
+  errorRate.add(isServerError);
+  if (isServerError) {
+    serverErrors.add(1);
+  }
+
+  // 대기열 진입 결과 기록
+  if (isSuccess) {
+    queueEnterSuccess.add(1);
+  } else {
+    queueEnterFailed.add(1);
+  }
+
+  return { isSuccess, isServerError };
+}
+
+/**
+ * 대기열 상태 조회 응답 분석 및 메트릭 기록
+ * @param {object} response - HTTP 응답 객체
+ * @param {number} duration - 요청 소요 시간 (ms)
+ */
+export function recordQueueStatusMetrics(response, duration) {
+  // 응답 시간 기록
+  queueStatusDuration.add(duration);
+
+  // 응답 분석
+  const isSuccess = response.status === 200;
+  const isServerError = response.status >= 500;
+
+  // 에러율 기록
+  errorRate.add(isServerError);
+  if (isServerError) {
+    serverErrors.add(1);
+  }
+
+  // 토큰 획득 여부 기록
+  if (isSuccess) {
+    try {
+      const body = JSON.parse(response.body || '{}');
+      if (body?.data?.hasToken) {
+        queueTokenAcquired.add(1);
+        queueTokenAcquireRate.add(true);
+      } else {
+        queueTokenAcquireRate.add(false);
+      }
+    } catch {
+      queueTokenAcquireRate.add(false);
+    }
+  }
+
+  return { isSuccess, isServerError };
 }
