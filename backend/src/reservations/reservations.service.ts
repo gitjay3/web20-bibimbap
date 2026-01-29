@@ -104,8 +104,22 @@ export class ReservationsService {
       throw new SlotFullException();
     }
 
+    // PENDING 레코드 먼저 생성
+    const reservation = await this.prisma.reservation.create({
+      data: {
+        userId,
+        slotId: dto.slotId,
+        status: 'PENDING',
+        groupNumber:
+          slot.event.applicationUnit === 'TEAM'
+            ? eligibility.groupNumber
+            : null,
+      },
+    });
+
     // Queue에 Job 추가
     await this.reservationQueue.add(PROCESS_RESERVATION_JOB, {
+      reservationId: reservation.id, // 추가
       userId,
       slotId: dto.slotId,
       maxCapacity: slot.maxCapacity,

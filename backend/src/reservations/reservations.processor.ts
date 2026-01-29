@@ -35,8 +35,14 @@ export class ReservationsProcessor extends WorkerHost {
       return;
     }
 
-    const { userId, slotId, maxCapacity, stockDeducted, groupNumber } =
-      job.data;
+    const {
+      reservationId,
+      userId,
+      slotId,
+      maxCapacity,
+      stockDeducted,
+      groupNumber,
+    } = job.data;
     const startTime = Date.now();
 
     this.logger.log(
@@ -44,7 +50,7 @@ export class ReservationsProcessor extends WorkerHost {
     );
 
     try {
-      await this.processReservation(userId, slotId, groupNumber);
+      await this.processReservation(reservationId, userId, slotId, groupNumber);
       this.logger.log(`예약 확정: userId=${userId}, slotId=${slotId}`);
 
       // 성공 메트릭
@@ -58,6 +64,13 @@ export class ReservationsProcessor extends WorkerHost {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`예약 실패: ${message}`);
 
+      // PENDING 레코드를 CANCELLED로 변경
+      const { reservationId } = job.data;
+      await this.prisma.reservation.update({
+        where: { id: reservationId },
+        data: { status: 'CANCELLED' },
+      });
+
       // 실패 메트릭
       this.metricsService.recordQueueJobComplete(
         RESERVATION_QUEUE,
@@ -65,6 +78,12 @@ export class ReservationsProcessor extends WorkerHost {
         Date.now() - startTime,
       );
       this.metricsService.recordReservation(slotId, 'failed');
+
+      // PENDING 레코드를 CANCELLED로 변경
+      await this.prisma.reservation.update({
+        where: { id: job.data.reservationId },
+        data: { status: 'CANCELLED' },
+      });
 
       // 보상 트랜잭션: Redis 선차감된 경우에만 재고 복구
       if (stockDeducted) {
@@ -81,6 +100,7 @@ export class ReservationsProcessor extends WorkerHost {
   }
 
   private async processReservation(
+    reservationId: number,
     userId: string,
     slotId: number,
     groupNumber: number | null,
@@ -147,14 +167,10 @@ export class ReservationsProcessor extends WorkerHost {
         throw new OptimisticLockException();
       }
 
-      // 예약 생성
-      await tx.reservation.create({
-        data: {
-          userId,
-          slotId,
-          groupNumber,
-          status: 'CONFIRMED',
-        },
+      // 예약 업데이트
+      await tx.reservation.update({
+        where: { id: reservationId },
+        data: { status: 'CONFIRMED' },
       });
     });
   }

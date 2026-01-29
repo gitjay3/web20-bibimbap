@@ -71,7 +71,9 @@ describe('ReservationsProcessor', () => {
     const userId = 'user-123';
     const slotId = 1;
     const maxCapacity = 10;
+    const reservationId = 1;
     const baseJobData: ReservationJobData = {
+      reservationId,
       userId,
       slotId,
       maxCapacity,
@@ -104,8 +106,8 @@ describe('ReservationsProcessor', () => {
       txMock.eventSlot.findUnique.mockResolvedValue(mockSlot);
       txMock.reservation.findFirst.mockResolvedValue(null); // 중복 예약 없음
       txMock.eventSlot.updateMany.mockResolvedValue({ count: 1 }); // 업데이트 성공
-      txMock.reservation.create.mockResolvedValue({
-        id: 1,
+      txMock.reservation.update.mockResolvedValue({
+        id: reservationId,
         userId,
         slotId,
         status: 'CONFIRMED',
@@ -121,13 +123,9 @@ describe('ReservationsProcessor', () => {
 
       // Assert
       expect(prismaMock.$transaction).toHaveBeenCalled();
-      expect(txMock.reservation.create).toHaveBeenCalledWith({
-        data: {
-          userId,
-          slotId,
-          status: 'CONFIRMED',
-          groupNumber: null,
-        },
+      expect(txMock.reservation.update).toHaveBeenCalledWith({
+        where: { id: reservationId },
+        data: { status: 'CONFIRMED' },
       });
       expect(metricsMock.recordQueueJobComplete).toHaveBeenCalledWith(
         'reservation-queue',
