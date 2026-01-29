@@ -106,7 +106,7 @@ export class ReservationsProcessor extends WorkerHost {
       });
       if (!slot) throw new SlotNotFoundException();
 
-      // 중복 예약 확인
+      // 중복 예약 확인 (현재 처리 중인 예약은 제외)
       if (groupNumber) {
         // 팀 단위
         const existingTeam = await tx.reservation.findFirst({
@@ -114,6 +114,7 @@ export class ReservationsProcessor extends WorkerHost {
             slotId,
             groupNumber,
             status: { in: ['PENDING', 'CONFIRMED'] },
+            id: { not: reservationId },
           },
           select: { id: true },
         });
@@ -125,6 +126,7 @@ export class ReservationsProcessor extends WorkerHost {
             userId,
             slotId,
             status: { in: ['PENDING', 'CONFIRMED'] },
+            id: { not: reservationId },
           },
           select: { id: true },
         });
