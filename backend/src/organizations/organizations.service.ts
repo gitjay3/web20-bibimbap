@@ -32,13 +32,23 @@ export class OrganizationsService {
   async findOne(id: string) {
     const organization = await this.prisma.organization.findUnique({
       where: { id },
+      select: {
+        id: true,
+        name: true,
+        slackWorkspaceId: true,
+        slackBotToken: true,
+      },
     });
 
     if (!organization) {
       throw new NotFoundException('조직을 찾을 수 없습니다.');
     }
 
-    return organization;
+    return {
+      ...organization,
+      isSlackEnabled: !!organization.slackBotToken,
+      slackBotToken: undefined,
+    };
   }
 
   async createOrganization(dto: CreateOrganizationDto) {
@@ -120,7 +130,7 @@ export class OrganizationsService {
       workspaceId = dto.slackWorkspaceId;
     }
 
-    return this.prisma.organization.update({
+    const updated = await this.prisma.organization.update({
       where: { id },
       data: {
         name,
@@ -128,6 +138,12 @@ export class OrganizationsService {
         slackWorkspaceId: workspaceId,
       },
     });
+
+    return {
+      ...updated,
+      isSlackEnabled: !!updated.slackBotToken,
+      slackBotToken: undefined,
+    };
   }
 
   async findMyOrganizations(userId: string, role: Role) {

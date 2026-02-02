@@ -74,12 +74,21 @@ describe('OrganizationsService', () => {
 
   describe('findOne', () => {
     it('조직을 찾아 반환한다', async () => {
-      const mockOrg = { id: 'org-123', name: 'Test Org' };
+      const mockOrg = {
+        id: 'org-123',
+        name: 'Test Org',
+        slackBotToken: 'token',
+      };
       prismaMock.organization.findUnique.mockResolvedValue(mockOrg);
 
       const result = await service.findOne('org-123');
 
-      expect(result).toEqual(mockOrg);
+      expect(result).toEqual({
+        id: 'org-123',
+        name: 'Test Org',
+        isSlackEnabled: true,
+        slackBotToken: undefined,
+      });
     });
 
     it('조직이 없으면 NotFoundException을 던진다', async () => {
