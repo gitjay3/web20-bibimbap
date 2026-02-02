@@ -8,23 +8,39 @@ import { MetricsService } from '../metrics/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForbiddenTrackException } from '../../common/exceptions/api.exception';
 import { isUserEligibleForTrack } from '../../common/utils/track.util';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class QueueService {
+  private readonly HEARTBEAT_TTL: number;
+  private readonly USER_STATUS_TTL: number;
+  private readonly TOKEN_TTL: number;
+  private readonly BATCH_SIZE: number;
+  private readonly MAX_TOKEN_RETRY: number;
+
   constructor(
     private readonly redisService: RedisService,
     private readonly metricsService: MetricsService,
     private readonly prisma: PrismaService,
+    private readonly configService: ConfigService, // 추가
     @InjectQueue(QUEUE_CLEANUP_QUEUE)
     private cleanupQueue: Queue<CleanupJobData>,
-  ) {}
-
-  // TTL (seconds)
-  private readonly HEARTBEAT_TTL = 60;
-  private readonly USER_STATUS_TTL = 60;
-  private readonly TOKEN_TTL = 300; // 토큰 유효
-  private readonly BATCH_SIZE = 100; // 동시 처리 가능 인원
-  private readonly MAX_TOKEN_RETRY = 3; // 토큰 발급 최대 재시도 횟수
+  ) {
+    this.HEARTBEAT_TTL = this.configService.get<number>(
+      'queue.heartbeatTtl',
+      60,
+    );
+    this.USER_STATUS_TTL = this.configService.get<number>(
+      'queue.userStatusTtl',
+      60,
+    );
+    this.TOKEN_TTL = this.configService.get<number>('queue.tokenTtl', 300);
+    this.BATCH_SIZE = this.configService.get<number>('queue.batchSize', 100);
+    this.MAX_TOKEN_RETRY = this.configService.get<number>(
+      'queue.maxTokenRetry',
+      3,
+    );
+  }
 
   private getQueueKey(eventId: number): string {
     return `event:${eventId}:queue`;

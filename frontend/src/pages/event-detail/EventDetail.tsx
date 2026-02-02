@@ -16,11 +16,10 @@ import QueueStatus from '@/components/QueueStatus';
 import { useAuth } from '@/store/AuthContext';
 import ConfirmModal from '@/components/DropdownConfirmModal';
 import SlotEditModal from '@/components/SlotEditModal';
+import CONFIG from '@/config/polling.config';
 import EventDetailHeader from './components/EventDetailHeader';
 import ReservationButton from './components/ReservationButton';
 import SlotList from './components/SlotList';
-
-const POLLING_INTERVAL = 1000;
 
 function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -146,7 +145,7 @@ function EventDetail() {
       if (!isPageVisibleRef.current) return;
       updateSlotAvailability();
       fetchMyReservation();
-    }, POLLING_INTERVAL);
+    }, CONFIG.polling.eventDetail);
 
     return () => clearInterval(intervalId);
   }, [eventStatus, updateSlotAvailability, fetchMyReservation]);

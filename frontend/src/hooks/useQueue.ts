@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { enterQueue, getQueueStatus } from '@/api/queue';
-
-const QUEUE_POLLING_INTERVAL = 3000; // 3초
+import CONFIG from '@/config/polling.config';
 
 interface UseQueueOptions {
   eventId: number;
@@ -101,7 +100,7 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
       return undefined;
     }
 
-    const intervalId = setInterval(fetchStatus, QUEUE_POLLING_INTERVAL);
+    const intervalId = setInterval(fetchStatus, CONFIG.polling.queueStatus);
 
     return () => clearInterval(intervalId);
   }, [enabled, state.inQueue, state.hasToken, fetchStatus]);
