@@ -53,32 +53,32 @@ export class EventSlotsService {
   async getAvailabilityByEvent(eventId: number) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { applicationUnit: true, organizationId: true },
+      select: {
+        applicationUnit: true,
+        organizationId: true,
+        slots: {
+          // ← 추가
+          orderBy: { id: 'asc' },
+          include: {
+            reservations: {
+              where: { status: 'CONFIRMED' },
+              select: {
+                groupNumber: true,
+                user: {
+                  select: { name: true, username: true, avatarUrl: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!event) {
       throw new NotFoundException('이벤트를 찾을 수 없습니다');
     }
 
-    const slots = await this.prisma.eventSlot.findMany({
-      where: { eventId },
-      include: {
-        reservations: {
-          where: { status: 'CONFIRMED' },
-          select: {
-            groupNumber: true,
-            user: {
-              select: {
-                name: true,
-                username: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { id: 'asc' },
-    });
+    const slots = event.slots;
 
     if (slots.length === 0) {
       throw new NotFoundException('해당 이벤트의 슬롯을 찾을 수 없습니다');
