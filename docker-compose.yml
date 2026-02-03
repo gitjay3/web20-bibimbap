@@ -92,6 +92,7 @@ services:
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_TOKEN_ENCRYPTION_KEY=${SLACK_TOKEN_ENCRYPTION_KEY}
     # ports 대신 expose 사용 - 호스트 포트 충돌 방지
     expose:
       - "3001"
