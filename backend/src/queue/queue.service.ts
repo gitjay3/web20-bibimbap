@@ -82,15 +82,11 @@ export class QueueService {
     const existingSessionId = await client.hget(statusKey, 'sessionId');
 
     if (existingSessionId) {
-      // TODO: 단일 세션 정책
-      // - existingSessionId !== sessionId 인 경우
-
-      // 이미 있음 - 세션 교체, 순번 유지
-      await client.hset(statusKey, 'sessionId', sessionId);
-      await client.expire(statusKey, this.USER_STATUS_TTL);
-
-      // heartbeat 갱신
-      await client.zadd(heartbeatKey, now, userId);
+      const pipeline = client.pipeline();
+      pipeline.hset(statusKey, 'sessionId', sessionId);
+      pipeline.expire(statusKey, this.USER_STATUS_TTL);
+      pipeline.zadd(heartbeatKey, now, userId);
+      await pipeline.exec();
 
       const position = await client.zrank(queueKey, userId);
 
@@ -103,16 +99,13 @@ export class QueueService {
       };
     }
 
-    // 신규 진입
-    await client.zadd(queueKey, now, userId);
-
-    // 상태 저장 + TTL
-    await client.hset(statusKey, 'sessionId', sessionId);
-    await client.hset(statusKey, 'enteredAt', String(now));
-    await client.expire(statusKey, this.USER_STATUS_TTL);
-
-    // heartbeat 기록
-    await client.zadd(heartbeatKey, now, userId);
+    const pipeline = client.pipeline();
+    pipeline.zadd(queueKey, now, userId);
+    pipeline.hset(statusKey, 'sessionId', sessionId);
+    pipeline.hset(statusKey, 'enteredAt', String(now));
+    pipeline.expire(statusKey, this.USER_STATUS_TTL);
+    pipeline.zadd(heartbeatKey, now, userId);
+    await pipeline.exec();
 
     const position = await client.zrank(queueKey, userId);
 
@@ -222,9 +215,11 @@ export class QueueService {
     if (setResult === 'OK') {
       // 최초 발급 성공 → 대기열에서 제거 + 활성 토큰 목록에 추가
       const expiresAt = Date.now() + this.TOKEN_TTL * 1000;
-      await client.zrem(queueKey, userId);
-      await client.zrem(heartbeatKey, userId);
-      await client.zadd(activeTokensKey, expiresAt, userId);
+      const pipeline = client.pipeline();
+      pipeline.zrem(queueKey, userId);
+      pipeline.zrem(heartbeatKey, userId);
+      pipeline.zadd(activeTokensKey, expiresAt, userId);
+      await pipeline.exec();
 
       this.metricsService.recordTokenIssued(eventId);
       const totalWaiting = await client.zcard(queueKey);
