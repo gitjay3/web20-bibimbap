@@ -12,11 +12,12 @@ usage() {
 Usage: $0 <environment> [max_retries]
 
 Arguments:
-    environment    배포 환경 (prod)
+    environment    배포 환경 (prod, staging)
     max_retries    최대 재시도 횟수 (기본값: 5)
 
 Example:
     $0 prod
+    $0 staging
     $0 prod 10
 
 설명:
@@ -35,8 +36,8 @@ ENVIRONMENT=$1
 MAX_RETRIES=${2:-5}
 RETRY_INTERVAL=10
 
-if [[ "$ENVIRONMENT" != "prod" ]]; then
-    log_error "HEALTH" "Invalid environment: $ENVIRONMENT (only 'prod' is supported)"
+if [[ "$ENVIRONMENT" != "prod" && "$ENVIRONMENT" != "staging" ]]; then
+    log_error "HEALTH" "Invalid environment: $ENVIRONMENT (only 'prod' or 'staging' is supported)"
     usage
 fi
 

@@ -12,11 +12,12 @@ usage() {
 Usage: $0 <environment> [backup_timestamp]
 
 Arguments:
-    environment         배포 환경 (prod)
+    environment         배포 환경 (prod, staging)
     backup_timestamp    복원할 백업 타임스탬프 (선택사항, 기본값: 최신)
 
 Example:
     $0 prod
+    $0 staging
     $0 prod 20260108_143000
 
 설명:
@@ -34,8 +35,8 @@ fi
 ENVIRONMENT=$1
 BACKUP_TIMESTAMP=${2:-}
 
-if [[ "$ENVIRONMENT" != "prod" ]]; then
-    log_error "ROLLBACK" "Invalid environment: $ENVIRONMENT (only 'prod' is supported)"
+if [[ "$ENVIRONMENT" != "prod" && "$ENVIRONMENT" != "staging" ]]; then
+    log_error "ROLLBACK" "Invalid environment: $ENVIRONMENT (only 'prod' or 'staging' is supported)"
     usage
 fi
 
