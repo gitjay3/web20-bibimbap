@@ -4,16 +4,20 @@ import {
   Query,
   ParseIntPipe,
   BadRequestException,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Post,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { EventSlotsService } from './event-slots.service';
 import { AvailabilityOnlyResponseDto } from './dto/slot-availability-response.dto';
-import { Patch, Delete, Param, Body } from '@nestjs/common';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Role } from '@prisma/client';
 import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
-import { Post } from '@nestjs/common';
 import { CreateEventSlotDto } from './dto/create-event-slot.dto';
+import { ParseCommaSeparatedIntsPipe } from '../common/pipes/parse-comma-separated-ints.pipe';
 
 @ApiTags('event-slots')
 @Controller('event-slots')
@@ -50,28 +54,18 @@ export class EventSlotsController {
   async getAvailability(
     @Query('eventId', new ParseIntPipe({ optional: true }))
     eventId?: number,
-    @Query('slotIds')
-    slotIds?: string,
+    @Query('slotIds', new ParseCommaSeparatedIntsPipe({ optional: true }))
+    slotIds?: number[],
   ) {
     if (eventId) {
       return this.eventSlotsService.getAvailabilityByEvent(eventId);
     }
 
     if (slotIds) {
-      if (!slotIds || slotIds.trim() === '') {
-        throw new BadRequestException('slotIds는 비어있을 수 없습니다');
-      }
-      const ids = slotIds.split(',').map((id) => {
-        const parsed = parseInt(id.trim(), 10);
-        if (isNaN(parsed)) {
-          throw new BadRequestException(`유효하지 않은 slotId: ${id}`);
-        }
-        return parsed;
-      });
-      return this.eventSlotsService.getAvailability(ids);
+      return this.eventSlotsService.getAvailability(slotIds);
     }
 
-    throw new BadRequestException('식별 ID는 필수입니다.');
+    throw new BadRequestException('eventId 또는 slotIds는 필수입니다.');
   }
 
   @Patch(':id')

@@ -12,11 +12,17 @@ export class EncryptionService {
     const keyString = this.configService.get<string>(
       'SLACK_TOKEN_ENCRYPTION_KEY',
     );
+    const nodeEnv = this.configService.get<string>('NODE_ENV');
+
     if (!keyString) {
+      if (nodeEnv === 'production') {
+        throw new Error(
+          'SLACK_TOKEN_ENCRYPTION_KEY must be defined in production environment',
+        );
+      }
       this.logger.warn(
-        'SLACK_TOKEN_ENCRYPTION_KEY is not defined. Using a temporary key for development. DO NOT USE IN PRODUCTION.',
+        'SLACK_TOKEN_ENCRYPTION_KEY is not defined. Using a temporary key for development only.',
       );
-      // Fallback for development only. In production, this must be defined.
       this.key = crypto.scryptSync('temporary-dev-key', 'salt', 32);
     } else {
       // Key should be 32 bytes for aes-256

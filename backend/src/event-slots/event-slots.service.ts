@@ -7,14 +7,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
 import { CreateEventSlotDto } from './dto/create-event-slot.dto';
-
-interface ReservationUser {
-  user: {
-    name: string | null;
-    username: string;
-    avatarUrl: string | null;
-  };
-}
+import { ReservationUser } from '../common/types/reservation.types';
 
 @Injectable()
 export class EventSlotsService {

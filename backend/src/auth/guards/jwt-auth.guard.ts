@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { PUBLIC_ROUTES } from '../../common/constants/routes.constant';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -20,9 +21,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    // /api/metrics 경로는 Prometheus 스크래핑을 위해 인증 제외
+    // Prometheus 메트릭 스크래핑은 인증 제외
     const request = context.switchToHttp().getRequest<Request>();
-    if (request.path === '/api/metrics') {
+    if (request.path === PUBLIC_ROUTES.METRICS) {
       return true;
     }
 

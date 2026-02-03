@@ -20,13 +20,56 @@ import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SlackModule } from './slack/slack.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { OpenTelemetryModule } from 'nestjs-otel';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
+import { LoggerModule } from 'nestjs-pino';
+import { ClientLogsModule } from './client-logs/client-logs.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    LoggerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        pinoHttp: {
+          level: configService.get<string>('LOG_LEVEL', 'info'),
+          transport:
+            configService.get<string>('NODE_ENV') !== 'production'
+              ? { target: 'pino-pretty', options: { colorize: true } }
+              : undefined,
+          autoLogging: true,
+          redact: ['req.headers.cookie', 'req.headers.authorization'],
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    // Rate Limiting: 브루트포스 공격 방지
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000, // 1초
+        limit: 5, // 초당 5회
+      },
+      {
+        name: 'medium',
+        ttl: 10000, // 10초
+        limit: 30, // 10초당 30회
+      },
+      {
+        name: 'long',
+        ttl: 60000, // 1분
+        limit: 100, // 분당 100회
+      },
+    ]),
     ScheduleModule.forRoot(),
+    OpenTelemetryModule.forRoot({
+      metrics: {
+        hostMetrics: true,
+      },
+    }),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true,
@@ -57,6 +100,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     SlackModule,
     NotificationsModule,
     AdminModule,
+    ClientLogsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -64,6 +108,10 @@ import { NotificationsModule } from './notifications/notifications.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
     },
   ],
 })

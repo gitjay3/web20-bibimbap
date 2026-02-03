@@ -136,11 +136,12 @@ export class ReservationsService {
       (Date.now() - startTime) / 1000,
     );
 
-    // TODO: await this.queueService.invalidateToken(dto.eventId, userId); 지금은 수강신청같은 방식. 1인 1예약이라면 토큰 무효화
+    // 예약 성공 시 대기열 토큰 무효화 (토큰 재사용 방지)
+    await this.queueService.invalidateToken(slot.event.id, userId);
 
     return {
       status: 'PENDING',
-      message: '예약이 접수되었습니다. 잠시 후 확정됩니다.', // 예약 대기 시간 확인하고 이 메세지 수정 혹은 생략 가능
+      message: '예약이 접수되었습니다. 잠시 후 확정됩니다.',
     };
   }
 
