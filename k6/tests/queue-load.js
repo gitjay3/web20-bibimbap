@@ -11,6 +11,10 @@
  * - POST /api/queue/:eventId/enter - 대기열 진입
  * - GET /api/queue/:eventId/status - 대기열 상태 폴링 → 토큰 획득
  *
+ * 토큰 발급 조건:
+ * - 활성 토큰 수가 BATCH_SIZE(100) 미만일 때만 토큰 발급
+ * - 기존 토큰 만료/무효화 시 활성 토큰 목록에서 자동 정리
+ *
  * 실행:
  *   pnpm k6:queue            - 경쟁 테스트 (기본)
  *   pnpm k6:queue:stress     - 스트레스 테스트

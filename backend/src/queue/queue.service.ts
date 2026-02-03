@@ -58,6 +58,10 @@ export class QueueService {
     return `event:${eventId}:user:${userId}:token`;
   }
 
+  private getActiveTokensKey(eventId: number): string {
+    return `event:${eventId}:active_tokens`;
+  }
+
   // 대기열 진입
   async enterQueue(
     eventId: number,
@@ -125,7 +129,17 @@ export class QueueService {
     };
   }
 
-  // 대기열 상태 조회: 토큰 확인 → 순번 확인 → heartbeat 갱신 → batch 이내면 토큰 발급
+  // 활성 토큰 수 조회
+  async getActiveTokenCount(eventId: number): Promise<number> {
+    const client = this.redisService.getClient();
+    const activeTokensKey = this.getActiveTokensKey(eventId);
+    const now = Date.now();
+
+    await client.zremrangebyscore(activeTokensKey, 0, now);
+    return client.zcard(activeTokensKey);
+  }
+
+  // 대기열 상태 조회: 토큰 확인 → 순번 확인 → heartbeat 갱신 → 활성 토큰 수 제한 내에서 토큰 발급
   async getQueueStatus(
     eventId: number,
     userId: string,
@@ -166,8 +180,9 @@ export class QueueService {
     // heartbeat 갱신
     await client.zadd(heartbeatKey, Date.now(), userId);
 
-    // 순번이 batch 이내면 토큰 발급
-    if (position < this.BATCH_SIZE) {
+    // 활성 토큰 수 확인 후 제한 내에서만 토큰 발급
+    const activeTokenCount = await this.getActiveTokenCount(eventId);
+    if (activeTokenCount < this.BATCH_SIZE) {
       await this.issueToken(eventId, userId);
       return {
         position: null,
@@ -190,6 +205,7 @@ export class QueueService {
     const tokenKey = this.getTokenKey(eventId, userId);
     const queueKey = this.getQueueKey(eventId);
     const heartbeatKey = this.getHeartbeatKey(eventId);
+    const activeTokensKey = this.getActiveTokensKey(eventId);
 
     // 새 토큰 생성
     const token = randomUUID();
@@ -204,9 +220,11 @@ export class QueueService {
     );
 
     if (setResult === 'OK') {
-      // 최초 발급 성공 → 대기열에서 제거
+      // 최초 발급 성공 → 대기열에서 제거 + 활성 토큰 목록에 추가
+      const expiresAt = Date.now() + this.TOKEN_TTL * 1000;
       await client.zrem(queueKey, userId);
       await client.zrem(heartbeatKey, userId);
+      await client.zadd(activeTokensKey, expiresAt, userId);
 
       this.metricsService.recordTokenIssued(eventId);
       const totalWaiting = await client.zcard(queueKey);
@@ -236,11 +254,14 @@ export class QueueService {
     return (await client.get(tokenKey)) !== null;
   }
 
-  // TODO: 토큰 무효화 (예약 성공 후)
+  // 토큰 무효화 (예약 성공 후)
   async invalidateToken(eventId: number, userId: string): Promise<void> {
     const client = this.redisService.getClient();
     const tokenKey = this.getTokenKey(eventId, userId);
+    const activeTokensKey = this.getActiveTokensKey(eventId);
+
     await client.del(tokenKey);
+    await client.zrem(activeTokensKey, userId);
   }
 
   // 만료된 유저 정리 (heartbeat 기준)
