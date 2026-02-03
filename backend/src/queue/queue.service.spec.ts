@@ -23,6 +23,9 @@ const createRedisMock = () => {
     set: jest.fn(),
     del: jest.fn(),
     ttl: jest.fn(),
+    sadd: jest.fn(),
+    srem: jest.fn(),
+    smembers: jest.fn(),
     pipeline: jest.fn().mockReturnValue({
       zrem: jest.fn().mockReturnThis(),
       del: jest.fn().mockReturnThis(),
@@ -110,7 +113,7 @@ describe('QueueService', () => {
 
       const result = await service.enterQueue(eventId, userId, sessionId);
 
-      expect(result).toEqual({ position: 5, isNew: true });
+      expect(result).toEqual({ position: 5, isNew: true, totalWaiting: 10 });
       expect(clientMock.zadd).toHaveBeenCalled();
       expect(clientMock.hset).toHaveBeenCalledWith(
         expect.stringContaining('status'),
