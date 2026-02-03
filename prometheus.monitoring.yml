@@ -7,15 +7,46 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
+  # ===================
+  # Production targets
+  # ===================
   - job_name: 'node'
     static_configs:
       - targets: ['10.0.0.6:9100']
+        labels:
+          env: 'production'
 
   - job_name: 'backend'
     static_configs:
       - targets: ['10.0.0.6:3001']
+        labels:
+          env: 'production'
     metrics_path: '/api/metrics'
 
   - job_name: 'redis'
     static_configs:
       - targets: ['10.0.0.6:9121']
+        labels:
+          env: 'production'
+
+  # ===================
+  # Staging targets
+  # ===================
+  - job_name: 'node-staging'
+    static_configs:
+      - targets: ['10.0.0.9:9100']
+        labels:
+          env: 'staging'
+
+  - job_name: 'backend-staging'
+    static_configs:
+      - targets: ['10.0.0.9:3001']
+        labels:
+          env: 'staging'
+    metrics_path: '/api/metrics'
+
+  - job_name: 'redis-staging'
+    static_configs:
+      - targets: ['10.0.0.9:9121']
+        labels:
+          env: 'staging'

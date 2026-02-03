@@ -14,6 +14,10 @@ const environments = {
     baseUrl: "http://localhost:80",
     timeout: "60s", // 10s → 60s (Connection Pool 15개 기준 처리 시간 고려)
   },
+  staging: {
+    baseUrl: "https://bookstcamp-staging.duckdns.org",
+    timeout: "30s",
+  },
   production: {
     baseUrl: "https://bookstcamp.duckdns.org",
     timeout: "30s", // 20s → 30s (프로덕션 여유 확보)

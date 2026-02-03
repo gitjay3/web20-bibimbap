@@ -1,14 +1,6 @@
-import type { ReservationApiResponse, ApplyReservationDto } from '@/types/BEapi';
+import type { ReservationApiResponse } from '@/types/BEapi';
 import axios from 'axios';
 import api from './api';
-
-// 예약 신청
-export async function applyReservation(slotId: number): Promise<ReservationApiResponse> {
-  const { data } = await api.post<ReservationApiResponse>('/reservations', {
-    slotId,
-  } as ApplyReservationDto);
-  return data;
-}
 
 // 예약 목록 조회
 export async function getMyReservations(): Promise<ReservationApiResponse[]> {

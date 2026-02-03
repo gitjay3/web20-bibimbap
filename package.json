@@ -40,7 +40,13 @@
     "k6:queue": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL SKIP_QUEUE_TOKENS=true pnpm --filter backend exec tsx ../k6/scripts/setup-load-test.ts' && K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw -e K6_ENV=local -e SCENARIO=competition -e EVENT_ID=100 -e TEST_ID=queue-$(date +%Y%m%d-%H%M%S) k6/tests/queue-load.js",
     "k6:queue:stress": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL USER_COUNT=5000 SKIP_QUEUE_TOKENS=true pnpm --filter backend exec tsx ../k6/scripts/setup-load-test.ts' && K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw -e K6_ENV=local -e SCENARIO=stress -e EVENT_ID=100 -e TEST_ID=queue-stress-$(date +%Y%m%d-%H%M%S) k6/tests/queue-load.js",
     "k6:queue:spike": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL USER_COUNT=10000 SKIP_QUEUE_TOKENS=true pnpm --filter backend exec tsx ../k6/scripts/setup-load-test.ts' && K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw -e K6_ENV=local -e SCENARIO=spike -e EVENT_ID=100 -e TEST_ID=queue-spike-$(date +%Y%m%d-%H%M%S) k6/tests/queue-load.js",
-    "k6:queue:logic": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL SKIP_QUEUE_TOKENS=true pnpm --filter backend exec tsx ../k6/scripts/setup-load-test.ts' && K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw -e K6_ENV=local -e EVENT_ID=100 -e SLOT_ID=100 -e TEST_ID=queue-logic-$(date +%Y%m%d-%H%M%S) k6/tests/queue-scenarios.js"
+    "k6:queue:logic": "dotenvx run -f .env.development -- sh -c 'DATABASE_URL=$DATABASE_URL_LOCAL SKIP_QUEUE_TOKENS=true pnpm --filter backend exec tsx ../k6/scripts/setup-load-test.ts' && K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw -e K6_ENV=local -e EVENT_ID=100 -e SLOT_ID=100 -e TEST_ID=queue-logic-$(date +%Y%m%d-%H%M%S) k6/tests/queue-scenarios.js",
+    "k6:staging:competition": "k6 run -e K6_ENV=staging -e SCENARIO=competition -e EVENT_ID=100 -e SLOT_ID=100 -e TEST_ID=staging-competition-$(date +%Y%m%d-%H%M%S) k6/tests/reservation-load.js",
+    "k6:staging:stress": "k6 run -e K6_ENV=staging -e SCENARIO=stress -e EVENT_ID=100 -e SLOT_ID=100 -e TEST_ID=staging-stress-$(date +%Y%m%d-%H%M%S) k6/tests/reservation-load.js",
+    "k6:staging:queue": "k6 run -e K6_ENV=staging -e SCENARIO=competition -e EVENT_ID=100 -e TEST_ID=staging-queue-$(date +%Y%m%d-%H%M%S) k6/tests/queue-load.js",
+    "k6:staging:logic": "k6 run -e K6_ENV=staging -e EVENT_ID=100 -e SLOT_ID=100 -e TEST_ID=staging-logic-$(date +%Y%m%d-%H%M%S) k6/tests/reservation-scenarios.js",
+    "env:encrypt:staging": "dotenvx encrypt -f .env.staging",
+    "env:decrypt:staging": "dotenvx decrypt --stdout -f .env.staging"
   },
   "keywords": [],
   "author": "",

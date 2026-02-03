@@ -37,3 +37,32 @@ output "monitoring_public_ip" {
   description = "Monitoring Server Public IP"
   value       = ncloud_public_ip.monitoring.public_ip
 }
+
+# ===================
+# Staging Outputs
+# ===================
+
+output "staging_app_server_id" {
+  description = "Staging App Server ID"
+  value       = ncloud_server.staging_app.id
+}
+
+output "staging_db_server_id" {
+  description = "Staging DB Server ID"
+  value       = ncloud_server.staging_db.id
+}
+
+output "staging_app_public_ip" {
+  description = "Staging App Server Public IP"
+  value       = ncloud_public_ip.staging_app.public_ip
+}
+
+output "staging_app_private_ip" {
+  description = "Staging App Server Private IP"
+  value       = ncloud_network_interface.staging_app.private_ip
+}
+
+output "staging_db_private_ip" {
+  description = "Staging DB Server Private IP"
+  value       = ncloud_network_interface.staging_db.private_ip
+}

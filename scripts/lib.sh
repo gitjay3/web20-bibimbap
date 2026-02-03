@@ -67,9 +67,11 @@ setup_environment() {
     PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
     COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 
-    # 환경 이름 매핑 (prod -> production)
+    # 환경 이름 매핑 (prod -> production, staging -> staging)
     if [ "$environment" = "prod" ]; then
         ENVIRONMENT="production"
+    elif [ "$environment" = "staging" ]; then
+        ENVIRONMENT="staging"
     else
         ENVIRONMENT="$environment"
     fi

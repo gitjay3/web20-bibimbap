@@ -12,10 +12,11 @@ usage() {
 Usage: $0 <environment>
 
 Arguments:
-    environment    배포 환경 (prod)
+    environment    배포 환경 (prod, staging)
 
 Example:
     $0 prod
+    $0 staging
 
 Environment Variables Required:
     NCP_REGISTRY_URL        - NCP Container Registry URL (필수)
@@ -32,8 +33,8 @@ fi
 
 ENVIRONMENT=$1
 
-if [[ "$ENVIRONMENT" != "prod" ]]; then
-    log_error "Invalid environment: $ENVIRONMENT (only 'prod' is supported)"
+if [[ "$ENVIRONMENT" != "prod" && "$ENVIRONMENT" != "staging" ]]; then
+    log_error "Invalid environment: $ENVIRONMENT (only 'prod' or 'staging' is supported)"
     usage
 fi
 

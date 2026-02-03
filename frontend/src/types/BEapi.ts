@@ -113,10 +113,6 @@ export interface ReservationApiResponse {
   };
 }
 
-export interface ApplyReservationDto {
-  slotId: number;
-}
-
 export interface ApiErrorResponse {
   message: string;
   statusCode: number;
