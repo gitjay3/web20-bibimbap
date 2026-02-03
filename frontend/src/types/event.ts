@@ -12,7 +12,7 @@ export interface Event {
   startTime: Date;
   endTime: Date;
   status: Status;
-  isSlackEnabled?: boolean;
+  myNotification: { notificationTime: number } | null;
 }
 
 export interface EventSlot {

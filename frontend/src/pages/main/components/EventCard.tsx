@@ -15,7 +15,7 @@ import BellRingIcon from '@/assets/icons/bell-ring.svg?react';
 import DropdownMenu from '@/components/DropdownMenu';
 import { useAuth } from '@/store/AuthContext';
 import { deleteEvent } from '@/api/event';
-import { getMyNotification } from '@/api/notification';
+import { useOrg } from '@/store/OrgContext';
 import EventNotificationModal from './EventNotificationModal';
 
 interface EventCardProps {
@@ -29,23 +29,23 @@ function EventCard({ event, onDeleted }: EventCardProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const isUser = user?.role === 'USER';
+  const { organization } = useOrg();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
-  const [hasNotification, setHasNotification] = useState(false);
+  const [myNotification, setMyNotification] = useState(event.myNotification);
+
+  const hasNotification = !!myNotification;
 
    
   const { id, track, status, title, description, startTime, endTime, applicationUnit } = event;
 
   const isUpcoming = status === 'UPCOMING' || (new Date(startTime) > new Date());
 
+  // 알림 상태 최신화를 위해 props 변경 시 상태 동기화
   useEffect(() => {
-    if (isUser && isUpcoming && event.isSlackEnabled && orgId) {
-      getMyNotification(orgId, id).then((data) => {
-        setHasNotification(!!data);
-      });
-    }
-  }, [isUser, isUpcoming, event.isSlackEnabled, orgId, id, isNotificationModalOpen]); // Modal 닫힐 때 최신 상태 반영을 위해 의존성 추가
+    setMyNotification(event.myNotification);
+  }, [event.myNotification]);
 
   const handleEdit = () => {
     navigate(`/orgs/${orgId}/events/${id}/edit`);
@@ -78,35 +78,35 @@ function EventCard({ event, onDeleted }: EventCardProps) {
   return (
     <>
       <Card>
-        {isAdmin && (
-          <div className="absolute top-3 right-3 z-10">
-            <DropdownMenu items={menuItems} />
-          </div>
-        )}
-        
-        {isUser && isUpcoming && event.isSlackEnabled && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              setIsNotificationModalOpen(true);
-            }}
-            className="absolute top-3 right-3 z-10 p-1 rounded-full hover:bg-neutral-100 transition-colors"
-          >
-            {hasNotification ? (
-              <BellRingIcon className="h-5 w-5 text-brand-500" />
-            ) : (
-              <BellIcon className="h-5 w-5 text-neutral-text-tertiary" />
-            )}
-          </button>
-        )}
-
         <Link to={`/orgs/${orgId}/events/${id}`} className="flex h-full flex-col justify-between">
           <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <ApplicationUnitLabel applicationUnit={applicationUnit} />
-              <EventCategoryLabel category={track} />
-              <EventStatusLabel status={status} />
+            <div className="flex items-start justify-between">
+              <div className="flex gap-2">
+                <ApplicationUnitLabel applicationUnit={applicationUnit} />
+                <EventCategoryLabel category={track} />
+                <EventStatusLabel status={status} />
+              </div>
+              
+              <div className="flex items-center gap-1">
+                {isAdmin && <DropdownMenu items={menuItems} />}
+                
+                {isUser && isUpcoming && organization?.isSlackEnabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsNotificationModalOpen(true);
+                    }}
+                    className="p-1 rounded-full hover:bg-neutral-100 transition-colors"
+                  >
+                    {hasNotification ? (
+                      <BellRingIcon className="h-5 w-5 text-brand-500" />
+                    ) : (
+                      <BellIcon className="h-5 w-5 text-neutral-text-tertiary" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="text-20 font-extrabold">{title}</div>
             <div className="text-12 text-neutral-text-secondary">{description}</div>
@@ -118,7 +118,7 @@ function EventCard({ event, onDeleted }: EventCardProps) {
         </Link>
       </Card>
 
-      <ConfirmModal
+      {isAdmin && <ConfirmModal
         open={isDeleteModalOpen}
         title="이벤트 삭제"
         message="이 이벤트를 삭제하시겠습니까? 모든 일정이 함께 삭제됩니다."
@@ -126,14 +126,16 @@ function EventCard({ event, onDeleted }: EventCardProps) {
         onConfirm={handleDeleteConfirm}
         onCancel={handleCancelDelete}
         variant="danger"
-      />
+      />}
 
-      {isUser && isUpcoming && event.isSlackEnabled && (
+      {isUser && isUpcoming && organization?.isSlackEnabled && (
         <EventNotificationModal
           isOpen={isNotificationModalOpen}
           onClose={() => setIsNotificationModalOpen(false)}
+          onUpdated={setMyNotification}
           eventId={id}
           startTime={new Date(startTime)}
+          initialNotification={myNotification}
         />
       )}
     </>

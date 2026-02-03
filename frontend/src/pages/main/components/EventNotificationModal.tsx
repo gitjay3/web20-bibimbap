@@ -3,9 +3,9 @@ import { useParams } from 'react-router';
 import { toast } from 'sonner';
 import Modal from '@/components/Modal';
 import {
-  getMyNotification,
   setNotification,
   deleteNotification,
+  type NotificationResponse,
 } from '@/api/notification';
 
 interface EventNotificationModalProps {
@@ -13,6 +13,8 @@ interface EventNotificationModalProps {
   onClose: () => void;
   eventId: number;
   startTime: Date;
+  initialNotification: NotificationResponse | null;
+  onUpdated: (notification: NotificationResponse | null) => void;
 }
 
 const TIME_OPTIONS = [
@@ -27,10 +29,12 @@ function EventNotificationModal({
   onClose,
   eventId,
   startTime,
+  initialNotification,
+  onUpdated,
 }: EventNotificationModalProps) {
   const { orgId } = useParams<{ orgId: string }>();
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<number>(5);
+  const [isEnabled, setIsEnabled] = useState(!!initialNotification);
+  const [selectedTime, setSelectedTime] = useState<number>(initialNotification?.notificationTime ?? 5);
   const [isLoading, setIsLoading] = useState(false);
 
   const isValidTime = (minutes: number) => {
@@ -38,26 +42,11 @@ function EventNotificationModal({
     return alertTime > new Date(); // Future time only
   };
 
-  // Load initial state
+  // Sync internal state when initialNotification changes (e.g., from parent)
   useEffect(() => {
-    if (isOpen && orgId) {
-      const loadNotification = async () => {
-        try {
-          const data = await getMyNotification(orgId, eventId);
-          if (data) {
-            setIsEnabled(true);
-            setSelectedTime(data.notificationTime);
-          } else {
-            setIsEnabled(false);
-            setSelectedTime(5); // Default
-          }
-        } catch {
-          // Silent fail for initial load
-        }
-      };
-      loadNotification();
-    }
-  }, [isOpen, orgId, eventId]);
+    setIsEnabled(!!initialNotification);
+    setSelectedTime(initialNotification?.notificationTime ?? 5);
+  }, [initialNotification]);
 
   const handleToggle = async () => {
     if (!orgId) return;
@@ -67,6 +56,7 @@ function EventNotificationModal({
         // OFF: Delete notification
         await deleteNotification(orgId, eventId);
         setIsEnabled(false);
+        onUpdated(null);
         toast.success('알림이 해제되었습니다.');
       } else {
         // ON: Set notification (default or current selected)
@@ -78,9 +68,10 @@ function EventNotificationModal({
              return;
         }
 
-        await setNotification(orgId, eventId, validTime);
+        const data = await setNotification(orgId, eventId, validTime);
         setIsEnabled(true);
         setSelectedTime(validTime);
+        onUpdated(data);
         toast.success('알림이 설정되었습니다.');
       }
     } catch (error) {
@@ -97,8 +88,9 @@ function EventNotificationModal({
     
     setIsLoading(true);
     try {
-      await setNotification(orgId, eventId, time);
+      const data = await setNotification(orgId, eventId, time);
       setSelectedTime(time);
+      onUpdated(data);
       toast.success('알림 시간이 변경되었습니다.');
     } catch (error) {
        const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || '알림 시간 변경에 실패했습니다.';

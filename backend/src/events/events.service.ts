@@ -25,9 +25,7 @@ interface SlotWithReservations extends EventSlot {
 
 interface EventWithSlotsAndReservations extends Event {
   slots: SlotWithReservations[];
-  organization: {
-    slackBotToken: string | null;
-  };
+  notifications?: { notificationTime: number }[] | false;
 }
 
 @Injectable()
@@ -143,7 +141,7 @@ export class EventsService {
     return this.prisma.event.delete({ where: { id } });
   }
 
-  async findAll(track?: string, organizationId?: string) {
+  async findAll(track?: string, userId?: string, organizationId?: string) {
     const parsedTrack = this.parseTrack(track);
 
     const events = await this.prisma.event.findMany({
@@ -164,30 +162,36 @@ export class EventsService {
         applicationUnit: true,
         startTime: true,
         endTime: true,
-        organization: {
-          select: {
-            slackBotToken: true,
-          },
-        },
+        notifications: userId
+          ? {
+              where: { userId },
+              select: { notificationTime: true },
+            }
+          : false,
       },
     });
 
-    return events.map((event) => ({
-      ...event,
-      isSlackEnabled: !!event.organization.slackBotToken,
-      organization: undefined,
-    }));
+    return events.map((event) => {
+      const { notifications, ...rest } = event;
+      return {
+        ...rest,
+        myNotification: Array.isArray(notifications)
+          ? (notifications[0] ?? null)
+          : null,
+      };
+    });
   }
 
   async findOne(id: number, userId?: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },
       include: {
-        organization: {
-          select: {
-            slackBotToken: true,
-          },
-        },
+        notifications: userId
+          ? {
+              where: { userId },
+              select: { notificationTime: true },
+            }
+          : false,
         slots: {
           include: {
             reservations: {
@@ -237,7 +241,9 @@ export class EventsService {
       ...eventWithSlots,
       slots: flattenedSlots,
       canReserveByTrack,
-      isSlackEnabled: !!eventWithSlots.organization.slackBotToken,
+      myNotification: Array.isArray(eventWithSlots.notifications)
+        ? (eventWithSlots.notifications[0] ?? null)
+        : null,
     };
   }
 

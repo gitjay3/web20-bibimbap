@@ -49,7 +49,6 @@ describe('AuthController', () => {
                 id: 'user-123',
                 role: 'USER',
                 name: 'Test User',
-                organizations: [],
               }),
             },
           },
@@ -151,11 +150,7 @@ describe('AuthController', () => {
         id: 'user-123',
         role: 'USER',
         name: 'Test User',
-        organizations: [],
       };
-
-      // prisma mock 수정 필요
-      // PrismaService mock이 user.findUnique를 반환하도록 설정되어야 함
 
       const result = await controller.getMe(mockUser as any); // await 추가
 

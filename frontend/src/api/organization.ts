@@ -6,7 +6,7 @@ export interface Organization {
   name: string;
   camperCount?: number;
   eventCount?: number;
-  isSlackEnabled?: boolean;
+  isSlackEnabled: boolean;
   slackWorkspaceId?: string | null;
 }
 

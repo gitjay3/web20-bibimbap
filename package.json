@@ -21,6 +21,7 @@
     "env:decrypt:prod": "dotenvx decrypt --stdout -f .env.production",
     "docker:local:up": "dotenvx run -f .env.development -- docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local up --build -d",
     "docker:local:up:monitoring": "dotenvx run -f .env.development -- docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local --profile monitoring up --build -d",
+    "docker:local:up:fe-prod": "dotenvx run -f .env.development -- docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.fe-prod.yml --profile local up --build -d",
     "docker:local:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local --profile monitoring down",
     "docker:local:logs": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local logs -f",
     "docker:local:clean": "docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile local --profile monitoring down -v",

@@ -129,7 +129,7 @@ function OrganizationFormModal({
                 }
                 onChange={(event) => setSlackBotToken(event.target.value)}
                 disabled={isSubmitting}
-                className="font-mono text-14"
+                className="text-14"
               />
               <p className="text-neutral-text-tertiary text-12 mt-2 leading-5">
                 {organization?.isSlackEnabled ? (

@@ -74,9 +74,10 @@ export class EventsController {
   })
   findAll(
     @Query('track') track?: string,
+    @CurrentUser('id') userId?: string,
     @Query('organizationId') organizationId?: string,
   ) {
-    return this.eventsService.findAll(track, organizationId);
+    return this.eventsService.findAll(track, userId, organizationId);
   }
 
   @Get(':id/slots')

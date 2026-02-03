@@ -85,16 +85,21 @@ describe('EventsController', () => {
 
       await controller.findAll('WEB');
 
-      expect(eventsServiceMock.findAll).toHaveBeenCalledWith('WEB', undefined);
+      expect(eventsServiceMock.findAll).toHaveBeenCalledWith(
+        'WEB',
+        undefined,
+        undefined,
+      );
     });
 
     it('조직 ID로 필터링한다', async () => {
       const mockEvents = [{ id: 1, title: 'Org Event' }];
       eventsServiceMock.findAll.mockResolvedValue(mockEvents);
 
-      await controller.findAll(undefined, 'org-123');
+      await controller.findAll(undefined, undefined, 'org-123');
 
       expect(eventsServiceMock.findAll).toHaveBeenCalledWith(
+        undefined,
         undefined,
         'org-123',
       );

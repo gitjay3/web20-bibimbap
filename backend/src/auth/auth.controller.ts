@@ -125,12 +125,10 @@ export class AuthController {
   async getMe(@CurrentUser() user: JwtUser) {
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
-      include: {
-        organizations: {
-          include: {
-            organization: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        role: true,
       },
     });
 
