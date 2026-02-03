@@ -2,6 +2,10 @@ import { Controller, Post, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { QueueService } from './queue.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { randomUUID } from 'crypto';
+import {
+  ThrottleQueueEnter,
+  ThrottleQueueStatus,
+} from 'src/common/decorators/throttle.decorator';
 
 @Controller('queue')
 export class QueueController {
@@ -9,6 +13,7 @@ export class QueueController {
 
   // 대기열 진입
   @Post(':eventId/enter')
+  @ThrottleQueueEnter()
   async enterQueue(
     @Param('eventId', ParseIntPipe) eventId: number,
     @CurrentUser('id') userId: string,
@@ -32,6 +37,7 @@ export class QueueController {
 
   // 대기열 상태 조회
   @Get(':eventId/status')
+  @ThrottleQueueStatus()
   async getQueueStatus(
     @Param('eventId', ParseIntPipe) eventId: number,
     @CurrentUser('id') userId: string,

@@ -24,6 +24,7 @@ import { ErrorResponseDto } from '../common/dto/error-response.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UseGuards } from '@nestjs/common';
 import { QueueTokenGuard } from '../queue/guards/queue-token.guard';
+import { ThrottleReservation } from 'src/common/decorators/throttle.decorator';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -31,6 +32,7 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
+  @ThrottleReservation()
   @ApiOperation({
     summary: '예약 신청',
     description: '이벤트 슬롯에 예약을 신청합니다.',
