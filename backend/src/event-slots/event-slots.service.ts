@@ -5,13 +5,17 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
 import { CreateEventSlotDto } from './dto/create-event-slot.dto';
 import { ReservationUser } from '../common/types/reservation.types';
 
 @Injectable()
 export class EventSlotsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
   async findByEventWithAvailability(eventId: number) {
     const event = await this.prisma.event.findUnique({
@@ -198,7 +202,7 @@ export class EventSlotsService {
       );
     }
 
-    return this.prisma.eventSlot.update({
+    const updatedSlot = await this.prisma.eventSlot.update({
       where: { id },
       data: {
         ...(dto.maxCapacity !== undefined && { maxCapacity: dto.maxCapacity }),
@@ -207,6 +211,17 @@ export class EventSlotsService {
         }),
       },
     });
+
+    // maxCapacity 변경 시 Redis 재고 동기화
+    if (dto.maxCapacity !== undefined) {
+      await this.redisService.initStock(
+        id,
+        updatedSlot.maxCapacity,
+        updatedSlot.currentCount,
+      );
+    }
+
+    return updatedSlot;
   }
 
   async delete(id: number) {
@@ -235,7 +250,7 @@ export class EventSlotsService {
       throw new NotFoundException('이벤트를 찾을 수 없습니다.');
     }
 
-    return this.prisma.eventSlot.create({
+    const slot = await this.prisma.eventSlot.create({
       data: {
         eventId: dto.eventId,
         maxCapacity: dto.maxCapacity,
@@ -243,5 +258,10 @@ export class EventSlotsService {
         extraInfo: dto.extraInfo as Prisma.InputJsonValue,
       },
     });
+
+    // Redis 재고 초기화
+    await this.redisService.initStock(slot.id, slot.maxCapacity, 0);
+
+    return slot;
   }
 }

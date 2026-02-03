@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 import { QueueService } from './queue.service';
 import { RedisService } from '../redis/redis.service';
 import { MetricsService } from '../metrics/metrics.service';
@@ -54,6 +55,10 @@ const createPrismaMock = () => ({
   },
 });
 
+const createConfigMock = () => ({
+  get: jest.fn((key: string, defaultValue: number) => defaultValue),
+});
+
 describe('QueueService', () => {
   let service: QueueService;
   let redisMock: ReturnType<typeof createRedisMock>;
@@ -77,6 +82,7 @@ describe('QueueService', () => {
         { provide: RedisService, useValue: redisMock },
         { provide: MetricsService, useValue: metricsMock },
         { provide: PrismaService, useValue: prismaMock },
+        { provide: ConfigService, useValue: createConfigMock() },
         {
           provide: getQueueToken(QUEUE_CLEANUP_QUEUE),
           useValue: createCleanupQueueMock(),
