@@ -313,6 +313,7 @@ function EventDetail() {
           onCancelSuccess={handleCancelSuccess}
           canReserveByTrack={event.canReserveByTrack}
           eventTrack={event.track}
+          isInQueue={event.status === 'ONGOING' && !hasToken && position !== null}
         />
       )}
     </div>

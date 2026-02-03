@@ -22,6 +22,7 @@ interface ReservationButtonProps {
   onCancelSuccess: () => void;
   canReserveByTrack?: boolean;
   eventTrack: Track;
+  isInQueue?: boolean;
 }
 
 function ReservationButton({
@@ -33,6 +34,7 @@ function ReservationButton({
   onCancelSuccess,
   canReserveByTrack = true,
   eventTrack,
+  isInQueue = false,
 }: ReservationButtonProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const hasReservation = Boolean(myReservation);
@@ -95,6 +97,8 @@ function ReservationButton({
     buttonText = `${TRACK_LABEL[eventTrack]} 전용`;
   } else if (isReservable) {
     buttonText = '예약하기';
+  } else if (isInQueue) {
+    buttonText = '대기 중입니다';
   } else {
     buttonText = '예약 기간이 아닙니다';
   }
