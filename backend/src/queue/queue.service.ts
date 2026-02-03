@@ -71,7 +71,11 @@ export class QueueService {
     eventId: number,
     userId: string,
     sessionId: string,
-  ): Promise<{ position: number; isNew: boolean }> {
+  ): Promise<{
+    position: number;
+    isNew: boolean;
+    totalWaiting: number;
+  }> {
     // 트랙 검증
     await this.validateTrackOrThrow(eventId, userId);
 
@@ -105,18 +109,22 @@ export class QueueService {
         // 메트릭: 재진입
         this.metricsService.recordQueueEntry(eventId, false);
 
+        const totalWaiting = await client.zcard(queueKey);
         return {
           position: newPosition ?? 0,
           isNew: false,
+          totalWaiting,
         };
       }
 
       // 메트릭: 기존 사용자 재진입
       this.metricsService.recordQueueEntry(eventId, false);
 
+      const totalWaiting = await client.zcard(queueKey);
       return {
         position: position ?? 0,
         isNew: false,
+        totalWaiting,
       };
     }
 
@@ -146,6 +154,7 @@ export class QueueService {
     return {
       position: position ?? 0,
       isNew: true,
+      totalWaiting,
     };
   }
 
