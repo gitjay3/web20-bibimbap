@@ -75,6 +75,7 @@ function ReservationButton({
       onCancelSuccess();
     } catch (error) {
       console.error('예약 취소 실패:', error);
+      toast.error('예약 취소에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -111,7 +112,9 @@ function ReservationButton({
         className={cn(
           'bg-brand-surface-default h-12 w-200 cursor-pointer rounded-lg font-bold text-white transition',
           hasReservation && 'bg-error-500 hover:bg-error-600',
-          (disabled || isTrackMismatch) && !hasReservation && 'bg-brand-surface-disabled cursor-not-allowed',
+          (disabled || isTrackMismatch) &&
+            !hasReservation &&
+            'bg-brand-surface-disabled cursor-not-allowed',
           !isReservable &&
             !hasReservation &&
             !isTrackMismatch &&
