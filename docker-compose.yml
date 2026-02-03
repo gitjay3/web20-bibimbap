@@ -73,7 +73,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   backend:
-    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:production-latest
+    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:${IMAGE_TAG:-production-latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -120,7 +120,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   frontend:
-    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-frontend:production-latest
+    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-frontend:${IMAGE_TAG:-production-latest}
     build:
       context: .
       dockerfile: frontend/Dockerfile
