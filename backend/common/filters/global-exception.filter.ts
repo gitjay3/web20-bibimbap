@@ -82,6 +82,4 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error,
     });
   }
-
-  // TODO : 모니터링 연동 시 로깅 추가 가능
 }
