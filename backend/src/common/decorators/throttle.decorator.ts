@@ -27,10 +27,11 @@ export const ThrottleQueueEnter = () =>
 /**
  * 대기열 상태 조회 엔드포인트용 Rate Limiting 데코레이터
  * - 과도한 폴링 방지 (프론트엔드 기본: 3초 간격)
+ * - 멀티탭, 네트워크 재시도 고려하여 여유 있게 설정
  */
 export const ThrottleQueueStatus = () =>
   Throttle({
-    short: { limit: 1, ttl: 2000 }, // 2초당 1회
-    medium: { limit: 30, ttl: 60000 }, // 분당 30회
-    long: { limit: 200, ttl: 600000 }, // 10분당 200회
+    short: { limit: 2, ttl: 2000 }, // 2초당 2회 (멀티탭 고려)
+    medium: { limit: 60, ttl: 60000 }, // 분당 60회 (3초 폴링의 3배 여유)
+    long: { limit: 400, ttl: 600000 }, // 10분당 400회
   });
