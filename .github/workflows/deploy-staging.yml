@@ -1,0 +1,212 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+# Staging 배포는 한 번에 하나씩만
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  # Docker 이미지 빌드 및 푸시
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - backend
+          - frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to NCP Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.NCP_REGISTRY_URL }}
+          username: ${{ secrets.NCP_REGISTRY_USERNAME }}
+          password: ${{ secrets.NCP_REGISTRY_PASSWORD }}
+
+      - name: Extract version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build and push ${{ matrix.service }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:staging-latest
+            ${{ secrets.NCP_REGISTRY_URL }}/bookstcamp-${{ matrix.service }}:staging-${{ steps.version.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.service }}-staging
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-staging
+
+      - name: Image built successfully
+        run: |
+          echo "${{ matrix.service }} image built and pushed"
+          echo "Tags: staging-latest, staging-${{ steps.version.outputs.version }}"
+
+  # Staging 배포
+  deploy:
+    name: Deploy to Staging Server
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.STAGING_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Setup dotenvx
+        run: |
+          npm install -g @dotenvx/dotenvx
+
+      - name: Create temporary env file with decrypted DATABASE_URL
+        env:
+          DOTENV_PRIVATE_KEY_STAGING: ${{ secrets.DOTENVX_PRIVATE_KEY_STAGING }}
+          NCP_REGISTRY_URL: ${{ secrets.NCP_REGISTRY_URL }}
+          NCP_REGISTRY_USERNAME: ${{ secrets.NCP_REGISTRY_USERNAME }}
+          NCP_REGISTRY_PASSWORD: ${{ secrets.NCP_REGISTRY_PASSWORD }}
+        run: |
+          # DATABASE_URL 복호화
+          DATABASE_URL=$(dotenvx get DATABASE_URL -f .env.staging)
+
+          # deploy.env 생성
+          {
+            echo "ENVIRONMENT=staging"
+            echo "IMAGE_TAG=staging-latest"
+            echo "NCP_REGISTRY_URL=${NCP_REGISTRY_URL}"
+            echo "NCP_REGISTRY_USERNAME=${NCP_REGISTRY_USERNAME}"
+            echo "NCP_REGISTRY_PASSWORD=${NCP_REGISTRY_PASSWORD}"
+            echo "DOTENV_PRIVATE_KEY_STAGING=${DOTENV_PRIVATE_KEY_STAGING}"
+            echo "DATABASE_URL=${DATABASE_URL}"
+          } > /tmp/deploy.env
+          chmod 600 /tmp/deploy.env
+
+      - name: Copy deployment files to server
+        run: |
+          scp -r scripts/ ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:~/bookstcamp/
+          scp -r nginx/ ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:~/bookstcamp/
+          scp docker-compose.yml ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:~/bookstcamp/docker-compose.yml
+          scp .env.staging ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:~/bookstcamp/.env.staging
+          scp /tmp/deploy.env ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }}:~/bookstcamp/.deploy.env
+          rm /tmp/deploy.env
+
+      - name: Deploy on staging server
+        run: |
+          ssh ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
+            set -e
+            cd ~/bookstcamp
+
+            # 환경변수 로드
+            set -a
+            source .deploy.env
+            set +a
+
+            # 배포 스크립트 실행
+            chmod +x scripts/*.sh
+            ./scripts/deploy.sh staging
+
+            # 보안: 배포 완료 후 삭제
+            rm -f .deploy.env
+          EOF
+
+      - name: Verify deployment
+        run: |
+          ssh ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
+            cd ~/bookstcamp
+
+            echo "Waiting for containers to start..."
+            sleep 10
+
+            echo "=== Container Status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}"
+          EOF
+
+      - name: Deployment successful
+        run: |
+          echo "Staging deployment completed successfully!"
+          echo "Deployed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+  # 모니터링 설정 업데이트
+  update-monitoring:
+    name: Update Monitoring Config
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MONITORING_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.MONITORING_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Update Prometheus config
+        run: |
+          scp prometheus.monitoring.yml ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }}:~/bookstcamp/
+          ssh ${{ secrets.MONITORING_SERVER_USER }}@${{ secrets.MONITORING_SERVER_HOST }} << 'EOF'
+            cd ~/bookstcamp
+            # Prometheus 설정 리로드
+            docker exec bookstcamp-prometheus kill -HUP 1 || docker restart bookstcamp-prometheus
+            echo "Prometheus config reloaded"
+          EOF
+
+  # 배포 실패 시 자동 롤백
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.STAGING_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Execute rollback
+        run: |
+          ssh ${{ secrets.STAGING_SERVER_USER }}@${{ secrets.STAGING_SERVER_HOST }} << 'EOF'
+            set -e
+            cd ~/bookstcamp
+
+            echo "Executing automatic rollback..."
+            ./scripts/rollback.sh staging
+
+            echo "Waiting for services to stabilize..."
+            sleep 10
+
+            echo "=== Container Status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}"
+          EOF
+
+      - name: Rollback completed
+        run: |
+          echo "Staging deployment failed and was rolled back"
+          echo "Please check the logs and fix the issue before redeploying"
