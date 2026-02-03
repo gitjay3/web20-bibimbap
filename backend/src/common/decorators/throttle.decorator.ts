@@ -8,9 +8,9 @@ import { Throttle } from '@nestjs/throttler';
  */
 export const ThrottleReservation = () =>
   Throttle({
-    short: { limit: 3, ttl: 1000 }, // 초당 3회
-    medium: { limit: 10, ttl: 60000 }, // 분당 10회
-    long: { limit: 30, ttl: 600000 }, // 10분당 30회
+    short: { limit: 5, ttl: 1000 }, // 초당 5회
+    medium: { limit: 30, ttl: 60000 }, // 분당 30회
+    long: { limit: 100, ttl: 600000 }, // 10분당 100회
   });
 
 /**
