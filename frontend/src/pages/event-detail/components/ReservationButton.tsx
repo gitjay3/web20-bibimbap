@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { toast } from 'sonner';
 import { createReservation, cancelReservation } from '@/api/reservation';
 import cn from '@/utils/cn';
@@ -129,4 +129,4 @@ function ReservationButton({
   );
 }
 
-export default ReservationButton;
+export default memo(ReservationButton);
