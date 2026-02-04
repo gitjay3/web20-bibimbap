@@ -72,7 +72,11 @@ function EventDetail() {
 
     try {
       const reservation = await getMyReservationForEvent(eventId);
-      setMyReservation(reservation);
+      setMyReservation((prev) => {
+        // 데이터가 동일하면 참조를 유지하여 리렌더링 방지
+        if (JSON.stringify(prev) === JSON.stringify(reservation)) return prev;
+        return reservation;
+      });
     } catch {
       setMyReservation(null);
     }

@@ -46,7 +46,10 @@
     "k6:staging:queue": "k6 run -e K6_ENV=staging -e SCENARIO=competition -e EVENT_ID=100 -e TEST_ID=staging-queue-$(date +%Y%m%d-%H%M%S) k6/tests/queue-load.js",
     "k6:staging:logic": "k6 run -e K6_ENV=staging -e EVENT_ID=100 -e SLOT_ID=100 -e TEST_ID=staging-logic-$(date +%Y%m%d-%H%M%S) k6/tests/reservation-scenarios.js",
     "env:encrypt:staging": "dotenvx encrypt -f .env.staging",
-    "env:decrypt:staging": "dotenvx decrypt --stdout -f .env.staging"
+    "env:decrypt:staging": "dotenvx decrypt --stdout -f .env.staging",
+    "fe:lighthouse": "cd frontend && pnpm run lighthouse",
+    "fe:build:stats": "cd frontend && pnpm run build:stats",
+    "fe:stats": "cd frontend && pnpm run stats"
   },
   "keywords": [],
   "author": "",

@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage",
+    "build:stats": "tsc --noEmit && vite build --mode production",
+    "stats": "open dist/stats.html",
+    "lighthouse": "node scripts/lighthouse-summary.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

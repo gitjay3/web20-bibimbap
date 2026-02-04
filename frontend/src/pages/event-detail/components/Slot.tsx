@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import type { EventSlot, SlotSchemaField, ApplicationUnit } from '@/types/event';
 import type { ReservationApiResponse } from '@/types/BEapi';
 import cn from '@/utils/cn';
@@ -10,7 +10,7 @@ interface SlotProps {
   isReservable: boolean;
   slot: EventSlot;
   fields: SlotSchemaField[];
-  selectedSlotId: number | null;
+  isSelected: boolean;
   setSelectedSlotId: React.Dispatch<React.SetStateAction<number | null>>;
   myReservation: ReservationApiResponse | null;
   applicationUnit: ApplicationUnit;
@@ -23,18 +23,17 @@ function Slot({
   isReservable,
   slot,
   fields,
-  selectedSlotId,
+  isSelected,
   setSelectedSlotId,
   myReservation,
   applicationUnit,
   isAdmin = false,
   onEdit,
   onDelete,
-}: Omit<SlotProps, 'gridLayout'>) {
+}: SlotProps) {
   const [isReserversModalOpen, setIsReserversModalOpen] = useState(false);
   const isClosed = slot.maxCapacity === slot.currentCount;
   const isReserved = myReservation?.slotId === slot.id;
-  const isSelected = selectedSlotId === slot.id;
   const isDisabled = isAdmin ? false : isReserved || !isReservable || isClosed;
 
   const handleReserversClick = (e: React.MouseEvent) => {
@@ -124,7 +123,7 @@ function Slot({
           )}
           style={{ gridTemplateColumns: 'subgrid' }}
           onClick={() => {
-            if (!isDisabled) setSelectedSlotId(slot.id);
+            if (!isDisabled && !isAdmin) setSelectedSlotId(slot.id);
           }}
           title={isReserved ? '예약된 슬롯' : '슬롯 선택'}
           aria-label={isReserved ? '예약된 슬롯' : '슬롯 선택'}
@@ -205,4 +204,4 @@ function Slot({
   );
 }
 
-export default Slot;
+export default memo(Slot);

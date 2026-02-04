@@ -1,3 +1,4 @@
+import { useMemo, memo } from 'react';
 import type {
   EventSlot,
   SlotSchema,
@@ -5,7 +6,6 @@ import type {
   ApplicationUnit,
 } from '@/types/event';
 import type { ReservationApiResponse } from '@/types/BEapi';
-import { sortSlotFields } from '@/constants/slot-field';
 import Slot from './Slot';
 
 interface SlotListProps {
@@ -37,12 +37,12 @@ function SlotList({
   onDeleteSlot,
   onAddSlot,
 }: SlotListProps) {
-  const fields = sortSlotFields(slotSchema.fields ?? []);
+  const fields = useMemo(() => slotSchema.fields ?? [], [slotSchema.fields]);
 
   // 마스터 그리드 설정: 내용에 맞추되 전체 너비를 고려하여 밸런스 조정
-  const gridLayout = {
+  const gridLayout = useMemo(() => ({
     gridTemplateColumns: `repeat(${fields.length}, minmax(max-content, 1fr)) minmax(100px, 0.8fr) minmax(80px, 0.5fr) 48px`,
-  };
+  }), [fields.length]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -89,7 +89,7 @@ function SlotList({
             isReservable={status === 'ONGOING' && !disabled}
             slot={slot}
             fields={fields}
-            selectedSlotId={selectedSlotId}
+            isSelected={selectedSlotId === slot.id}
             setSelectedSlotId={setSelectedSlotId}
             myReservation={myReservation}
             applicationUnit={applicationUnit}
@@ -101,6 +101,6 @@ function SlotList({
       </div>
     </div>
   );
-}
+};
 
-export default SlotList;
+export default memo(SlotList);
