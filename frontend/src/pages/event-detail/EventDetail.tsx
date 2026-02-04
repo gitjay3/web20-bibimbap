@@ -234,7 +234,7 @@ function EventDetail() {
 
   return (
     <div className="flex justify-center">
-      <div className={cn('w-200', !isAdmin && 'pb-24')}>
+      <div className={cn('w-full max-w-200', !isAdmin && 'pb-24')}>
         <div className="flex flex-col gap-6">
           <EventDetailHeader
             category={event.track}
