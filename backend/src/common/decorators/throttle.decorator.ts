@@ -35,3 +35,14 @@ export const ThrottleQueueStatus = () =>
     medium: { limit: 60, ttl: 60000 }, // 분당 60회 (3초 폴링의 3배 여유)
     long: { limit: 400, ttl: 600000 }, // 10분당 400회
   });
+
+/**
+ * 폴링 엔드포인트용 Rate Limiting 데코레이터
+ * - 슬롯 조회, 내 예약 조회 등 1초 간격 폴링 API에 적용
+ */
+export const ThrottlePolling = () =>
+  Throttle({
+    short: { limit: 3, ttl: 1000 }, // 초당 3회
+    medium: { limit: 120, ttl: 60000 }, // 분당 120회
+    long: { limit: 800, ttl: 600000 }, // 10분당 800회
+  });

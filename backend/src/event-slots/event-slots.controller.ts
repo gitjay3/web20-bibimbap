@@ -15,6 +15,7 @@ import { EventSlotsService } from './event-slots.service';
 import { AvailabilityOnlyResponseDto } from './dto/slot-availability-response.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Role } from '@prisma/client';
+import { ThrottlePolling } from '../common/decorators/throttle.decorator';
 import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
 import { CreateEventSlotDto } from './dto/create-event-slot.dto';
 import { ParseCommaSeparatedIntsPipe } from '../common/pipes/parse-comma-separated-ints.pipe';
@@ -25,6 +26,7 @@ export class EventSlotsController {
   constructor(private readonly eventSlotsService: EventSlotsService) {}
 
   @Get('availability')
+  @ThrottlePolling()
   @ApiOperation({
     summary: '실시간 정원 조회',
     description: '특정 슬롯들의 실시간 정원 정보만 빠르게 조회합니다.(폴링용)',
