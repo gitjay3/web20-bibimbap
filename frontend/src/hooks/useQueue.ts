@@ -64,12 +64,13 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
       setState((prev) => ({
         ...prev,
         position: result.position,
+        totalWaiting: result.totalWaiting,
+        hasToken: false,
         inQueue: true,
         isLoading: false,
         isNew: result.isNew,
+        tokenExpiresAt: null,
       }));
-
-      await fetchStatus();
 
       return result;
     } catch (error) {
@@ -80,7 +81,7 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
       }));
       throw error;
     }
-  }, [eventId, fetchStatus]);
+  }, [eventId]);
 
   useEffect(() => {
     if (enabled && !hasEnteredRef.current) {

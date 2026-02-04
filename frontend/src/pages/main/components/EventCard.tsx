@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, memo } from 'react';
 import ConfirmModal from '@/components/DropdownConfirmModal';
 import ApplicationUnitLabel from '@/components/ApplicationUnitLabel';
 import EventCategoryLabel from '@/components/EventCategoryLabel';
@@ -142,4 +142,4 @@ function EventCard({ event, onDeleted }: EventCardProps) {
   );
 }
 
-export default EventCard;
+export default memo(EventCard);

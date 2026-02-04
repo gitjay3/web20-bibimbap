@@ -1,22 +1,24 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Toaster } from 'sonner';
 import Layout from './Layout';
-import Main from './pages/main/Main';
-import EventDetail from './pages/event-detail/EventDetail';
-import ManageTemplate from './pages/manage-template/ManageTemplate';
-import ManageReservationPage from './pages/manage-reservation/ManageReservationPage';
-import LoginPage from './pages/auth/LoginPage';
 import RootProviders from './RootProvider';
 import ProtectedRoute from './ProtectedRoute';
-import SelectOrgPage from './pages/auth/select-org/SelectOrgPage';
 import OrgLayout from './OrgLayout';
-import EventCreatePage from './pages/events/create/EventCreatePage';
-import ManageCamper from './pages/manage-camper/ManageCamper';
-import ManageOrganization from './pages/manage-organization/ManageOrganization';
-import CamperMyPage from './pages/mypage/CamperMyPage';
-import ManageAdmin from './pages/manage-admin/ManageAdmin';
 import { sendErrorToServer } from './utils/logger';
+
+const Main = lazy(() => import('./pages/main/Main'));
+const EventDetail = lazy(() => import('./pages/event-detail/EventDetail'));
+const ManageTemplate = lazy(() => import('./pages/manage-template/ManageTemplate'));
+const ManageReservationPage = lazy(() => import('./pages/manage-reservation/ManageReservationPage'));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const SelectOrgPage = lazy(() => import('./pages/auth/select-org/SelectOrgPage'));
+const EventCreatePage = lazy(() => import('./pages/events/create/EventCreatePage'));
+const ManageCamper = lazy(() => import('./pages/manage-camper/ManageCamper'));
+const ManageOrganization = lazy(() => import('./pages/manage-organization/ManageOrganization'));
+const CamperMyPage = lazy(() => import('./pages/mypage/CamperMyPage'));
+const ManageAdmin = lazy(() => import('./pages/manage-admin/ManageAdmin'));
 
 const router = createBrowserRouter([
   {
@@ -60,6 +62,14 @@ const router = createBrowserRouter([
   },
 ]);
 
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+    </div>
+  );
+}
+
 function ErrorFallback({ error }: { error: unknown }) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   return (
@@ -91,7 +101,9 @@ function App() {
         sendErrorToServer(err, { componentStack: info.componentStack ?? undefined });
       }}
     >
-      <RouterProvider router={router} />
+      <Suspense fallback={<PageLoader />}>
+        <RouterProvider router={router} />
+      </Suspense>
       <Toaster position="top-center" richColors />
     </ErrorBoundary>
   );

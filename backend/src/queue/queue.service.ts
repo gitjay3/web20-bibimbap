@@ -3,7 +3,11 @@ import { RedisService } from '../redis/redis.service';
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { CleanupJobData, QUEUE_CLEANUP_QUEUE } from './queue.constants';
+import {
+  CleanupJobData,
+  QUEUE_CLEANUP_QUEUE,
+  ACTIVE_EVENTS_KEY,
+} from './queue.constants';
 import { MetricsService } from '../metrics/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForbiddenTrackException } from '../../common/exceptions/api.exception';
@@ -22,7 +26,7 @@ export class QueueService {
     private readonly redisService: RedisService,
     private readonly metricsService: MetricsService,
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService, // 추가
+    private readonly configService: ConfigService,
     @InjectQueue(QUEUE_CLEANUP_QUEUE)
     private cleanupQueue: Queue<CleanupJobData>,
   ) {
@@ -67,7 +71,11 @@ export class QueueService {
     eventId: number,
     userId: string,
     sessionId: string,
-  ): Promise<{ position: number; isNew: boolean }> {
+  ): Promise<{
+    position: number;
+    isNew: boolean;
+    totalWaiting: number;
+  }> {
     // 트랙 검증
     await this.validateTrackOrThrow(eventId, userId);
 
@@ -82,37 +90,50 @@ export class QueueService {
     const existingSessionId = await client.hget(statusKey, 'sessionId');
 
     if (existingSessionId) {
-      // TODO: 단일 세션 정책
-      // - existingSessionId !== sessionId 인 경우
+      const pipeline = client.pipeline();
+      pipeline.hset(statusKey, 'sessionId', sessionId);
+      pipeline.expire(statusKey, this.USER_STATUS_TTL);
+      pipeline.zadd(heartbeatKey, now, userId);
+      await pipeline.exec();
 
-      // 이미 있음 - 세션 교체, 순번 유지
-      await client.hset(statusKey, 'sessionId', sessionId);
-      await client.expire(statusKey, this.USER_STATUS_TTL);
-
-      // heartbeat 갱신
-      await client.zadd(heartbeatKey, now, userId);
-
+      // 대기열에서 제거된 경우 다시 추가
       const position = await client.zrank(queueKey, userId);
+      if (position === null) {
+        await client.zadd(queueKey, now, userId);
+        const newPosition = await client.zrank(queueKey, userId);
+
+        // 메트릭: 재진입
+        this.metricsService.recordQueueEntry(eventId, false);
+
+        const totalWaiting = await client.zcard(queueKey);
+        return {
+          position: newPosition ?? 0,
+          isNew: false,
+          totalWaiting,
+        };
+      }
 
       // 메트릭: 기존 사용자 재진입
       this.metricsService.recordQueueEntry(eventId, false);
 
+      const totalWaiting = await client.zcard(queueKey);
       return {
         position: position ?? 0,
         isNew: false,
+        totalWaiting,
       };
     }
 
-    // 신규 진입
-    await client.zadd(queueKey, now, userId);
+    const pipeline = client.pipeline();
+    pipeline.zadd(queueKey, now, userId);
+    pipeline.hset(statusKey, 'sessionId', sessionId);
+    pipeline.hset(statusKey, 'enteredAt', String(now));
+    pipeline.expire(statusKey, this.USER_STATUS_TTL);
+    pipeline.zadd(heartbeatKey, now, userId);
+    await pipeline.exec();
 
-    // 상태 저장 + TTL
-    await client.hset(statusKey, 'sessionId', sessionId);
-    await client.hset(statusKey, 'enteredAt', String(now));
-    await client.expire(statusKey, this.USER_STATUS_TTL);
-
-    // heartbeat 기록
-    await client.zadd(heartbeatKey, now, userId);
+    // 활성 이벤트 등록
+    await this.registerActiveEvent(eventId);
 
     const position = await client.zrank(queueKey, userId);
 
@@ -126,6 +147,7 @@ export class QueueService {
     return {
       position: position ?? 0,
       isNew: true,
+      totalWaiting,
     };
   }
 
@@ -222,9 +244,11 @@ export class QueueService {
     if (setResult === 'OK') {
       // 최초 발급 성공 → 대기열에서 제거 + 활성 토큰 목록에 추가
       const expiresAt = Date.now() + this.TOKEN_TTL * 1000;
-      await client.zrem(queueKey, userId);
-      await client.zrem(heartbeatKey, userId);
-      await client.zadd(activeTokensKey, expiresAt, userId);
+      const pipeline = client.pipeline();
+      pipeline.zrem(queueKey, userId);
+      pipeline.zrem(heartbeatKey, userId);
+      pipeline.zadd(activeTokensKey, expiresAt, userId);
+      await pipeline.exec();
 
       this.metricsService.recordTokenIssued(eventId);
       const totalWaiting = await client.zcard(queueKey);
@@ -293,7 +317,30 @@ export class QueueService {
     }
 
     await pipeline.exec();
+
+    // 대기열이 비었으면 활성 이벤트에서 제거
+    const remainingUsers = await client.zcard(queueKey);
+    if (remainingUsers === 0) {
+      await this.unregisterActiveEvent(eventId);
+    }
+
     return expiredUserIds.length;
+  }
+
+  async registerActiveEvent(eventId: number): Promise<void> {
+    const client = this.redisService.getClient();
+    await client.sadd(ACTIVE_EVENTS_KEY, String(eventId));
+  }
+
+  async unregisterActiveEvent(eventId: number): Promise<void> {
+    const client = this.redisService.getClient();
+    await client.srem(ACTIVE_EVENTS_KEY, String(eventId));
+  }
+
+  async getActiveEventIds(): Promise<number[]> {
+    const client = this.redisService.getClient();
+    const eventIds = await client.smembers(ACTIVE_EVENTS_KEY);
+    return eventIds.map((id) => parseInt(id, 10));
   }
 
   // 트랙 검증: COMMON이 아닌 이벤트는 해당 트랙 캠퍼만 진입 가능

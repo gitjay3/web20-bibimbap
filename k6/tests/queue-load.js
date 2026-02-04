@@ -75,7 +75,7 @@ export const options = {
       exec: "queueLoadTest",
     },
   },
-  thresholds: getThresholdsForScenario("queue"),
+  thresholds: getThresholdsForScenario(`queue_${SCENARIO}`),
   summaryTrendStats,
 
   // 응답 파싱 필요 (대기열 상태/토큰 확인)
@@ -194,13 +194,9 @@ export function queueLoadTest() {
   }
 
   // 2단계: 상태 폴링 (프론트 useQueue와 동일한 패턴)
-  // - i=0: 진입 후 즉시 조회 (프론트: enter 완료 시 바로 fetchStatus 호출)
-  // - i>0: 3초 간격 폴링 (프론트 QUEUE_POLLING_INTERVAL = 3000ms)
   const MAX_POLLS = scenarioMeta[SCENARIO]?.maxPolls || 10;
   for (let i = 0; i < MAX_POLLS; i++) {
-    if (i > 0) {
-      sleep(POLL_INTERVAL_BASE + Math.random() * POLL_INTERVAL_JITTER); // ~3초 (±0.5s jitter)
-    }
+    sleep(POLL_INTERVAL_BASE + Math.random() * POLL_INTERVAL_JITTER); // ~3초 (±0.5s jitter)
 
     const statusStartTime = Date.now();
     const statusRes = getQueueStatus(token, EVENT_ID);

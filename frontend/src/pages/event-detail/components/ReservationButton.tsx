@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { toast } from 'sonner';
 import { createReservation, cancelReservation } from '@/api/reservation';
 import cn from '@/utils/cn';
@@ -22,6 +22,7 @@ interface ReservationButtonProps {
   onCancelSuccess: () => void;
   canReserveByTrack?: boolean;
   eventTrack: Track;
+  isInQueue?: boolean;
 }
 
 function ReservationButton({
@@ -33,6 +34,7 @@ function ReservationButton({
   onCancelSuccess,
   canReserveByTrack = true,
   eventTrack,
+  isInQueue = false,
 }: ReservationButtonProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const hasReservation = Boolean(myReservation);
@@ -75,6 +77,7 @@ function ReservationButton({
       onCancelSuccess();
     } catch (error) {
       console.error('예약 취소 실패:', error);
+      toast.error('예약 취소에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +97,8 @@ function ReservationButton({
     buttonText = `${TRACK_LABEL[eventTrack]} 전용`;
   } else if (isReservable) {
     buttonText = '예약하기';
+  } else if (isInQueue) {
+    buttonText = '대기 중입니다';
   } else {
     buttonText = '예약 기간이 아닙니다';
   }
@@ -111,7 +116,9 @@ function ReservationButton({
         className={cn(
           'bg-brand-surface-default h-12 w-200 cursor-pointer rounded-lg font-bold text-white transition',
           hasReservation && 'bg-error-500 hover:bg-error-600',
-          (disabled || isTrackMismatch) && !hasReservation && 'bg-brand-surface-disabled cursor-not-allowed',
+          (disabled || isTrackMismatch) &&
+            !hasReservation &&
+            'bg-brand-surface-disabled cursor-not-allowed',
           !isReservable &&
             !hasReservation &&
             !isTrackMismatch &&
@@ -129,4 +136,4 @@ function ReservationButton({
   );
 }
 
-export default ReservationButton;
+export default memo(ReservationButton);

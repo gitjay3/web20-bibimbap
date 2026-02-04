@@ -7,3 +7,5 @@ export const GLOBAL_CLEANUP_JOB = 'queue-cleanup-global';
 export const GLOBAL_CLEANUP_JOB_ID = 'queue-cleanup-global';
 
 export const DEFAULT_CLEANUP_INTERVAL_MS = 30_000;
+
+export const ACTIVE_EVENTS_KEY = 'active:events';

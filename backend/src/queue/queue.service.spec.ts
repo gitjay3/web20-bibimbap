@@ -9,6 +9,15 @@ import { QUEUE_CLEANUP_QUEUE } from './queue.constants';
 import { ForbiddenTrackException } from '../../common/exceptions/api.exception';
 
 const createRedisMock = () => {
+  const pipelineMock = {
+    zadd: jest.fn().mockReturnThis(),
+    hset: jest.fn().mockReturnThis(),
+    expire: jest.fn().mockReturnThis(),
+    zrem: jest.fn().mockReturnThis(),
+    del: jest.fn().mockReturnThis(),
+    exec: jest.fn().mockResolvedValue([]),
+  };
+
   const clientMock = {
     hget: jest.fn(),
     hset: jest.fn(),
@@ -23,16 +32,13 @@ const createRedisMock = () => {
     set: jest.fn(),
     del: jest.fn(),
     ttl: jest.fn(),
-    pipeline: jest.fn().mockReturnValue({
-      zrem: jest.fn().mockReturnThis(),
-      del: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue([]),
-    }),
+    pipeline: jest.fn().mockReturnValue(pipelineMock),
   };
 
   return {
     getClient: jest.fn().mockReturnValue(clientMock),
     clientMock,
+    pipelineMock,
   };
 };
 
@@ -64,9 +70,11 @@ describe('QueueService', () => {
   let redisMock: ReturnType<typeof createRedisMock>;
   let metricsMock: ReturnType<typeof createMetricsMock>;
   let prismaMock: ReturnType<typeof createPrismaMock>;
+  let pipelineMock: ReturnType<typeof createRedisMock>['pipelineMock'];
 
   beforeEach(async () => {
     redisMock = createRedisMock();
+    pipelineMock = redisMock.pipelineMock;
     metricsMock = createMetricsMock();
     prismaMock = createPrismaMock();
 
@@ -111,8 +119,8 @@ describe('QueueService', () => {
       const result = await service.enterQueue(eventId, userId, sessionId);
 
       expect(result).toEqual({ position: 5, isNew: true });
-      expect(clientMock.zadd).toHaveBeenCalled();
-      expect(clientMock.hset).toHaveBeenCalledWith(
+      expect(pipelineMock.zadd).toHaveBeenCalled();
+      expect(pipelineMock.hset).toHaveBeenCalledWith(
         expect.stringContaining('status'),
         'sessionId',
         sessionId,
@@ -300,9 +308,9 @@ describe('QueueService', () => {
         300,
         'NX',
       );
-      expect(clientMock.zrem).toHaveBeenCalled();
+      expect(pipelineMock.zrem).toHaveBeenCalled();
       // 활성 토큰 목록에 추가 확인
-      expect(clientMock.zadd).toHaveBeenCalledWith(
+      expect(pipelineMock.zadd).toHaveBeenCalledWith(
         expect.stringContaining('active_tokens'),
         expect.any(Number),
         userId,

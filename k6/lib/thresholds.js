@@ -54,26 +54,53 @@ export const scenarioThresholds = {
 // 대기열 시나리오별 임계값
 // ==========================================
 
-export const queueThresholds = {
-  // HTTP 응답 시간
-  http_req_duration: ['p(95)<2000'],
-
-  // 서버 에러율 (1% 미만)
-  error_rate: ['rate<0.01'],
-
-  // 대기열 진입 응답 시간
-  queue_enter_duration: ['p(95)<500'],
-
-  // 대기열 상태 조회 응답 시간
-  queue_status_duration: ['p(95)<300'],
-
-  // 대기열 진입 최소 1건 성공
-  queue_enter_success: ['count>0'],
+export const queueCompetitionThresholds = {
+  checks: ['rate>0.99'],
+  http_req_failed: ['rate<0.01'],
+  error_rate: ['rate<0.01'], // 5xx만
+  queue_enter_success_rate: ['rate>0.99'],
+  queue_status_success_rate: ['rate>0.99'],
+  queue_enter_duration: ['p(95)<500', 'p(99)<1000'],
+  queue_status_duration: ['p(95)<300', 'p(99)<800'],
 };
+
+export const queueStressThresholds = {
+  checks: ['rate>0.98'],
+  http_req_failed: ['rate<0.03'],
+  error_rate: ['rate<0.03'], // 5xx만
+  queue_enter_success_rate: ['rate>0.98'],
+  queue_status_success_rate: ['rate>0.98'],
+  // 로컬 5000 VU 기준: timeout(60s) 내에서 대부분 완료되는지 확인
+  queue_enter_duration: ['p(95)<45000', 'p(99)<60000'],
+  queue_status_duration: ['p(95)<20000', 'p(99)<60000'],
+};
+
+export const queueSpikeThresholds = {
+  checks: ['rate>0.95'],
+  http_req_failed: ['rate<0.05'],
+  error_rate: ['rate<0.05'], // 5xx만
+  queue_enter_success_rate: ['rate>0.95'],
+  queue_status_success_rate: ['rate>0.95'],
+  queue_enter_duration: ['p(95)<55000', 'p(99)<60000'],
+  queue_status_duration: ['p(95)<30000', 'p(99)<60000'],
+};
+
+export const queueSoakThresholds = {
+  checks: ['rate>0.99'],
+  http_req_failed: ['rate<0.02'],
+  error_rate: ['rate<0.02'], // 5xx만
+  queue_enter_success_rate: ['rate>0.99'],
+  queue_status_success_rate: ['rate>0.99'],
+  queue_enter_duration: ['p(95)<2000', 'p(99)<5000'],
+  queue_status_duration: ['p(95)<1500', 'p(99)<5000'],
+};
+
+// 하위 호환: 기존 queue 키는 competition 기준으로 유지
+export const queueThresholds = queueCompetitionThresholds;
 
 export const queueScenarioThresholds = {
   // 대기열 시나리오 테스트: 체크 기반
-  checks: ['rate>0.9'],
+  checks: ['rate>0.99'],
 };
 
 // ==========================================
@@ -93,6 +120,10 @@ export function getThresholdsForScenario(scenario) {
     soak: stressThresholds,
     scenarios: scenarioThresholds,
     queue: queueThresholds,
+    queue_competition: queueCompetitionThresholds,
+    queue_stress: queueStressThresholds,
+    queue_spike: queueSpikeThresholds,
+    queue_soak: queueSoakThresholds,
     queue_scenarios: queueScenarioThresholds,
   };
 

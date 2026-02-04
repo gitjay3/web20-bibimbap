@@ -23,7 +23,7 @@ export default function EventCreatePage() {
   }
 
   const methods = useForm<EventFormValues>({
-    resolver: isEditMode ? undefined : zodResolver(eventSchema), // TODO : slotSchema 통일 후 : 앞부분 삭제 요망
+    resolver: zodResolver(eventSchema), // TODO : slotSchema 통일 후 : 앞부분 삭제 요망
     defaultValues: {
       track: 'COMMON',
       applicationUnit: 'INDIVIDUAL',

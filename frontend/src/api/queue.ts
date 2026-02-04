@@ -7,6 +7,7 @@ export const enterQueue = async (eventId: number) => {
     position: number;
     isNew: boolean;
     sessionId: string;
+    totalWaiting: number;
   };
 };
 

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import ApplicationUnitLabel from '@/components/ApplicationUnitLabel';
 import EventCategoryLabel from '@/components/EventCategoryLabel';
 import EventStatusLabel from '@/components/EventStatusLabel';
@@ -31,4 +32,4 @@ function EventDetailHeader({
   );
 }
 
-export default EventDetailHeader;
+export default memo(EventDetailHeader);

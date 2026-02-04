@@ -4,7 +4,7 @@ import type { Event } from '@/types/event';
 import Dropdown from '@/components/Dropdown';
 import { getEvents } from '@/api/event';
 import CategoryTabs from './CategoryTabs';
-import EventCard from './EventCard';
+import EventCards from './EventCards';
 
 type EventTrackFilter = 'ALL' | Event['track'];
 type EventStatusFilter = 'ALL' | Event['status'];
@@ -70,15 +70,7 @@ function EventList() {
           className="w-35"
         />
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredEvents.map((item) => (
-          <EventCard
-            key={item.id}
-            event={item}
-            onDeleted={handleDeleted}
-          />
-        ))}
-      </div>
+      <EventCards events={filteredEvents} onDeleted={handleDeleted} />
     </>
   );
 }
