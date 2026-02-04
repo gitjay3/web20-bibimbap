@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
+export const RATE_LIMIT_ERROR_MESSAGE = '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.';
+
 const api = axios.create({
   baseURL: '/api',
   timeout: 5000,
@@ -37,7 +39,7 @@ api.interceptors.response.use(
         const now = Date.now();
         if (now - lastRateLimitToastTime > RATE_LIMIT_TOAST_COOLDOWN) {
           lastRateLimitToastTime = now;
-          toast.error('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.', {
+          toast.error(RATE_LIMIT_ERROR_MESSAGE, {
             id: 'rate-limit-error',
           });
         }

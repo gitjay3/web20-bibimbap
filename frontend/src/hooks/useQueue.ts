@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import { enterQueue, getQueueStatus } from '@/api/queue';
+import { RATE_LIMIT_ERROR_MESSAGE } from '@/api/api';
 import CONFIG from '@/config/polling.config';
 
 interface UseQueueOptions {
@@ -49,6 +51,15 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
       }));
       return status;
     } catch (error) {
+      const statusCode = axios.isAxiosError(error) ? error.response?.status : null;
+      const errorMessage =
+        statusCode === 429 ? RATE_LIMIT_ERROR_MESSAGE : '대기열 상태 조회에 실패했습니다.';
+
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
       console.error('대기열 상태 조회 실패:', error);
       return null;
     }
@@ -74,10 +85,14 @@ function useQueue({ eventId, enabled = true }: UseQueueOptions) {
 
       return result;
     } catch (error) {
+      const statusCode = axios.isAxiosError(error) ? error.response?.status : null;
+      const errorMessage =
+        statusCode === 429 ? RATE_LIMIT_ERROR_MESSAGE : '대기열 진입에 실패했습니다.';
+
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: '대기열 진입에 실패했습니다.',
+        error: errorMessage,
       }));
       throw error;
     }

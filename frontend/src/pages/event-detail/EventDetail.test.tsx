@@ -229,6 +229,32 @@ describe('EventDetail', () => {
       });
     });
 
+    it('429(요청 제한)일 때 안내 문구를 표시한다', async () => {
+      mockUseQueue.mockReturnValue({
+        position: null,
+        totalWaiting: 0,
+        hasToken: false,
+        inQueue: false,
+        tokenExpiresAt: null,
+        isLoading: false,
+        error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+        isNew: null,
+        enter: vi.fn(),
+        refetch: vi.fn(),
+        sessionId: null,
+      });
+
+      renderAuthenticated(<EventDetail />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /요청이 너무 많습니다/ })).toBeInTheDocument();
+      });
+
+      expect(
+        screen.queryByRole('button', { name: '예약 기간이 아닙니다' }),
+      ).not.toBeInTheDocument();
+    });
+
     it('비로그인 상태일 때 로그인 필요 메시지를 표시한다', async () => {
       customRender(<EventDetail />, {
         auth: { user: null, isLoading: false },

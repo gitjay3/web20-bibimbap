@@ -23,6 +23,8 @@ interface ReservationButtonProps {
   canReserveByTrack?: boolean;
   eventTrack: Track;
   isInQueue?: boolean;
+  isQueueLoading?: boolean;
+  queueErrorMessage?: string | null;
 }
 
 function ReservationButton({
@@ -35,6 +37,8 @@ function ReservationButton({
   canReserveByTrack = true,
   eventTrack,
   isInQueue = false,
+  isQueueLoading = false,
+  queueErrorMessage = null,
 }: ReservationButtonProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const hasReservation = Boolean(myReservation);
@@ -99,6 +103,10 @@ function ReservationButton({
     buttonText = '예약하기';
   } else if (isInQueue) {
     buttonText = '대기 중입니다';
+  } else if (isQueueLoading) {
+    buttonText = '대기열 확인 중...';
+  } else if (queueErrorMessage) {
+    buttonText = queueErrorMessage;
   } else {
     buttonText = '예약 기간이 아닙니다';
   }

@@ -34,18 +34,21 @@ function EventDetail() {
   const eventStatus = event?.status;
 
   const canReserveByTrack = event?.canReserveByTrack !== false;
+  const isQueueEnabled = eventStatus === 'ONGOING' && isLoggedIn && canReserveByTrack;
 
   const {
     position,
     totalWaiting,
     hasToken,
     tokenExpiresAt,
+    inQueue,
     isLoading: isQueueLoading,
+    error: queueErrorMessage,
     isNew,
     enter: enterQueue,
   } = useQueue({
     eventId,
-    enabled: eventStatus === 'ONGOING' && isLoggedIn && canReserveByTrack,
+    enabled: isQueueEnabled,
   });
 
   // 이벤트 정보 불러오기
@@ -315,7 +318,9 @@ function EventDetail() {
           onCancelSuccess={handleCancelSuccess}
           canReserveByTrack={event.canReserveByTrack}
           eventTrack={event.track}
-          isInQueue={event.status === 'ONGOING' && !hasToken && position !== null}
+          isInQueue={isQueueEnabled && !hasToken && inQueue}
+          isQueueLoading={isQueueEnabled && isQueueLoading}
+          queueErrorMessage={isQueueEnabled ? queueErrorMessage : null}
         />
       )}
     </div>
