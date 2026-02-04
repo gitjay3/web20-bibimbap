@@ -19,8 +19,7 @@ api.interceptors.response.use(
   async (error) => {
     // TODO: 공통 에러 처리 로직 구현 및 access token 만료 시 재발급 로직 구현
     if (error.response) {
-      const { status, data } = error.response;
-      const errorMessage = data?.message || '알 수 없는 오류가 발생했습니다.';
+      const { status } = error.response;
 
       // 401: 인증 만료 시 로그인 페이지로 이동 (이미 로그인 페이지면 리다이렉트 안함)
       if (status === 401 && !window.location.pathname.startsWith('/login')) {
@@ -28,8 +27,6 @@ api.interceptors.response.use(
         window.location.href = '/login';
         return Promise.reject(error);
       }
-
-      toast.error(errorMessage);
     } else if (error.code === 'ECONNABORTED') {
       // 타임아웃 에러
       toast.error('요청 시간이 초과되었습니다. 다시 시도해주세요.');

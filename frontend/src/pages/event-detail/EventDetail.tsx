@@ -47,6 +47,7 @@ function EventDetail() {
     tokenExpiresAt,
     isLoading: isQueueLoading,
     isNew,
+    enter: enterQueue,
   } = useQueue({
     eventId,
     enabled: eventStatus === 'ONGOING' && isLoggedIn && canReserveByTrack,
@@ -163,7 +164,8 @@ function EventDetail() {
   const handleCancelSuccess = useCallback(() => {
     setMyReservation(null);
     fetchEvent();
-  }, [fetchEvent]);
+    enterQueue();
+  }, [fetchEvent, enterQueue]);
 
   const handleSaveSlot = useCallback(
     async (data: { slotId?: number; maxCapacity: number; extraInfo: Record<string, unknown> }) => {
@@ -315,6 +317,7 @@ function EventDetail() {
           onCancelSuccess={handleCancelSuccess}
           canReserveByTrack={event.canReserveByTrack}
           eventTrack={event.track}
+          isInQueue={event.status === 'ONGOING' && !hasToken && position !== null}
         />
       )}
     </div>

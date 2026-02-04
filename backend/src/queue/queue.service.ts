@@ -85,14 +85,27 @@ export class QueueService {
       // TODO: 단일 세션 정책
       // - existingSessionId !== sessionId 인 경우
 
-      // 이미 있음 - 세션 교체, 순번 유지
+      // 이미 있음 - 세션 교체
       await client.hset(statusKey, 'sessionId', sessionId);
       await client.expire(statusKey, this.USER_STATUS_TTL);
 
       // heartbeat 갱신
       await client.zadd(heartbeatKey, now, userId);
 
+      // 대기열에서 제거된 경우 다시 추가
       const position = await client.zrank(queueKey, userId);
+      if (position === null) {
+        await client.zadd(queueKey, now, userId);
+        const newPosition = await client.zrank(queueKey, userId);
+
+        // 메트릭: 재진입
+        this.metricsService.recordQueueEntry(eventId, false);
+
+        return {
+          position: newPosition ?? 0,
+          isNew: false,
+        };
+      }
 
       // 메트릭: 기존 사용자 재진입
       this.metricsService.recordQueueEntry(eventId, false);
