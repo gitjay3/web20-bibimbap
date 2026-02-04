@@ -1,6 +1,7 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import TrashIcon from '@/assets/icons/trash.svg?react';
 import { useFormContext } from 'react-hook-form';
+import useIsMobile from '@/hooks/useIsMobile';
 import type { SlotFieldType } from '@/types/event';
 import type { EventFormValues } from '../../schema';
 
@@ -18,6 +19,7 @@ export default function SlotTable({
   isInitializing = false,
 }: Props) {
   const { register } = useFormContext<EventFormValues>();
+  const isMobile = useIsMobile();
 
   const blockNegativeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (['-', 'e', 'E'].includes(e.key)) e.preventDefault();
@@ -70,10 +72,9 @@ export default function SlotTable({
     );
   }
 
-  return (
-    <>
-      {/* 모바일: 카드 레이아웃 */}
-      <div className="flex flex-col gap-3 sm:hidden">
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-3">
         {rows.map((row, rowIndex) => (
           <div
             key={row.id}
@@ -120,9 +121,11 @@ export default function SlotTable({
           </div>
         ))}
       </div>
+    );
+  }
 
-      {/* 데스크톱: 테이블 레이아웃 */}
-      <div className="border-neutral-border-default hidden overflow-x-auto rounded-lg border sm:block">
+  return (
+    <div className="border-neutral-border-default overflow-x-auto rounded-lg border">
         <table className="w-full min-w-max border-collapse">
           <thead>
             <tr className="bg-neutral-surface-default text-14 text-neutral-text-tertiary font-medium">
@@ -181,7 +184,6 @@ export default function SlotTable({
             ))}
           </tbody>
         </table>
-      </div>
-    </>
+    </div>
   );
 }
