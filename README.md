@@ -23,6 +23,7 @@
     - [Frontend](#frontend)
     - [Backend \& Database](#backend--database)
     - [Infrastructure](#infrastructure)
+  - [브라우저 지원](#브라우저-지원)
   - [설치 및 실행](#설치-및-실행)
     - [모니터링 (Prometheus + Grafana)](#모니터링-prometheus--grafana)
     - [부하 테스트 (k6)](#부하-테스트-k6)
@@ -105,6 +106,16 @@ Bookstcamp는 동시성 제어를 통한 정확한 선착순 처리와 실시간
 
 ![Infrastructure Skills](https://skillicons.dev/icons?i=docker,nginx,githubactions)
 ![Naver Cloud](https://img.shields.io/badge/Naver%20Cloud-03C75A?style=for-the-badge&logo=naver&logoColor=white)
+
+<br>
+
+## 브라우저 지원
+
+`defaults` 기준 ([상세 보기](https://browsersl.ist/?q=defaults))
+
+| [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/edge/edge_48x48.png" alt="Edge" width="24px" height="24px" />](https://browsersl.ist/?q=defaults)<br/>Edge | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png" alt="Firefox" width="24px" height="24px" />](https://browsersl.ist/?q=defaults)<br/>Firefox | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png" alt="Chrome" width="24px" height="24px" />](https://browsersl.ist/?q=defaults)<br/>Chrome | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari/safari_48x48.png" alt="Safari" width="24px" height="24px" />](https://browsersl.ist/?q=defaults)<br/>Safari | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari-ios/safari-ios_48x48.png" alt="iOS Safari" width="24px" height="24px" />](https://browsersl.ist/?q=defaults)<br/>iOS Safari | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/samsung-internet/samsung-internet_48x48.png" alt="Samsung" width="24px" height="24px" />](https://browsersl.ist/?q=defaults)<br/>Samsung |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 131+                                                                                                                                                                                   | 133+                                                                                                                                                                                               | 131+                                                                                                                                                                                           | 18+                                                                                                                                                                                            | 18+                                                                                                                                                                                                            | 28+                                                                                                                                                                                                                  |
 
 <br>
 
