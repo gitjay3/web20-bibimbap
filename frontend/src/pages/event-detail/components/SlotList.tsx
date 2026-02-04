@@ -48,7 +48,7 @@ function SlotList({
     <div className="flex flex-col gap-3">
       {/* 제목 + 일정 추가 버튼 (관리자용) */}
       <div className="flex items-center justify-between">
-        <h3 className="text-20 font-bold">예약 옵션</h3>
+        <h2 className="text-20 font-bold">예약 옵션</h2>
         {isAdmin && onAddSlot && (
           <button
             type="button"

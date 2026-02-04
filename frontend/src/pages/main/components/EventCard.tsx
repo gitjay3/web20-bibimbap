@@ -93,6 +93,7 @@ function EventCard({ event, onDeleted }: EventCardProps) {
                 {isUser && isUpcoming && organization?.isSlackEnabled && (
                   <button
                     type="button"
+                    aria-label="알림 설정"
                     onClick={(e) => {
                       e.preventDefault();
                       setIsNotificationModalOpen(true);

@@ -6,7 +6,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
+    <main className="flex min-h-screen items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-10">
         <div className="flex flex-col items-center gap-5">
           <img className="h-24 w-24" src="/logo.webp" alt="로고" />
@@ -31,6 +31,6 @@ export default function LoginPage() {
           © 2026 bookstcamp. All rights reserved.
         </div>
       </div>
-    </div>
+    </main>
   );
 }

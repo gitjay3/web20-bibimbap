@@ -41,7 +41,7 @@ function SelectOrgPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
       <div className="w-full max-w-md space-y-8 text-center">
         <div className="space-y-4">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -72,7 +72,7 @@ function SelectOrgPage() {
           <p className="text-sm text-gray-400">© 2026 bookstcamp. All rights reserved.</p>
         </footer>
       </div>
-    </div>
+    </main>
   );
 }
 
