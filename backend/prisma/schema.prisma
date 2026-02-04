@@ -60,6 +60,7 @@ model Event {
   notifications EventNotification[]
 
   @@index([organizationId])
+  @@index([organizationId, track])
 }
 
 model EventSlot {
@@ -88,6 +89,7 @@ model Reservation {
   slot EventSlot @relation(fields: [slotId], references: [id])
 
   @@index([slotId, groupNumber])
+  @@index([slotId, status])
   @@index([userId, status])
   @@index([userId, slotId, status])
 }
