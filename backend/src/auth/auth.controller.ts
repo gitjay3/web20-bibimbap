@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import type { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import type { Response } from 'express';
@@ -33,6 +34,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @UseGuards(CustomThrottlerGuard)
   @ThrottleLogin()
   @ApiOperation({
     summary: '내부 계정 로그인',

@@ -24,10 +24,8 @@ import { ErrorResponseDto } from '../common/dto/error-response.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UseGuards } from '@nestjs/common';
 import { QueueTokenGuard } from '../queue/guards/queue-token.guard';
-import {
-  ThrottleReservation,
-  ThrottlePolling,
-} from 'src/common/decorators/throttle.decorator';
+import { ThrottleReservation } from 'src/common/decorators/throttle.decorator';
+import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -35,6 +33,7 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
+  @UseGuards(CustomThrottlerGuard)
   @ThrottleReservation()
   @ApiOperation({
     summary: '예약 신청',
@@ -77,7 +76,6 @@ export class ReservationsController {
   }
 
   @Get('my/:eventId')
-  @ThrottlePolling()
   @ApiOperation({ summary: '특정 이벤트에 대한 내 예약 조회' })
   @ApiParam({ name: 'eventId', description: '이벤트 ID' })
   @ApiResponse({ status: 200, type: ReservationResponseDto })
