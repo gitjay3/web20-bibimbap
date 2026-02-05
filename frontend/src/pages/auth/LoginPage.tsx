@@ -7,12 +7,12 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white">
+    <main className="flex min-h-screen items-center justify-center bg-white px-4">
       <PageMeta
         title="로그인"
         description="Bookstcamp에 로그인하여 소속 조직의 이벤트를 확인하고 예약을 관리하세요."
       />
-      <div className="flex flex-col items-center gap-10">
+      <div className="flex w-full max-w-80 flex-col items-center gap-10">
         <div className="flex flex-col items-center gap-5">
           <img className="h-24 w-24" src="/logo.webp" alt="로고" />
 
@@ -26,7 +26,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={handleGithubLogin}
-          className="flex h-12 w-80 items-center justify-center gap-2 rounded-lg bg-black text-sm font-bold text-white hover:bg-black/90"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-black text-sm font-bold text-white hover:bg-black/90"
         >
           <GithubIcon className="h-4 w-4" />
           GitHub로 계속하기

@@ -1,6 +1,7 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import TrashIcon from '@/assets/icons/trash.svg?react';
 import { useFormContext } from 'react-hook-form';
+import useIsMobile from '@/hooks/useIsMobile';
 import type { SlotFieldType } from '@/types/event';
 import type { EventFormValues } from '../../schema';
 
@@ -18,6 +19,7 @@ export default function SlotTable({
   isInitializing = false,
 }: Props) {
   const { register } = useFormContext<EventFormValues>();
+  const isMobile = useIsMobile();
 
   const blockNegativeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (['-', 'e', 'E'].includes(e.key)) e.preventDefault();
@@ -60,25 +62,86 @@ export default function SlotTable({
     );
   }
 
+  if (rows.length === 0) {
+    return (
+      <div className="border-neutral-border-default rounded-lg border bg-white">
+        <div className="text-12 text-error-text-primary py-12 text-center font-medium">
+          등록된 선택지가 없습니다. &apos;선택지 추가&apos; 버튼을 눌러주세요.
+        </div>
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-3">
+        {rows.map((row, rowIndex) => (
+          <div
+            key={row.id}
+            className="border-neutral-border-default rounded-lg border bg-white p-3"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-neutral-text-secondary text-13 font-medium">
+                선택지 {rowIndex + 1}
+              </span>
+              <button type="button" onClick={() => onRemove(rowIndex)}>
+                <TrashIcon className="text-neutral-text-tertiary h-5 w-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {templateFields.map((field) => (
+                <div key={field.id} className={templateFields.length === 1 ? 'col-span-2' : ''}>
+                  <span className="text-neutral-text-tertiary mb-1 block text-12">
+                    {field.name}
+                  </span>
+                  <input
+                    {...register(
+                      `slots.${rowIndex}.${field.id}` as const,
+                      field.type === 'number' ? numberRegisterOptions : {},
+                    )}
+                    type={field.type === 'number' ? 'number' : field.type}
+                    placeholder={getPlaceholder(field)}
+                    onKeyDown={field.type === 'number' ? blockNegativeKey : undefined}
+                    className={inputBaseClassName}
+                  />
+                </div>
+              ))}
+              <div className={templateFields.length % 2 === 0 ? 'col-span-2' : ''}>
+                <span className="text-neutral-text-tertiary mb-1 block text-12">정원</span>
+                <input
+                  {...register(`slots.${rowIndex}.capacity` as const, capacityRegisterOptions)}
+                  type="number"
+                  min={1}
+                  placeholder="1"
+                  onKeyDown={blockNegativeKey}
+                  className={inputBaseClassName}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="border-neutral-border-default overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-max border-collapse">
-        <thead>
-          <tr className="bg-neutral-surface-default text-14 text-neutral-text-tertiary font-medium">
-            <th className="w-16 py-3.5 text-center whitespace-nowrap">No.</th>
+        <table className="w-full min-w-max border-collapse">
+          <thead>
+            <tr className="bg-neutral-surface-default text-14 text-neutral-text-tertiary font-medium">
+              <th className="w-16 py-3.5 text-center whitespace-nowrap">No.</th>
 
-            {templateFields.map((field) => (
-              <th key={field.id} className="min-w-40 px-4 py-3.5 text-left whitespace-nowrap">
-                {field.name}
-              </th>
-            ))}
+              {templateFields.map((field) => (
+                <th key={field.id} className="min-w-40 px-4 py-3.5 text-left whitespace-nowrap">
+                  {field.name}
+                </th>
+              ))}
 
-            <th className="w-28 px-4 py-3.5 text-left whitespace-nowrap">정원</th>
-            <th className="w-16 py-3.5 text-center whitespace-nowrap">삭제</th>
-          </tr>
-        </thead>
+              <th className="w-28 px-4 py-3.5 text-left whitespace-nowrap">정원</th>
+              <th className="w-16 py-3.5 text-center whitespace-nowrap">삭제</th>
+            </tr>
+          </thead>
 
-        {rows.length > 0 ? (
           <tbody className="divide-neutral-border-default divide-y bg-white">
             {rows.map((row, rowIndex) => (
               <tr key={row.id}>
@@ -120,19 +183,7 @@ export default function SlotTable({
               </tr>
             ))}
           </tbody>
-        ) : (
-          <tbody>
-            <tr>
-              <td
-                colSpan={templateFields.length + 3}
-                className="text-12 text-error-text-primary py-12 text-center font-medium"
-              >
-                등록된 선택지가 없습니다. &apos;선택지 추가&apos; 버튼을 눌러주세요.
-              </td>
-            </tr>
-          </tbody>
-        )}
-      </table>
+        </table>
     </div>
   );
 }

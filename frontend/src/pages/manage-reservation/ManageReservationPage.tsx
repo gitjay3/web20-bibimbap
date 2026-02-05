@@ -222,18 +222,18 @@ interface ViewModeToggleProps {
 
 function ViewModeToggle({ mode, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex h-9 items-center gap-1 rounded-lg bg-gray-50 p-1">
+    <div className="flex h-10 w-full items-center gap-1 rounded-lg bg-gray-50 p-1 sm:h-9 sm:w-auto">
       {(['grid', 'ticket'] as const).map((m) => (
         <button
           type="button"
           key={m}
           onClick={() => onChange(m)}
           className={cn(
-            'rounded-md px-4 py-1.5 text-14 font-bold transition-all',
+            'flex-1 rounded-md px-4 py-2 text-14 font-bold whitespace-nowrap transition-all sm:flex-none sm:py-1.5',
             mode === m ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:bg-gray-100',
           )}
         >
-          {m === 'grid' ? '나의 예약 현황' : '다가오는 일정'}
+          {m === 'grid' ? '예약 현황' : '다가오는 일정'}
         </button>
       ))}
     </div>
@@ -254,22 +254,22 @@ function FeaturedTicket({ reservation, onCancelClick }: FeaturedTicketProps) {
 
   return (
     <div className="group flex overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative flex w-36 shrink-0 flex-col items-center justify-center overflow-hidden bg-brand-500 py-6 text-white">
+      <div className="relative flex w-24 shrink-0 flex-col items-center justify-center overflow-hidden bg-brand-500 py-4 text-white sm:w-36 sm:py-6">
         <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white opacity-10" />
-        <span className="relative z-10 text-16 font-bold">
+        <span className="relative z-10 text-12 font-bold sm:text-16">
           {eventDate ? formatDateWithDay(eventDate) : '-'}
         </span>
-        <span className="relative z-10 text-24 leading-tight font-extrabold">
+        <span className="relative z-10 text-20 leading-tight font-extrabold sm:text-24">
           {eventDate ? calcDDay(eventDate) : '-'}
         </span>
       </div>
 
-      <div className="relative flex flex-1 flex-col bg-white">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-white">
         <div className="absolute top-1/2 -left-2.5 z-10 hidden h-5 w-5 -translate-y-1/2 rounded-full border-r border-gray-200 bg-white md:block" />
 
-        <div className="flex flex-1 flex-col gap-2 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
+        <div className="flex flex-1 flex-col gap-2 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-1.5">
               <ApplicationUnitLabel applicationUnit={applicationUnit} />
               <EventCategoryLabel category={eventTrack} />
               <ReservationStatusBadge status={status} isEnded={isEnded} />
@@ -278,24 +278,24 @@ function FeaturedTicket({ reservation, onCancelClick }: FeaturedTicketProps) {
               <button
                 type="button"
                 onClick={() => onCancelClick(reservation)}
-                className="rounded-lg border border-error-500 bg-white px-3 py-1.5 text-12 font-bold text-error-500 transition hover:bg-error-50"
+                className="shrink-0 rounded-lg border border-error-500 bg-white px-2 py-1 text-12 font-bold text-error-500 transition hover:bg-error-50 sm:px-3 sm:py-1.5"
               >
                 취소
               </button>
             )}
           </div>
-          <h3 className="text-20 leading-tight font-bold text-gray-900">{eventTitle}</h3>
+          <h3 className="text-16 leading-tight font-bold text-gray-900 sm:text-20">{eventTitle}</h3>
         </div>
 
-        <div className="flex flex-wrap items-center gap-y-2 border-t border-gray-100 bg-[#F8FAFC] px-6 py-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-100 bg-[#F8FAFC] px-4 py-2 sm:gap-y-2 sm:px-6 sm:py-3">
           {extraInfoEntries.map(({ label, value }, idx) => (
             <div key={label} className="flex items-center">
-              <div className="flex items-center text-14">
-                <span className="mr-2 font-bold text-brand-500">{label}</span>
-                <span className="max-w-40 truncate text-gray-700">{String(value)}</span>
+              <div className="flex items-center text-12 sm:text-14">
+                <span className="mr-1.5 font-bold text-brand-500 sm:mr-2">{label}</span>
+                <span className="max-w-32 truncate text-gray-700 sm:max-w-40">{String(value)}</span>
               </div>
               {idx < extraInfoEntries.length - 1 && (
-                <div className="mx-3 hidden h-3 w-px bg-gray-200 sm:block" />
+                <div className="mx-2 hidden h-3 w-px bg-gray-200 sm:mx-3 sm:block" />
               )}
             </div>
           ))}
@@ -320,22 +320,22 @@ function ReservationTicket({ reservation, onCancelClick }: ReservationTicketProp
 
   return (
     <div className="group flex overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-brand-500 hover:shadow-sm">
-      <div className="relative flex w-32 shrink-0 flex-col items-center justify-center overflow-hidden bg-brand-50 p-4">
+      <div className="relative flex w-20 shrink-0 flex-col items-center justify-center overflow-hidden bg-brand-50 p-3 sm:w-32 sm:p-4">
         <div className="absolute -top-6 -right-6 h-16 w-16 rounded-full bg-white opacity-50" />
-        <span className="relative z-10 text-14 font-bold whitespace-nowrap text-brand-500">
+        <span className="relative z-10 text-12 font-bold whitespace-nowrap text-brand-500 sm:text-14">
           {eventDate ? formatDateWithDay(eventDate) : '-'}
         </span>
         {isActive && eventDate && (
-          <span className="relative z-10 mt-1 text-20 leading-none font-bold text-brand-500">
+          <span className="relative z-10 mt-1 text-16 leading-none font-bold text-brand-500 sm:text-20">
             {calcDDay(eventDate)}
           </span>
         )}
       </div>
 
-      <div className="relative flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col gap-1.5 p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-2">
               <ApplicationUnitLabel applicationUnit={applicationUnit} />
               <EventCategoryLabel category={eventTrack} />
               <ReservationStatusBadge status={status} isEnded={isEnded} />
@@ -344,20 +344,20 @@ function ReservationTicket({ reservation, onCancelClick }: ReservationTicketProp
               <button
                 type="button"
                 onClick={() => onCancelClick(reservation)}
-                className="rounded-lg border border-error-500 bg-white px-3 py-1.5 text-12 font-bold text-error-500 transition hover:bg-error-50"
+                className="shrink-0 rounded-lg border border-error-500 bg-white px-2 py-1 text-12 font-bold text-error-500 transition hover:bg-error-50 sm:px-3 sm:py-1.5"
               >
                 취소
               </button>
             )}
           </div>
-          <h3 className="truncate text-16 font-bold text-gray-900">{eventTitle}</h3>
+          <h3 className="truncate text-14 font-bold text-gray-900 sm:text-16">{eventTitle}</h3>
         </div>
 
-        <div className="flex items-center gap-6 border-t border-gray-100 bg-[#F8FAFC] px-5 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-gray-100 bg-[#F8FAFC] px-3 py-2 sm:gap-6 sm:px-5 sm:py-2.5">
           {extraInfoEntries.map(({ label, value }) => (
-            <div key={label} className="flex items-center text-12 text-gray-700">
-              <span className="mr-2 font-bold text-brand-500">{label}</span>
-              <span>{String(value)}</span>
+            <div key={label} className="flex items-center text-12 text-gray-700 sm:text-12">
+              <span className="mr-1.5 font-bold text-brand-500 sm:mr-2">{label}</span>
+              <span className="truncate">{String(value)}</span>
             </div>
           ))}
         </div>
@@ -460,7 +460,7 @@ function ManageReservationPage() {
       />
       <div className="flex flex-col gap-4">
         <h1 className="text-36 font-extrabold text-gray-900">예약 관리</h1>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-16 text-gray-500">
             신청한 이벤트 내역을 확인하고 예약을 관리하세요.
           </p>

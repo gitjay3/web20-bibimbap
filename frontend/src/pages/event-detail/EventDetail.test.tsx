@@ -149,8 +149,9 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('내용')).toBeInTheDocument();
-        expect(screen.getByText('시작 시간')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('내용').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('시작 시간').length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -158,8 +159,9 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('React 멘토링')).toBeInTheDocument();
-        expect(screen.getByText('14:00')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('React 멘토링').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('14:00').length).toBeGreaterThanOrEqual(1);
       });
     });
   });
@@ -340,16 +342,17 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('React 멘토링')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('React 멘토링').length).toBeGreaterThanOrEqual(1);
       });
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '예약하기' })).toBeInTheDocument();
       });
 
-      // 슬롯 선택 버튼 클릭
-      const slotButton = screen.getByRole('button', { name: '슬롯 선택' });
-      await user.click(slotButton);
+      // 슬롯 선택 버튼 클릭 (첫 번째 버튼 선택)
+      const slotButtons = screen.getAllByRole('button', { name: '슬롯 선택' });
+      await user.click(slotButtons[0]);
 
       // 슬롯이 선택되면 예약하기 버튼이 활성화됨
       await waitFor(() => {
@@ -390,9 +393,10 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('React 멘토링')).toBeInTheDocument();
-        expect(screen.getByText('Vue 멘토링')).toBeInTheDocument();
-        expect(screen.getByText('Angular 멘토링')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('React 멘토링').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Vue 멘토링').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Angular 멘토링').length).toBeGreaterThanOrEqual(1);
       });
     });
   });

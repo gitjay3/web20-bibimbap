@@ -92,7 +92,7 @@ export default function SlotEditModal({
   const minCapacity = mode === 'edit' && slot ? slot.currentCount || 1 : 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         role="button"
         tabIndex={0}
@@ -104,15 +104,15 @@ export default function SlotEditModal({
         }}
       />
 
-      <div className="relative z-10 max-h-[80vh] w-120 overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">{mode === 'create' ? '일정 추가' : '일정 수정'}</h2>
+      <div className="relative z-10 w-full max-w-120 rounded-lg bg-white p-4 shadow-xl sm:max-h-[80vh] sm:overflow-y-auto sm:p-6">
+        <h2 className="text-base font-semibold sm:text-lg">{mode === 'create' ? '일정 추가' : '일정 수정'}</h2>
 
-        <div className="mt-4 flex flex-col gap-4">
+        <div className="mt-3 flex flex-col gap-2 sm:mt-4 sm:gap-4">
           {(slotSchema?.fields ?? []).map((field) => (
               <div key={field.id}>
                 <label
                   htmlFor={`slot-field-${field.id}`}
-                  className="text-neutral-text-primary block text-sm font-medium"
+                  className="text-neutral-text-primary block text-13 font-medium sm:text-sm"
                 >
                   {field.name}
                 </label>
@@ -121,7 +121,7 @@ export default function SlotEditModal({
                   type={FIELD_TYPE_TO_INPUT_TYPE[field.type] || 'text'}
                   value={extraInfo[field.id] || ''}
                   onChange={(e) => setExtraInfo({ ...extraInfo, [field.id]: e.target.value })}
-                  className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-2"
+                  className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-1.5 text-14 sm:py-2 sm:text-base"
                 />
               </div>
             ))}
@@ -129,7 +129,7 @@ export default function SlotEditModal({
           <div>
             <label
               htmlFor="slot-max-capacity"
-              className="text-neutral-text-primary block text-sm font-medium"
+              className="text-neutral-text-primary block text-13 font-medium sm:text-sm"
             >
               정원
             </label>
@@ -139,7 +139,7 @@ export default function SlotEditModal({
               min={minCapacity}
               value={maxCapacity}
               onChange={(e) => setMaxCapacity(Number(e.target.value))}
-              className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-2"
+              className="border-neutral-border-default mt-1 w-full rounded-md border px-3 py-1.5 text-14 sm:py-2 sm:text-base"
             />
             {mode === 'edit' && slot && slot.currentCount > 0 && (
               <p className="text-neutral-text-secondary mt-1 text-xs">
@@ -149,7 +149,7 @@ export default function SlotEditModal({
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-4 flex justify-end gap-3 sm:mt-6">
           <button
             type="button"
             onClick={onClose}

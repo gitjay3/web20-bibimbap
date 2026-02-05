@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import ModifyIcon from '@/assets/icons/pencil.svg?react';
 import RemoveIcon from '@/assets/icons/trash.svg?react';
 import EventCategoryLabel from '@/components/EventCategoryLabel';
 import Button from '@/components/Button';
-import type { Camper, Track } from '@/types/camper';
+import type { Camper } from '@/types/camper';
 import RegistrationLabel from './RegistrationLabel';
 import CamperFormCells from './CamperFormCells';
+import { useCamperEdit } from './hooks';
 
 interface CamperRowProps {
   camper: Camper;
@@ -14,76 +14,33 @@ interface CamperRowProps {
 }
 
 function CamperRow({ camper, onUpdate, onDelete }: CamperRowProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [editedCamperId, setEditedCamperId] = useState(camper.camperId);
-  const [editedName, setEditedName] = useState(camper.name);
-  const [editedUsername, setEditedUsername] = useState(camper.username);
-  const [editedTrack, setEditedTrack] = useState<Track>(camper.track as Track);
-  const [editedGroupNumber, setEditedGroupNumber] = useState(camper.groupNumber?.toString() || '');
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    // Reset to original values
-    setEditedCamperId(camper.camperId);
-    setEditedName(camper.name);
-    setEditedUsername(camper.username);
-    setEditedTrack(camper.track as Track);
-    setEditedGroupNumber(camper.groupNumber?.toString() || '');
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await onUpdate(camper.id, {
-        camperId: editedCamperId,
-        name: editedName,
-        username: editedUsername,
-        track: editedTrack,
-        groupNumber: editedGroupNumber ? parseInt(editedGroupNumber, 10) : null,
-      });
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to update camper:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm(`${camper.name} 캠퍼를 삭제하시겠습니까?`)) return;
-
-    setIsDeleting(true);
-    try {
-      await onDelete(camper.id);
-    } catch (error) {
-      console.error('Failed to delete camper:', error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const isInvalid = !editedCamperId || !editedName || !editedUsername || isSaving;
+  const {
+    isEditing,
+    isSaving,
+    isDeleting,
+    isInvalid,
+    editedData,
+    setEditedData,
+    handleEdit,
+    handleCancel,
+    handleSave,
+    handleDelete,
+  } = useCamperEdit({ camper, onUpdate, onDelete });
 
   if (isEditing) {
     return (
       <tr className="border-neutral-border-default h-15 border-t">
         <CamperFormCells
-          camperId={editedCamperId}
-          setCamperId={setEditedCamperId}
-          name={editedName}
-          setName={setEditedName}
-          username={editedUsername}
-          setUsername={setEditedUsername}
-          track={editedTrack}
-          setTrack={setEditedTrack}
-          groupNumber={editedGroupNumber}
-          setGroupNumber={setEditedGroupNumber}
+          camperId={editedData.camperId}
+          setCamperId={setEditedData.setCamperId}
+          name={editedData.name}
+          setName={setEditedData.setName}
+          username={editedData.username}
+          setUsername={setEditedData.setUsername}
+          track={editedData.track}
+          setTrack={setEditedData.setTrack}
+          groupNumber={editedData.groupNumber}
+          setGroupNumber={setEditedData.setGroupNumber}
         />
         <td className="px-6">
           <div className="flex h-10 items-center">
@@ -91,7 +48,7 @@ function CamperRow({ camper, onUpdate, onDelete }: CamperRowProps) {
           </div>
         </td>
         <td className="px-6 text-right">
-          <div className="flex justify-end gap-2 items-center">
+          <div className="flex items-center justify-end gap-2">
             <div className="w-16">
               <Button type="secondary" onClickHandler={handleCancel} variant="outline" disabled={isSaving}>
                 취소
@@ -133,7 +90,7 @@ function CamperRow({ camper, onUpdate, onDelete }: CamperRowProps) {
         </div>
       </td>
       <td className="px-6 text-right">
-        <div className={`flex h-10 items-center justify-end gap-4 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`flex h-10 items-center justify-end gap-4 ${isDeleting ? 'pointer-events-none opacity-50' : ''}`}>
           <ModifyIcon className="h-4 w-4 cursor-pointer" onClick={handleEdit} />
           <RemoveIcon
             className="text-error-text-primary h-4 w-4 cursor-pointer"

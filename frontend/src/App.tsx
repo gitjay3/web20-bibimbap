@@ -104,7 +104,7 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <RouterProvider router={router} />
       </Suspense>
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" richColors style={{ top: 72 }} />
     </ErrorBoundary>
   );
 }

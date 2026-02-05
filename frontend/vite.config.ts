@@ -1,6 +1,7 @@
 import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
 import svgr from 'vite-plugin-svgr';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -11,6 +12,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     svgr(),
+    legacy({
+      targets: ['defaults'],
+    }),
     visualizer({
       filename: 'dist/stats.html',
       open: false,

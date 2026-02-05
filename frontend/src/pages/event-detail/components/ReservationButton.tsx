@@ -116,13 +116,13 @@ function ReservationButton({
   const isClickable = hasReservation || (isReservable && !disabled && !isTrackMismatch);
 
   return (
-    <div className="border-neutral-border-default fixed right-0 bottom-0 left-0 flex flex-col items-center gap-1 border-t bg-white py-4">
+    <div className="border-neutral-border-default fixed right-0 bottom-0 left-0 flex flex-col items-center gap-1 border-t bg-white px-4 py-4">
       <button
         type="button"
         onClick={handleClick}
         disabled={!isClickable || isSubmitting}
         className={cn(
-          'bg-brand-surface-default h-12 w-200 cursor-pointer rounded-lg font-bold text-white transition',
+          'bg-brand-surface-default h-12 w-full max-w-200 cursor-pointer rounded-lg font-bold text-white transition',
           hasReservation && 'bg-error-500 hover:bg-error-600',
           (disabled || isTrackMismatch) &&
             !hasReservation &&
@@ -136,7 +136,7 @@ function ReservationButton({
         {buttonText}
       </button>
       {isTrackMismatch && !hasReservation && (
-        <p className="text-12 text-gray-500">
+        <p className="text-12 text-center text-gray-500">
           이 이벤트는 {TRACK_LABEL[eventTrack]} 캠퍼만 예약할 수 있습니다
         </p>
       )}

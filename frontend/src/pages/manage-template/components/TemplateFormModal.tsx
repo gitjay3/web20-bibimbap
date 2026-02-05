@@ -6,6 +6,7 @@ import Modal from '@/components/Modal';
 import TextInput from '@/components/TextInput';
 import Dropdown from '@/components/Dropdown';
 import Button from '@/components/Button';
+import useIsMobile from '@/hooks/useIsMobile';
 import type { Template, CreateTemplateDto } from '@/types/template';
 import PlusIcon from '@/assets/icons/plus.svg?react';
 import TrashIcon from '@/assets/icons/trash.svg?react';
@@ -48,6 +49,7 @@ interface TemplateFormModalProps {
 function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormModalProps) {
   const titleId = useId();
   const descriptionId = useId();
+  const isMobile = useIsMobile();
 
   const {
     register,
@@ -112,9 +114,9 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
     <Modal isOpen={isOpen} onClose={onClose}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 pt-4">
         {/* 템플릿 이름 + 설명 */}
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1">
-            <label htmlFor={titleId} className="text-16 mb-2 block font-bold">
+            <label htmlFor={titleId} className="mb-2 block text-14 font-bold sm:text-16">
               템플릿 이름
             </label>
             <TextInput
@@ -126,7 +128,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
             {errors.title && <p className="text-12 mt-1 text-red-500">{errors.title.message}</p>}
           </div>
           <div className="flex-1">
-            <label htmlFor={descriptionId} className="text-16 mb-2 block font-bold">
+            <label htmlFor={descriptionId} className="mb-2 block text-14 font-bold sm:text-16">
               설명 (선택)
             </label>
             <TextInput
@@ -141,45 +143,85 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
         {/* 필드 정의 섹션 */}
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-16 font-bold">필드 정의</span>
+            <span className="text-14 font-bold sm:text-16">필드 정의</span>
             <button
               type="button"
-              className="border-neutral-border-default text-neutral-text-secondary text-14 flex cursor-pointer items-center gap-1 rounded-md border bg-white px-3 py-1.5"
+              className="border-neutral-border-default text-neutral-text-secondary flex cursor-pointer items-center gap-1 rounded-md border bg-white px-2 py-1 text-13 sm:px-3 sm:py-1.5 sm:text-14"
               onClick={handleAddField}
             >
               <PlusIcon className="h-4 w-4" />
-              필드 추가
+              <span className="hidden sm:inline">필드 추가</span>
+              <span className="sm:hidden">추가</span>
             </button>
           </div>
 
-          {/* 테이블 헤더 */}
-          <div className="border-neutral-border-default rounded-lg border">
-            <div className="text-neutral-text-tertiary border-neutral-border-default text-12 flex border-b bg-gray-50">
+          {/* 정원 기본 필드 (고정) - 모바일/데스크톱 공통 */}
+          <div className="border-neutral-border-default mb-2 rounded-lg border bg-gray-50/50 px-3 py-2">
+            <div className="text-neutral-text-tertiary flex items-center justify-between text-13">
+              <span>정원 (기본 필드)</span>
+              <span>숫자</span>
+            </div>
+          </div>
+
+          {/* 모바일: 카드 레이아웃 / 데스크톱: 테이블 레이아웃 */}
+          {isMobile ? (
+            <div className="flex flex-col gap-2">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="border-neutral-border-default rounded-lg border bg-white p-3"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-neutral-text-secondary text-13">필드 {index + 1}</span>
+                    <button
+                      type="button"
+                      className={`${
+                        fields.length > 1
+                          ? 'text-neutral-text-tertiary active:text-red-500'
+                          : 'cursor-not-allowed text-gray-300'
+                      }`}
+                      onClick={() => remove(index)}
+                      disabled={fields.length <= 1}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <TextInput
+                      placeholder="필드 이름"
+                      /* eslint-disable-next-line react/jsx-props-no-spreading */
+                      {...register(`slotSchema.fields.${index}.name`)}
+                    />
+                    <Controller
+                      name={`slotSchema.fields.${index}.type`}
+                      control={control}
+                      render={({ field: controllerField }) => (
+                        <Dropdown
+                          options={fieldTypeOptions}
+                          value={controllerField.value}
+                          setValue={controllerField.onChange}
+                        />
+                      )}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border-neutral-border-default rounded-lg border">
+            <div className="text-neutral-text-tertiary border-neutral-border-default flex border-b bg-gray-50 text-12">
               <div className="w-12 px-3 py-2 text-center">순서</div>
-              <div className="flex-1 px-3 py-2">필드 이름 (화면에 표시될 이름)</div>
+              <div className="flex-1 px-3 py-2">필드 이름</div>
               <div className="w-44 px-3 py-2">데이터 타입</div>
               <div className="w-10" />
             </div>
 
-            {/* 정원 기본 필드 (고정) */}
-            <div className="border-neutral-border-default flex items-center border-b bg-gray-50/50">
-              <div className="text-neutral-text-tertiary text-14 w-12 px-3 py-2 text-center">-</div>
-              <div className="flex flex-1 items-center gap-2 px-3 py-2">
-                <span className="text-neutral-text-secondary text-14">정원</span>
-              </div>
-              <div className="w-44 px-3 py-2">
-                <span className="text-neutral-text-tertiary text-14">숫자</span>
-              </div>
-              <div className="w-10" />
-            </div>
-
-            {/* 필드 행들 */}
             {fields.map((field, index) => (
               <div
                 key={field.id}
                 className="border-neutral-border-default flex items-center border-b last:border-b-0"
               >
-                <div className="text-neutral-text-secondary text-14 w-12 px-3 py-2 text-center">
+                <div className="text-neutral-text-secondary w-12 px-3 py-2 text-center text-14">
                   {index + 1}
                 </div>
                 <div className="flex-1 px-3 py-2">
@@ -219,6 +261,7 @@ function TemplateFormModal({ isOpen, onClose, onSave, template }: TemplateFormMo
               </div>
             ))}
           </div>
+          )}
 
           {errors.slotSchema?.fields && (
             <p className="text-12 mt-1 text-red-500">

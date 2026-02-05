@@ -34,10 +34,10 @@ function Modal({ isOpen, onClose, children }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div
         ref={modalRef}
-        className="relative max-h-[90vh] w-full max-w-[540px] overflow-visible rounded-xl bg-white p-8"
+        className="relative max-h-[90vh] w-full max-w-[540px] overflow-y-auto rounded-xl bg-white p-4 sm:p-8"
       >
         <button
           type="button"
