@@ -27,7 +27,6 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ReservationsService } from '../reservations/reservations.service';
 import { ReservationResponseDto } from '../reservations/dto/reservation-response.dto';
-import { ThrottlePolling } from '../common/decorators/throttle.decorator';
 
 @ApiTags('events')
 @Controller('events')
@@ -105,7 +104,6 @@ export class EventsController {
   }
 
   @Get(':id/polling-status')
-  @ThrottlePolling()
   @ApiOperation({
     summary: '이벤트 폴링 상태 조회',
     description:

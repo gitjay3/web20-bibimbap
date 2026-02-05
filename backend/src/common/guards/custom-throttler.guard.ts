@@ -1,4 +1,5 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request } from 'express';
 import { PUBLIC_ROUTES } from '../constants/routes.constant';
@@ -15,6 +16,13 @@ interface RequestWithUser extends Request {
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
+  constructor(
+    private readonly configService: ConfigService,
+    ...args: ConstructorParameters<typeof ThrottlerGuard>
+  ) {
+    super(...args);
+  }
+
   /**
    * Rate Limit 키 생성
    * - 메타데이터의 keyType에 따라 동적으로 키 생성
@@ -84,6 +92,11 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   protected shouldSkip(context: ExecutionContext): Promise<boolean> {
+    // THROTTLE_SKIP=true면 모든 요청 통과 (k6 부하 테스트용)
+    if (this.configService.get('THROTTLE_SKIP') === 'true') {
+      return Promise.resolve(true);
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
 
     // Prometheus 메트릭 스크래핑은 Rate Limiting 제외

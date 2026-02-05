@@ -3,6 +3,7 @@ import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QueueService } from '../queue/queue.service';
+import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 
 describe('ReservationsController', () => {
   let controller: ReservationsController;
@@ -15,7 +16,10 @@ describe('ReservationsController', () => {
         { provide: EventEmitter2, useValue: {} },
         { provide: QueueService, useValue: { hasValidToken: jest.fn() } },
       ],
-    }).compile();
+    })
+      .overrideGuard(CustomThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ReservationsController>(ReservationsController);
   });

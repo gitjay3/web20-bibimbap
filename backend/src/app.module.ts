@@ -22,7 +22,6 @@ import { SlackModule } from './slack/slack.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { LoggerModule } from 'nestjs-pino';
 import { ClientLogsModule } from './client-logs/client-logs.module';
 
@@ -108,10 +107,6 @@ import { ClientLogsModule } from './client-logs/client-logs.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: CustomThrottlerGuard,
     },
   ],
 })
