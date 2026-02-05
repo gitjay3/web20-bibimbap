@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request } from 'express';
@@ -16,12 +16,8 @@ interface RequestWithUser extends Request {
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
-  constructor(
-    private readonly configService: ConfigService,
-    ...args: ConstructorParameters<typeof ThrottlerGuard>
-  ) {
-    super(...args);
-  }
+  @Inject(ConfigService)
+  private readonly configService!: ConfigService;
 
   /**
    * Rate Limit 키 생성
