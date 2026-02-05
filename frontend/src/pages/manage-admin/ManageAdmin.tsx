@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import PageMeta from '@/components/PageMeta';
 import PageHeader from '@/components/PageHeader';
 import Button from '@/components/Button';
 import PlusIcon from '@/assets/icons/plus.svg?react';
@@ -64,6 +65,10 @@ function ManageAdmin() {
 
   return (
     <div className="flex flex-col gap-8">
+      <PageMeta
+        title="운영진 관리"
+        description="조직 운영을 담당할 운영진 권한을 설정하고 관리할 수 있습니다."
+      />
       <PageHeader
         title="운영진 관리"
         description="운영진 목록을 관리하고 새로운 운영진을 초대합니다."

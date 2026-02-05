@@ -47,6 +47,7 @@ function Header({ navItems }: HeaderProps) {
           <span className="text-14 text-gray-700">안녕하세요, {user.name}님</span>
           <button
             type="button"
+            aria-label="로그아웃"
             onClick={logout}
             className="text-neutral-text-secondary hover:text-brand-500 hover:bg-neutral-surface-default flex h-8 w-8 items-center justify-center rounded-md transition-colors"
           >

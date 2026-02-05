@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
+import PageMeta from '@/components/PageMeta';
 import { useAuth } from '@/store/AuthContext';
 import UserIcon from '@/assets/icons/user.svg?react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
@@ -80,6 +81,10 @@ function CamperMyPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center py-20">
+      <PageMeta
+        title="마이페이지"
+        description="내 계정 정보와 소속 조직, 이벤트 참여 내역을 확인할 수 있습니다."
+      />
       <div className="mb-6 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-neutral-border-default bg-neutral-surface-default">
         {profile?.profileUrl ? (
           <img

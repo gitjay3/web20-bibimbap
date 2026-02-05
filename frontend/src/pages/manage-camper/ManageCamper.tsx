@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'sonner';
+import PageMeta from '@/components/PageMeta';
 import PageHeader from '@/components/PageHeader';
 import Button from '@/components/Button';
 import PlusIcon from '@/assets/icons/plus.svg?react';
@@ -104,6 +105,10 @@ function ManageCamper() {
 
   return (
     <div className="flex flex-col gap-8">
+      <PageMeta
+        title="캠퍼 관리"
+        description="조직에 속한 캠퍼 목록을 확인하고 참여 상태를 관리할 수 있습니다."
+      />
       <PageHeader
         title="캠퍼 관리"
         description="현재 선택된 과정의 캠퍼 목록을 관리합니다."

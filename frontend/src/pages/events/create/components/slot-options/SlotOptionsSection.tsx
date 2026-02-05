@@ -207,7 +207,7 @@ export default function SlotOptionsSection() {
           if (cell.type === ExcelJS.ValueType.Date && cell.value instanceof Date) {
             const date = cell.value;
             if (type === 'time') {
-              value = date.toTimeString().slice(0, 5);
+              value = date.toISOString().slice(11, 16);
             } else if (type === 'date') {
               [value] = date.toISOString().split('T');
             }

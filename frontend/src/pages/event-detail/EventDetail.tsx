@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router';
+import PageMeta from '@/components/PageMeta';
 import type { EventDetail as EventDetailType, EventSlot } from '@/types/event';
 import { getEvent } from '@/api/event';
 import cn from '@/utils/cn';
@@ -234,6 +235,12 @@ function EventDetail() {
 
   return (
     <div className="flex justify-center">
+      <PageMeta
+        title={event.title}
+        description={
+          event.description || '이벤트 일정과 상세 정보를 확인하고 예약 여부를 결정할 수 있습니다.'
+        }
+      />
       <div className={cn('w-200', !isAdmin && 'pb-24')}>
         <div className="flex flex-col gap-6">
           <EventDetailHeader

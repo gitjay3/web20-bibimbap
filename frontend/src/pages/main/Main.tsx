@@ -1,4 +1,5 @@
 import PageHeader from '@/components/PageHeader';
+import PageMeta from '@/components/PageMeta';
 import { useAuth } from '@/store/AuthContext';
 import Button from '@/components/Button';
 import PlusIcon from '@/assets/icons/plus.svg?react';
@@ -19,6 +20,7 @@ function Main() {
 
   return (
     <div className="flex flex-col gap-8">
+      <PageMeta title={title} description={description} />
       <PageHeader
         title={title}
         description={description}

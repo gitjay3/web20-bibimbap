@@ -60,6 +60,7 @@
     "globals": "^16.5.0",
     "jsdom": "^27.4.0",
     "lighthouse": "^13.0.1",
+    "puppeteer": "^24.1.1",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "rollup-plugin-visualizer": "^6.0.5",

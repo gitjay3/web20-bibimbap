@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import PageHeader from '@/components/PageHeader';
+import PageMeta from '@/components/PageMeta';
 import toISODateTime from '@/utils/date';
 import { createEvent, getEvent, updateEvent } from '@/api/event';
 import type { EventSlot } from '@/types/event';
@@ -134,6 +135,14 @@ export default function EventCreatePage() {
   return (
     // eslint-disable-next-line react/jsx-props-no-spreading
     <FormProvider {...methods}>
+      <PageMeta
+        title={isEditMode ? '이벤트 수정' : '새 이벤트 만들기'}
+        description={
+          isEditMode
+            ? '등록된 이벤트의 일정, 인원 제한, 설명 정보를 수정할 수 있습니다.'
+            : '새로운 멘토링 또는 특강 이벤트를 생성하고 예약 설정을 구성하세요.'
+        }
+      />
       <form
         onSubmit={methods.handleSubmit(onSubmit)}
         className="mx-auto flex max-w-300 flex-col gap-8"

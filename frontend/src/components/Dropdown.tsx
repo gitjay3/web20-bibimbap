@@ -31,6 +31,7 @@ function Dropdown<T extends string>({ options, value, setValue, className }: Dro
     <div ref={ref} className={cn('relative', className)}>
       <button
         type="button"
+        aria-label="드롭다운 메뉴"
         className="border-neutral-border-default flex h-10 w-full cursor-pointer items-center justify-between rounded-md border bg-white px-3 text-14"
         onClick={() => setIsOpen((prev) => !prev)}
       >

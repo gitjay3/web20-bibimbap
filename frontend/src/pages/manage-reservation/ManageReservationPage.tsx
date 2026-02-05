@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PageMeta from '@/components/PageMeta';
 import { toast } from 'sonner';
 import EventCategoryLabel from '@/components/EventCategoryLabel';
 import ApplicationUnitLabel from '@/components/ApplicationUnitLabel';
@@ -453,6 +454,10 @@ function ManageReservationPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <PageMeta
+        title="내 예약 현황"
+        description="신청한 이벤트와 다가오는 일정을 한눈에 확인하고 예약 상태를 관리하세요."
+      />
       <div className="flex flex-col gap-4">
         <h1 className="text-36 font-extrabold text-gray-900">예약 관리</h1>
         <div className="flex items-center justify-between">

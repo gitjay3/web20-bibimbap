@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState } from 'react';
+import PageMeta from '@/components/PageMeta';
 import PageHeader from '@/components/PageHeader';
 import Button from '@/components/Button';
 import PlusIcon from '@/assets/icons/plus.svg?react';
@@ -83,6 +84,10 @@ function ManageOrganization() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageMeta
+        title="조직 관리"
+        description="조직 정보를 수정하고 조직 구성 및 설정을 관리하세요."
+      />
       <PageHeader
         title="조직 관리"
         description="등록된 조직 목록을 확인하고 관리합니다."

@@ -1,5 +1,6 @@
 import { useReducer } from 'react';
 import Button from '@/components/Button';
+import PageMeta from '@/components/PageMeta';
 import PageHeader from '@/components/PageHeader';
 import PlusIcon from '@/assets/icons/plus.svg?react';
 import type { CreateTemplateDto, Template } from '@/types/template';
@@ -57,6 +58,10 @@ function ManageTemplate() {
 
   return (
     <div className="flex flex-col gap-8">
+      <PageMeta
+        title="템플릿 관리"
+        description="반복 사용되는 이벤트 템플릿을 생성하고 관리하여 운영 효율을 높이세요."
+      />
       <PageHeader
         title="템플릿 관리"
         description="이벤트 생성 시 입력받을 정보(필드)의 구성을 템플릿으로 관리합니다."
