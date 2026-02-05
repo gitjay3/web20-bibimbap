@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 import { QueueService } from './queue.service';
 import { RedisService } from '../redis/redis.service';
 import { MetricsService } from '../metrics/metrics.service';
@@ -8,6 +9,15 @@ import { QUEUE_CLEANUP_QUEUE } from './queue.constants';
 import { ForbiddenTrackException } from '../../common/exceptions/api.exception';
 
 const createRedisMock = () => {
+  const pipelineMock = {
+    zadd: jest.fn().mockReturnThis(),
+    hset: jest.fn().mockReturnThis(),
+    expire: jest.fn().mockReturnThis(),
+    zrem: jest.fn().mockReturnThis(),
+    del: jest.fn().mockReturnThis(),
+    exec: jest.fn().mockResolvedValue([]),
+  };
+
   const clientMock = {
     hget: jest.fn(),
     hset: jest.fn(),
@@ -17,20 +27,21 @@ const createRedisMock = () => {
     zcard: jest.fn(),
     zrem: jest.fn(),
     zrangebyscore: jest.fn(),
+    zremrangebyscore: jest.fn(),
     get: jest.fn(),
     set: jest.fn(),
     del: jest.fn(),
     ttl: jest.fn(),
-    pipeline: jest.fn().mockReturnValue({
-      zrem: jest.fn().mockReturnThis(),
-      del: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue([]),
-    }),
+    sadd: jest.fn(),
+    srem: jest.fn(),
+    smembers: jest.fn(),
+    pipeline: jest.fn().mockReturnValue(pipelineMock),
   };
 
   return {
     getClient: jest.fn().mockReturnValue(clientMock),
     clientMock,
+    pipelineMock,
   };
 };
 
@@ -53,16 +64,27 @@ const createPrismaMock = () => ({
   },
 });
 
+const createConfigMock = () => ({
+  get: jest.fn((key: string, defaultValue: number) => defaultValue),
+});
+
 describe('QueueService', () => {
   let service: QueueService;
   let redisMock: ReturnType<typeof createRedisMock>;
   let metricsMock: ReturnType<typeof createMetricsMock>;
   let prismaMock: ReturnType<typeof createPrismaMock>;
+  let pipelineMock: ReturnType<typeof createRedisMock>['pipelineMock'];
 
   beforeEach(async () => {
     redisMock = createRedisMock();
+    pipelineMock = redisMock.pipelineMock;
     metricsMock = createMetricsMock();
     prismaMock = createPrismaMock();
+
+    const { clientMock } = redisMock;
+    clientMock.set.mockResolvedValue('OK');
+    clientMock.zremrangebyscore.mockResolvedValue(0);
+    clientMock.zcard.mockResolvedValue(0);
 
     // 기본값: COMMON 트랙 이벤트 (모든 사용자 허용)
     prismaMock.event.findUnique.mockResolvedValue({
@@ -76,6 +98,7 @@ describe('QueueService', () => {
         { provide: RedisService, useValue: redisMock },
         { provide: MetricsService, useValue: metricsMock },
         { provide: PrismaService, useValue: prismaMock },
+        { provide: ConfigService, useValue: createConfigMock() },
         {
           provide: getQueueToken(QUEUE_CLEANUP_QUEUE),
           useValue: createCleanupQueueMock(),
@@ -100,12 +123,13 @@ describe('QueueService', () => {
       clientMock.hget.mockResolvedValue(null); // 기존 세션 없음
       clientMock.zrank.mockResolvedValue(5);
       clientMock.zcard.mockResolvedValue(10);
+      clientMock.zremrangebyscore.mockResolvedValue(0);
 
       const result = await service.enterQueue(eventId, userId, sessionId);
 
-      expect(result).toEqual({ position: 5, isNew: true });
-      expect(clientMock.zadd).toHaveBeenCalled();
-      expect(clientMock.hset).toHaveBeenCalledWith(
+      expect(result).toMatchObject({ isNew: true, totalWaiting: 10 });
+      expect(pipelineMock.zadd).toHaveBeenCalled();
+      expect(pipelineMock.hset).toHaveBeenCalledWith(
         expect.stringContaining('status'),
         'sessionId',
         sessionId,
@@ -117,10 +141,12 @@ describe('QueueService', () => {
       const { clientMock } = redisMock;
       clientMock.hget.mockResolvedValue('old-session'); // 기존 세션 있음
       clientMock.zrank.mockResolvedValue(3);
+      clientMock.zcard.mockResolvedValue(5);
+      clientMock.zremrangebyscore.mockResolvedValue(0);
 
       const result = await service.enterQueue(eventId, userId, sessionId);
 
-      expect(result).toEqual({ position: 3, isNew: false });
+      expect(result).toMatchObject({ isNew: false, totalWaiting: 5 });
       expect(metricsMock.recordQueueEntry).toHaveBeenCalledWith(eventId, false);
     });
 
@@ -129,6 +155,7 @@ describe('QueueService', () => {
       clientMock.hget.mockResolvedValue(null);
       clientMock.zrank.mockResolvedValue(0);
       clientMock.zcard.mockResolvedValue(1);
+      clientMock.zremrangebyscore.mockResolvedValue(0);
 
       // WEB 전용 이벤트
       prismaMock.event.findUnique.mockResolvedValue({
@@ -205,12 +232,15 @@ describe('QueueService', () => {
       expect(result.hasToken).toBe(false);
     });
 
-    it('순번이 100 이내면 토큰을 발급한다', async () => {
+    it('활성 토큰 수가 100 미만이면 토큰을 발급한다', async () => {
       const { clientMock } = redisMock;
       clientMock.get.mockResolvedValueOnce(null); // 기존 토큰 없음
-      clientMock.zrank.mockResolvedValue(50); // 100 미만
-      clientMock.zcard.mockResolvedValue(100);
-      clientMock.get.mockResolvedValueOnce(null); // issueToken 내부 체크
+      clientMock.zrank.mockResolvedValue(50);
+      clientMock.zcard
+        .mockResolvedValueOnce(100) // totalWaiting
+        .mockResolvedValueOnce(50) // getActiveTokenCount (활성 토큰 50개)
+        .mockResolvedValueOnce(99); // issueToken 후 totalWaiting
+      clientMock.zremrangebyscore.mockResolvedValue(0);
       clientMock.set.mockResolvedValue('OK');
 
       const result = await service.getQueueStatus(eventId, userId);
@@ -219,16 +249,54 @@ describe('QueueService', () => {
       expect(metricsMock.recordTokenIssued).toHaveBeenCalled();
     });
 
-    it('순번이 100 이상이면 대기열 정보를 반환한다', async () => {
+    it('활성 토큰 수가 100 이상이면 토큰을 발급하지 않는다', async () => {
       const { clientMock } = redisMock;
       clientMock.get.mockResolvedValue(null); // 토큰 없음
-      clientMock.zrank.mockResolvedValue(150); // 100 이상
-      clientMock.zcard.mockResolvedValue(200);
+      clientMock.zrank.mockResolvedValue(50); // 대기열 순번은 50
+      clientMock.zcard
+        .mockResolvedValueOnce(200) // totalWaiting
+        .mockResolvedValueOnce(100); // getActiveTokenCount (활성 토큰 100개 - 제한에 도달)
+      clientMock.zremrangebyscore.mockResolvedValue(0);
 
       const result = await service.getQueueStatus(eventId, userId);
 
-      expect(result.position).toBe(150);
+      expect(result.position).toBe(50);
       expect(result.hasToken).toBe(false);
+      expect(metricsMock.recordTokenIssued).not.toHaveBeenCalled();
+    });
+
+    it('순번이 높아도 활성 토큰 수가 적으면 토큰을 발급한다', async () => {
+      const { clientMock } = redisMock;
+      clientMock.get.mockResolvedValueOnce(null); // 기존 토큰 없음
+      clientMock.zrank.mockResolvedValue(150); // 순번은 150이지만
+      clientMock.zcard
+        .mockResolvedValueOnce(200) // totalWaiting
+        .mockResolvedValueOnce(50) // getActiveTokenCount (활성 토큰 50개만)
+        .mockResolvedValueOnce(199); // issueToken 후 totalWaiting
+      clientMock.zremrangebyscore.mockResolvedValue(0);
+      clientMock.set.mockResolvedValue('OK');
+
+      const result = await service.getQueueStatus(eventId, userId);
+
+      expect(result.hasToken).toBe(true);
+      expect(metricsMock.recordTokenIssued).toHaveBeenCalled();
+    });
+  });
+
+  describe('getActiveTokenCount', () => {
+    it('만료된 토큰을 정리하고 활성 토큰 수를 반환한다', async () => {
+      const { clientMock } = redisMock;
+      clientMock.zremrangebyscore.mockResolvedValue(5); // 5개 만료된 토큰 제거
+      clientMock.zcard.mockResolvedValue(95); // 남은 활성 토큰 수
+
+      const count = await service.getActiveTokenCount(1);
+
+      expect(count).toBe(95);
+      expect(clientMock.zremrangebyscore).toHaveBeenCalledWith(
+        expect.stringContaining('active_tokens'),
+        0,
+        expect.any(Number),
+      );
     });
   });
 
@@ -236,7 +304,7 @@ describe('QueueService', () => {
     const eventId = 1;
     const userId = 'user-123';
 
-    it('새 토큰을 발급하고 대기열에서 제거한다', async () => {
+    it('새 토큰을 발급하고 대기열에서 제거하고 활성 토큰에 추가한다', async () => {
       const { clientMock } = redisMock;
       clientMock.get.mockResolvedValue(null);
       clientMock.set.mockResolvedValue('OK');
@@ -252,7 +320,13 @@ describe('QueueService', () => {
         300,
         'NX',
       );
-      expect(clientMock.zrem).toHaveBeenCalled();
+      expect(pipelineMock.zrem).toHaveBeenCalled();
+      // 활성 토큰 목록에 추가 확인
+      expect(pipelineMock.zadd).toHaveBeenCalledWith(
+        expect.stringContaining('active_tokens'),
+        expect.any(Number),
+        userId,
+      );
       expect(metricsMock.recordTokenIssued).toHaveBeenCalledWith(eventId);
     });
 
@@ -290,13 +364,17 @@ describe('QueueService', () => {
   });
 
   describe('invalidateToken', () => {
-    it('토큰을 삭제한다', async () => {
+    it('토큰을 삭제하고 활성 토큰 목록에서 제거한다', async () => {
       const { clientMock } = redisMock;
 
       await service.invalidateToken(1, 'user-123');
 
       expect(clientMock.del).toHaveBeenCalledWith(
         expect.stringContaining('token'),
+      );
+      expect(clientMock.zrem).toHaveBeenCalledWith(
+        expect.stringContaining('active_tokens'),
+        'user-123',
       );
     });
   });

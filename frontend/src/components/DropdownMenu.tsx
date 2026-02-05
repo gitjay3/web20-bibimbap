@@ -35,6 +35,7 @@ export default function DropdownMenu({ items }: DropdownMenuProps) {
     <div ref={menuRef} className="relative">
       <button
         type="button"
+        aria-label="이벤트 관리"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();

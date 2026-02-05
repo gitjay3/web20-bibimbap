@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import Button from '@/components/Button';
 import Dropdown from '@/components/Dropdown';
+import PageMeta from '@/components/PageMeta';
 import { getMyOrganizations, type Organization } from '@/api/organization';
 import { useAuth } from '@/store/AuthContext';
 
@@ -41,7 +42,11 @@ function SelectOrgPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
+      <PageMeta
+        title="조직 선택"
+        description={isAdmin  ? "조직을 선택하여 이벤트 및 조직 관리 기능을 이용할 수 있습니다." : "참여 중인 조직을 선택하여 이벤트 예약 기능을 이용할 수 있습니다."}
+      />
       <div className="w-full max-w-md space-y-8 text-center">
         <div className="space-y-4">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -72,7 +77,7 @@ function SelectOrgPage() {
           <p className="text-sm text-gray-400">© 2026 bookstcamp. All rights reserved.</p>
         </footer>
       </div>
-    </div>
+    </main>
   );
 }
 

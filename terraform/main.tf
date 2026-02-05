@@ -129,6 +129,71 @@ resource "ncloud_public_ip" "monitoring" {
 }
 
 # ===================
+# Staging Network Interfaces
+# ===================
+
+resource "ncloud_network_interface" "staging_app" {
+  name                  = "bookstcamp-staging-app-eth0"
+  subnet_no             = ncloud_subnet.public.id
+  access_control_groups = [ncloud_access_control_group.default.id]
+
+  lifecycle {
+    ignore_changes = [name]
+  }
+}
+
+resource "ncloud_network_interface" "staging_db" {
+  name                  = "bookstcamp-staging-db-eth0"
+  subnet_no             = ncloud_subnet.public.id
+  access_control_groups = [ncloud_access_control_group.default.id]
+
+  lifecycle {
+    ignore_changes = [name]
+  }
+}
+
+# ===================
+# Staging Servers
+# ===================
+
+# Staging App Server (커스텀 이미지 사용, 콘솔에서 생성 후 import)
+resource "ncloud_server" "staging_app" {
+  subnet_no              = ncloud_subnet.public.id
+  name                   = "bookstcamp-staging-server"
+  member_server_image_no = "127455988"  # bookstcamp-staging-server 이미지
+  server_product_code    = "SVR.VSVR.AMD.STAND.C002.M008.G003"
+  login_key_name         = "ncloud-bookstcamp-authkey"
+
+  network_interface {
+    network_interface_no = ncloud_network_interface.staging_app.id
+    order                = 0
+  }
+
+  lifecycle {
+    ignore_changes = [member_server_image_no, server_image_product_code]
+  }
+}
+
+# Staging DB Server
+resource "ncloud_server" "staging_db" {
+  subnet_no                 = ncloud_subnet.public.id
+  name                      = "bookstcamp-staging-db"
+  server_image_product_code = "SW.VSVR.OS.LNX64.UBNTU.SVR24.G003"
+  server_product_code       = "SVR.VSVR.AMD.STAND.C002.M008.G003"
+  login_key_name            = "ncloud-bookstcamp-authkey"
+
+  network_interface {
+    network_interface_no = ncloud_network_interface.staging_db.id
+    order                = 0
+  }
+}
+
+# Public IP for Staging App Server
+resource "ncloud_public_ip" "staging_app" {
+  server_instance_no = ncloud_server.staging_app.id
+}
+
+# ===================
 # ACG Inbound/Outbound 규칙
 # ===================
 resource "ncloud_access_control_group_rule" "default_rules" {

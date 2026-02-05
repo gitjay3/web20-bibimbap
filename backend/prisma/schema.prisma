@@ -60,6 +60,7 @@ model Event {
   notifications EventNotification[]
 
   @@index([organizationId])
+  @@index([organizationId, track])
 }
 
 model EventSlot {
@@ -88,6 +89,9 @@ model Reservation {
   slot EventSlot @relation(fields: [slotId], references: [id])
 
   @@index([slotId, groupNumber])
+  @@index([slotId, status])
+  @@index([userId, status])
+  @@index([userId, slotId, status])
 }
 
 model User {
@@ -160,6 +164,7 @@ model CamperOrganization {
 
   @@unique([userId, organizationId])
   @@unique([organizationId, camperId]) // 같은 조직 내에서 camperId 중복 방지
+  @@index([organizationId, groupNumber])
 }
 
 enum PreRegStatus {
@@ -188,6 +193,7 @@ model CamperPreRegistration {
 
   @@unique([organizationId, camperId])
   @@index([username])
+  @@index([organizationId, status])
 }
 
 model EventNotification {

@@ -28,13 +28,8 @@ function OrgLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  // 사용자가 해당 조직에 속해 있는지 확인 (운영진은 모든 조직에 접근 가능)
-  const isMember =
-    user.role === 'ADMIN' ||
-    user.organizations.some((orgEntry) => orgEntry.organization.id === orgId);
-
-  if (!orgId || !isMember || !organization) {
-    // 권한이 없거나 orgId가 없거나 조직 정보가 없으면 조직 선택 페이지로 이동
+  if (!orgId || !organization) {
+    // 조직 정보가 없으면 조직 선택 페이지로 이동
     return <Navigate to="/select-org" replace />;
   }
 

@@ -2,6 +2,7 @@ export interface ReservationJobData {
   reservationId: number;
   userId: string;
   slotId: number;
+  eventId: number;
   maxCapacity: number; // Redis 복구 시 사용
   stockDeducted: boolean;
   groupNumber: number | null;

@@ -4,9 +4,12 @@ import api from './api';
 export const enterQueue = async (eventId: number) => {
   const response = await api.post(`/queue/${eventId}/enter`);
   return response.data.data as {
-    position: number;
+    position: number | null;
     isNew: boolean;
     sessionId: string;
+    totalWaiting: number;
+    hasToken: boolean;
+    tokenExpiresAt?: number;
   };
 };
 

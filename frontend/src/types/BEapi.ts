@@ -113,12 +113,14 @@ export interface ReservationApiResponse {
   };
 }
 
-export interface ApplyReservationDto {
-  slotId: number;
-}
-
 export interface ApiErrorResponse {
   message: string;
   statusCode: number;
   error?: string;
+}
+
+export interface EventPollingStatusResponse {
+  slotAvailability: SlotAvailabilityApiResponse;
+  myReservation: ReservationApiResponse | null;
+  timestamp: string;
 }

@@ -2,19 +2,31 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { EventSlotsService } from './event-slots.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { createPrismaMock } from '../test/mocks/prisma.mock';
+
+const createRedisMock = () => ({
+  initStock: jest.fn().mockResolvedValue(undefined),
+  getReserversCache: jest.fn().mockResolvedValue(null),
+  setReserversCache: jest.fn().mockResolvedValue(undefined),
+  invalidateReserversCache: jest.fn().mockResolvedValue(undefined),
+  getStock: jest.fn().mockResolvedValue(5),
+});
 
 describe('EventSlotsService', () => {
   let service: EventSlotsService;
   let prismaMock: ReturnType<typeof createPrismaMock>;
+  let redisMock: ReturnType<typeof createRedisMock>;
 
   beforeEach(async () => {
     prismaMock = createPrismaMock();
+    redisMock = createRedisMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventSlotsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: RedisService, useValue: redisMock },
       ],
     }).compile();
 
@@ -94,14 +106,20 @@ describe('EventSlotsService', () => {
   });
 
   describe('getAvailabilityByEvent', () => {
-    it('이벤트의 슬롯 가용성을 반환한다', async () => {
-      const mockSlots = [
-        { id: 1, currentCount: 5, maxCapacity: 10, reservations: [] },
-        { id: 2, currentCount: 10, maxCapacity: 10, reservations: [] },
-      ];
+    it('캐시 MISS 시 DB 조회 후 Redis stock으로 가용성을 반환한다', async () => {
+      const mockEvent = {
+        applicationUnit: 'INDIVIDUAL',
+        organizationId: 1,
+        slots: [
+          { id: 1, maxCapacity: 10, reservations: [] },
+          { id: 2, maxCapacity: 10, reservations: [] },
+        ],
+      };
 
-      prismaMock.event.findUnique.mockResolvedValue({ id: 1 });
-      prismaMock.eventSlot.findMany.mockResolvedValue(mockSlots);
+      prismaMock.event.findUnique.mockResolvedValue(mockEvent);
+      // slot 1: stock=5 → currentCount=5, remainingSeats=5
+      // slot 2: stock=0 → currentCount=10, remainingSeats=0
+      redisMock.getStock.mockResolvedValueOnce(5).mockResolvedValueOnce(0);
 
       const result = await service.getAvailabilityByEvent(1);
 
@@ -122,12 +140,46 @@ describe('EventSlotsService', () => {
         },
       ]);
       expect(result.timestamp).toBeDefined();
+      expect(redisMock.setReserversCache).toHaveBeenCalledWith(
+        1,
+        expect.any(String),
+      );
+    });
+
+    it('캐시 HIT 시 DB 조회 없이 Redis stock으로 가용성을 반환한다', async () => {
+      const cacheData = {
+        applicationUnit: 'INDIVIDUAL',
+        slots: [{ slotId: 1, maxCapacity: 10, reservations: [] }],
+      };
+      redisMock.getReserversCache.mockResolvedValue(JSON.stringify(cacheData));
+      redisMock.getStock.mockResolvedValueOnce(3);
+
+      const result = await service.getAvailabilityByEvent(1);
+
+      expect(result.slots[0].currentCount).toBe(7);
+      expect(result.slots[0].remainingSeats).toBe(3);
+      expect(prismaMock.event.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('이벤트가 없으면 NotFoundException을 던진다', async () => {
+      prismaMock.event.findUnique.mockResolvedValue(null);
+
+      await expect(service.getAvailabilityByEvent(999)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getAvailabilityByEvent(999)).rejects.toThrow(
+        '이벤트를 찾을 수 없습니다',
+      );
     });
 
     it('슬롯이 없으면 NotFoundException을 던진다', async () => {
-      // 이벤트는 존재하지만 슬롯이 없는 경우
-      prismaMock.event.findUnique.mockResolvedValue({ id: 999 });
-      prismaMock.eventSlot.findMany.mockResolvedValue([]);
+      const mockEvent = {
+        applicationUnit: 'INDIVIDUAL',
+        organizationId: 1,
+        slots: [],
+      };
+
+      prismaMock.event.findUnique.mockResolvedValue(mockEvent);
 
       await expect(service.getAvailabilityByEvent(999)).rejects.toThrow(
         NotFoundException,

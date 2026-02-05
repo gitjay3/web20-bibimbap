@@ -1,58 +1,29 @@
-import { useState } from 'react';
 import PlusIcon from '@/assets/icons/plus.svg?react';
 import Button from '@/components/Button';
-import type { Camper, Track } from '@/types/camper';
+import type { Camper } from '@/types/camper';
 import CamperFormCells from './CamperFormCells';
+import { useCamperAdd } from './hooks';
 
 interface CamperAddRowProps {
   onAdd: (camper: Omit<Camper, 'id' | 'status'>) => void;
 }
 
 function CamperAddRow({ onAdd }: CamperAddRowProps) {
-  const [newCamperId, setNewCamperId] = useState('');
-  const [newName, setNewName] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [newTrack, setNewTrack] = useState<Track>('WEB');
-  const [newGroupNumber, setNewGroupNumber] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const isInvalid = !newCamperId || !newName || !newUsername || isSubmitting;
-
-  const handleAdd = async () => {
-    if (isInvalid) return;
-
-    setIsSubmitting(true);
-    try {
-      await onAdd({
-        camperId: newCamperId,
-        name: newName,
-        username: newUsername,
-        track: newTrack,
-        groupNumber: newGroupNumber ? parseInt(newGroupNumber, 10) : null,
-      });
-      setNewCamperId('');
-      setNewName('');
-      setNewUsername('');
-      setNewTrack('WEB');
-      setNewGroupNumber('');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const { isInvalid, formData, setFormData, handleAdd } = useCamperAdd({ onAdd });
 
   return (
     <tr className="border-neutral-border-default h-15 border-t">
       <CamperFormCells
-        camperId={newCamperId}
-        setCamperId={setNewCamperId}
-        name={newName}
-        setName={setNewName}
-        username={newUsername}
-        setUsername={setNewUsername}
-        track={newTrack}
-        setTrack={setNewTrack}
-        groupNumber={newGroupNumber}
-        setGroupNumber={setNewGroupNumber}
+        camperId={formData.camperId}
+        setCamperId={setFormData.setCamperId}
+        name={formData.name}
+        setName={setFormData.setName}
+        username={formData.username}
+        setUsername={setFormData.setUsername}
+        track={formData.track}
+        setTrack={setFormData.setTrack}
+        groupNumber={formData.groupNumber}
+        setGroupNumber={setFormData.setGroupNumber}
       />
       <td className="px-6" aria-hidden="true" />
       <td className="px-6 text-right">

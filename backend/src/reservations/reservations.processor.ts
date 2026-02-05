@@ -39,6 +39,7 @@ export class ReservationsProcessor extends WorkerHost {
       reservationId,
       userId,
       slotId,
+      eventId,
       maxCapacity,
       stockDeducted,
       groupNumber,
@@ -52,6 +53,9 @@ export class ReservationsProcessor extends WorkerHost {
     try {
       await this.processReservation(reservationId, userId, slotId, groupNumber);
       this.logger.log(`예약 확정: userId=${userId}, slotId=${slotId}`);
+
+      // 예약자 명단 캐시 무효화
+      await this.redisService.invalidateReserversCache(eventId);
 
       // 성공 메트릭
       this.metricsService.recordQueueJobComplete(

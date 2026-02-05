@@ -73,7 +73,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   backend:
-    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:production-latest
+    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-backend:${IMAGE_TAG:-production-latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -92,6 +92,7 @@ services:
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_TOKEN_ENCRYPTION_KEY=${SLACK_TOKEN_ENCRYPTION_KEY}
     # ports 대신 expose 사용 - 호스트 포트 충돌 방지
     expose:
       - "3001"
@@ -120,7 +121,7 @@ services:
         max-file: "${LOG_MAX_FILE}"
 
   frontend:
-    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-frontend:production-latest
+    image: ${NCP_REGISTRY_URL:+${NCP_REGISTRY_URL}/}bookstcamp-frontend:${IMAGE_TAG:-production-latest}
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -218,6 +219,7 @@ services:
     restart: unless-stopped
     profiles:
       - production
+      - staging
     command:
       - "--path.rootfs=/host"
     volumes:

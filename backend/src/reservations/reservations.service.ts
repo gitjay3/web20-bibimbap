@@ -104,29 +104,40 @@ export class ReservationsService {
       throw new SlotFullException();
     }
 
-    // PENDING 레코드 먼저 생성
-    const reservation = await this.prisma.reservation.create({
-      data: {
+    // Redis 차감 이후 실패 시 재고를 복구하기 위한 보상 트랜잭션
+    try {
+      const reservation = await this.prisma.reservation.create({
+        data: {
+          userId,
+          slotId: dto.slotId,
+          status: 'PENDING',
+          groupNumber:
+            slot.event.applicationUnit === 'TEAM'
+              ? eligibility.groupNumber
+              : null,
+        },
+      });
+
+      await this.reservationQueue.add(PROCESS_RESERVATION_JOB, {
+        reservationId: reservation.id,
         userId,
         slotId: dto.slotId,
-        status: 'PENDING',
+        eventId: slot.event.id,
+        maxCapacity: slot.maxCapacity,
+        stockDeducted: true,
         groupNumber:
           slot.event.applicationUnit === 'TEAM'
             ? eligibility.groupNumber
             : null,
-      },
-    });
-
-    // Queue에 Job 추가
-    await this.reservationQueue.add(PROCESS_RESERVATION_JOB, {
-      reservationId: reservation.id, // 추가
-      userId,
-      slotId: dto.slotId,
-      maxCapacity: slot.maxCapacity,
-      stockDeducted: true,
-      groupNumber:
-        slot.event.applicationUnit === 'TEAM' ? eligibility.groupNumber : null,
-    });
+      });
+    } catch (error) {
+      await this.redisService.incrementStock(
+        dto.slotId,
+        slot.maxCapacity,
+        'failure_recovery',
+      );
+      throw error;
+    }
 
     // 메트릭 기록
     this.metricsService.recordReservation(dto.slotId, 'pending');
@@ -136,11 +147,12 @@ export class ReservationsService {
       (Date.now() - startTime) / 1000,
     );
 
-    // TODO: await this.queueService.invalidateToken(dto.eventId, userId); 지금은 수강신청같은 방식. 1인 1예약이라면 토큰 무효화
+    // 예약 성공 시 대기열 토큰 무효화 (토큰 재사용 방지)
+    await this.queueService.invalidateToken(slot.event.id, userId);
 
     return {
       status: 'PENDING',
-      message: '예약이 접수되었습니다. 잠시 후 확정됩니다.', // 예약 대기 시간 확인하고 이 메세지 수정 혹은 생략 가능
+      message: '예약이 접수되었습니다. 잠시 후 확정됩니다.',
     };
   }
 
@@ -377,6 +389,7 @@ export class ReservationsService {
         return {
           reservation: updatedReservation,
           slotId: reservation.slotId,
+          eventId: reservation.slot.eventId,
           maxCapacity: reservation.slot.maxCapacity,
         };
       });
@@ -387,6 +400,9 @@ export class ReservationsService {
         result.maxCapacity,
         'cancellation',
       );
+
+      // 예약자 명단 캐시 무효화
+      await this.redisService.invalidateReserversCache(result.eventId);
 
       // 메트릭 기록
       this.metricsService.recordReservation(result.slotId, 'cancelled');

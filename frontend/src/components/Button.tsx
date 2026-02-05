@@ -22,7 +22,7 @@ function Button({
     <button
       type={htmlType === 'submit' ? 'submit' : 'button'}
       className={cn(
-        'flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md',
+        'flex h-10 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-14 sm:text-16',
         type === 'primary' ? 'w-full' : 'px-3',
         variant === 'fill'
           ? 'bg-brand-surface-default disabled:bg-brand-surface-disabled text-white'

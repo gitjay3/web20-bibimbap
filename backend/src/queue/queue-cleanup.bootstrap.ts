@@ -1,11 +1,12 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
 import {
   QUEUE_CLEANUP_QUEUE,
   GLOBAL_CLEANUP_JOB,
-  GLOBAL_CLEANUP_EVERY_MS,
   GLOBAL_CLEANUP_JOB_ID,
+  DEFAULT_CLEANUP_INTERVAL_MS,
 } from './queue.constants';
 
 @Injectable()
@@ -15,15 +16,20 @@ export class QueueCleanupBootstrapService implements OnModuleInit {
   constructor(
     @InjectQueue(QUEUE_CLEANUP_QUEUE)
     private readonly cleanupQueue: Queue,
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit() {
+    const intervalMs = this.configService.get<number>(
+      'queue.cleanupIntervalMs',
+      DEFAULT_CLEANUP_INTERVAL_MS,
+    );
     try {
       await this.cleanupQueue.add(
         GLOBAL_CLEANUP_JOB,
         {},
         {
-          repeat: { every: GLOBAL_CLEANUP_EVERY_MS },
+          repeat: { every: intervalMs },
           jobId: GLOBAL_CLEANUP_JOB_ID,
           removeOnComplete: true,
           removeOnFail: true,

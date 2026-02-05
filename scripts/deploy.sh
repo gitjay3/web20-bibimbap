@@ -12,10 +12,11 @@ usage() {
 Usage: $0 <environment>
 
 Arguments:
-    environment    배포 환경 (prod)
+    environment    배포 환경 (prod, staging)
 
 Example:
     $0 prod
+    $0 staging
 
 Environment Variables Required:
     NCP_REGISTRY_URL        - NCP Container Registry URL (필수)
@@ -32,8 +33,8 @@ fi
 
 ENVIRONMENT=$1
 
-if [[ "$ENVIRONMENT" != "prod" ]]; then
-    log_error "Invalid environment: $ENVIRONMENT (only 'prod' is supported)"
+if [[ "$ENVIRONMENT" != "prod" && "$ENVIRONMENT" != "staging" ]]; then
+    log_error "Invalid environment: $ENVIRONMENT (only 'prod' or 'staging' is supported)"
     usage
 fi
 
@@ -130,7 +131,10 @@ if [ -f "$PROJECT_ROOT/.deploy.env" ]; then
     set -a
     source "$PROJECT_ROOT/.deploy.env"
     set +a
-    log_info "DEBUG: DOTENV_PRIVATE_KEY_PRODUCTION 설정됨: $([ -n "$DOTENV_PRIVATE_KEY_PRODUCTION" ] && echo "yes (${#DOTENV_PRIVATE_KEY_PRODUCTION} chars)" || echo "no")"
+    # 환경에 맞는 키 확인
+    key_name="DOTENV_PRIVATE_KEY_${ENVIRONMENT^^}"
+    key_value="${!key_name:-}"
+    log_info "DEBUG: $key_name 설정됨: $([ -n "$key_value" ] && echo "yes (${#key_value} chars)" || echo "no")"
 else
     log_warn "DEBUG: .deploy.env 파일 없음!"
 fi

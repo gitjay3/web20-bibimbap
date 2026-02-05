@@ -10,10 +10,20 @@ import { QueueModule } from '../queue/queue.module';
   imports: [
     BullModule.registerQueue({
       name: RESERVATION_QUEUE,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
     }),
     QueueModule,
   ],
   controllers: [ReservationsController],
   providers: [ReservationsService, ReservationsProcessor],
+  exports: [ReservationsService],
 })
 export class ReservationsModule {}

@@ -7,16 +7,7 @@ import { JwtUser } from '../types/jwt-user.type';
 
 const createMockUser = (role: Role = 'USER'): JwtUser => ({
   id: 'user-123',
-  name: '테스트 유저',
   role,
-  organizations: [
-    {
-      organization: {
-        id: 'org-1',
-        name: '테스트 조직',
-      },
-    },
-  ],
 });
 
 const createMockExecutionContext = (

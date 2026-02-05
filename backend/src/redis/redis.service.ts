@@ -188,4 +188,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const result = await this.client.get(key);
     return result ? parseInt(result, 10) : 0;
   }
+
+  // 이벤트 예약자 명단 캐시 키
+  private getReserversKey(eventId: number): string {
+    return `event:${eventId}:reservers`;
+  }
+
+  // 예약자 명단 캐시 조회
+  async getReserversCache(eventId: number): Promise<string | null> {
+    return this.client.get(this.getReserversKey(eventId));
+  }
+
+  // 예약자 명단 캐시 저장 (TTL 60초)
+  async setReserversCache(
+    eventId: number,
+    data: string,
+    ttlSeconds = 60,
+  ): Promise<void> {
+    await this.client.set(
+      this.getReserversKey(eventId),
+      data,
+      'EX',
+      ttlSeconds,
+    );
+  }
+
+  // 예약자 명단 캐시 무효화
+  async invalidateReserversCache(eventId: number): Promise<void> {
+    await this.client.del(this.getReserversKey(eventId));
+  }
 }

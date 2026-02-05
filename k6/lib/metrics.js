@@ -60,6 +60,10 @@ export const apdexFrustrated = new Counter('apdex_frustrated'); // > 4T
 export const queueEnterSuccess = new Counter('queue_enter_success');
 export const queueEnterFailed = new Counter('queue_enter_failed');
 
+// 대기열 진입/상태 조회 성공률
+export const queueEnterSuccessRate = new Rate('queue_enter_success_rate');
+export const queueStatusSuccessRate = new Rate('queue_status_success_rate');
+
 // 대기열 토큰 획득
 export const queueTokenAcquired = new Counter('queue_token_acquired');
 export const queueTokenAcquireRate = new Rate('queue_token_acquire_rate');
@@ -152,6 +156,9 @@ export function recordQueueEnterMetrics(response, duration) {
   const isSuccess = response.status === 200 || response.status === 201;
   const isServerError = response.status >= 500;
 
+  // 성공률 기록 (4xx 포함)
+  queueEnterSuccessRate.add(isSuccess);
+
   // 에러율 기록
   errorRate.add(isServerError);
   if (isServerError) {
@@ -180,6 +187,9 @@ export function recordQueueStatusMetrics(response, duration) {
   // 응답 분석
   const isSuccess = response.status === 200;
   const isServerError = response.status >= 500;
+
+  // 성공률 기록 (4xx 포함)
+  queueStatusSuccessRate.add(isSuccess);
 
   // 에러율 기록
   errorRate.add(isServerError);

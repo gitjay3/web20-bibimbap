@@ -44,7 +44,7 @@ describe('ManageReservationPage', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: '나의 예약 현황' }),
+          screen.getByRole('button', { name: '예약 현황' }),
         ).toBeInTheDocument();
       });
       expect(
@@ -52,15 +52,15 @@ describe('ManageReservationPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('나의 예약 현황 버튼 클릭 시 그리드 뷰로 전환된다', async () => {
+    it('예약 현황 버튼 클릭 시 그리드 뷰로 전환된다', async () => {
       const user = userEvent.setup();
       renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '나의 예약 현황' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '예약 현황' })).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole('button', { name: '나의 예약 현황' }));
+      await user.click(screen.getByRole('button', { name: '예약 현황' }));
 
       expect(
         screen.getByRole('heading', { name: '나의 예약 현황' }),
@@ -72,11 +72,11 @@ describe('ManageReservationPage', () => {
       renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '나의 예약 현황' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '예약 현황' })).toBeInTheDocument();
       });
 
       // 먼저 그리드 뷰로 전환
-      await user.click(screen.getByRole('button', { name: '나의 예약 현황' }));
+      await user.click(screen.getByRole('button', { name: '예약 현황' }));
 
       // 다시 티켓 뷰로 전환
       await user.click(screen.getByRole('button', { name: '다가오는 일정' }));
@@ -101,10 +101,10 @@ describe('ManageReservationPage', () => {
       renderWithRouter(<ManageReservationPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: '나의 예약 현황' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '예약 현황' })).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole('button', { name: '나의 예약 현황' }));
+      await user.click(screen.getByRole('button', { name: '예약 현황' }));
 
       expect(
         screen.getByRole('heading', { name: '나의 예약 현황' }),

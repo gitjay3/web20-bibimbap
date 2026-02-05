@@ -1,18 +1,27 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import * as eventApi from '@/api/event';
 import * as eventSlotApi from '@/api/eventSlot';
 import * as reservationApi from '@/api/reservation';
-import * as queueApi from '@/api/queue';
 import { renderAuthenticated, renderAsAdmin, userEvent, customRender } from '@/test/utils';
 import type { EventDetail as EventDetailType, EventSlot, SlotSchema } from '@/types/event';
+import useQueue from '@/hooks/useQueue';
 import EventDetail from './EventDetail';
 
 // API 모킹
 vi.mock('@/api/event');
 vi.mock('@/api/eventSlot');
 vi.mock('@/api/reservation');
-vi.mock('@/api/queue');
+vi.mock('@/hooks/useQueue');
+
+vi.mock('@/config/polling.config', () => ({
+  default: {
+    polling: {
+      queueStatus: 60_000,
+      eventDetail: 60_000,
+    },
+  },
+}));
 
 // react-router 모킹
 vi.mock('react-router', async () => {
@@ -62,12 +71,10 @@ describe('EventDetail', () => {
   const mockGetEvent = vi.mocked(eventApi.getEvent);
   const mockGetSlotAvailability = vi.mocked(eventSlotApi.getSlotAvailability);
   const mockGetMyReservationForEvent = vi.mocked(reservationApi.getMyReservationForEvent);
-  const mockEnterQueue = vi.mocked(queueApi.enterQueue);
-  const mockGetQueueStatus = vi.mocked(queueApi.getQueueStatus);
+  const mockUseQueue = vi.mocked(useQueue);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     // 기본 모킹 설정
     mockGetEvent.mockResolvedValue(createMockEventDetail());
@@ -76,22 +83,19 @@ describe('EventDetail', () => {
       timestamp: '2026-01-25T10:00:00Z',
     });
     mockGetMyReservationForEvent.mockResolvedValue(null);
-    mockEnterQueue.mockResolvedValue({
-      position: 0,
-      isNew: true,
-      sessionId: 'session-1',
-    });
-    mockGetQueueStatus.mockResolvedValue({
+    mockUseQueue.mockReturnValue({
       position: null,
       totalWaiting: 0,
       hasToken: true,
       inQueue: true,
-      tokenExpiresAt: Date.now() + 300000,
+      tokenExpiresAt: null,
+      isLoading: false,
+      error: null,
+      isNew: null,
+      enter: vi.fn(),
+      refetch: vi.fn(),
+      sessionId: null,
     });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   describe('로딩 상태', () => {
@@ -145,8 +149,9 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('내용')).toBeInTheDocument();
-        expect(screen.getByText('시작 시간')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('내용').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('시작 시간').length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -154,8 +159,9 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('React 멘토링')).toBeInTheDocument();
-        expect(screen.getByText('14:00')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('React 멘토링').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('14:00').length).toBeGreaterThanOrEqual(1);
       });
     });
   });
@@ -180,12 +186,18 @@ describe('EventDetail', () => {
     });
 
     it('토큰이 있을 때 예약 가능 메시지를 표시한다', async () => {
-      mockGetQueueStatus.mockResolvedValue({
+      mockUseQueue.mockReturnValue({
         position: null,
         totalWaiting: 0,
         hasToken: true,
         inQueue: true,
-        tokenExpiresAt: Date.now() + 300000,
+        tokenExpiresAt: null,
+        isLoading: false,
+        error: null,
+        isNew: null,
+        enter: vi.fn(),
+        refetch: vi.fn(),
+        sessionId: null,
       });
 
       renderAuthenticated(<EventDetail />);
@@ -196,12 +208,18 @@ describe('EventDetail', () => {
     });
 
     it('대기 중일 때 대기 순번을 표시한다', async () => {
-      mockGetQueueStatus.mockResolvedValue({
+      mockUseQueue.mockReturnValue({
         position: 4,
         totalWaiting: 10,
         hasToken: false,
         inQueue: true,
         tokenExpiresAt: null,
+        isLoading: false,
+        error: null,
+        isNew: true,
+        enter: vi.fn(),
+        refetch: vi.fn(),
+        sessionId: null,
       });
 
       renderAuthenticated(<EventDetail />);
@@ -211,6 +229,32 @@ describe('EventDetail', () => {
         expect(screen.getByText('5번')).toBeInTheDocument(); // position + 1
         expect(screen.getByText('전체 대기: 10명')).toBeInTheDocument();
       });
+    });
+
+    it('429(요청 제한)일 때 안내 문구를 표시한다', async () => {
+      mockUseQueue.mockReturnValue({
+        position: null,
+        totalWaiting: 0,
+        hasToken: false,
+        inQueue: false,
+        tokenExpiresAt: null,
+        isLoading: false,
+        error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+        isNew: null,
+        enter: vi.fn(),
+        refetch: vi.fn(),
+        sessionId: null,
+      });
+
+      renderAuthenticated(<EventDetail />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /요청이 너무 많습니다/ })).toBeInTheDocument();
+      });
+
+      expect(
+        screen.queryByRole('button', { name: '예약 기간이 아닙니다' }),
+      ).not.toBeInTheDocument();
     });
 
     it('비로그인 상태일 때 로그인 필요 메시지를 표시한다', async () => {
@@ -294,20 +338,21 @@ describe('EventDetail', () => {
 
   describe('예약 상호작용', () => {
     it('슬롯을 클릭하여 선택할 수 있다', async () => {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const user = userEvent.setup();
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('React 멘토링')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('React 멘토링').length).toBeGreaterThanOrEqual(1);
       });
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: '예약하기' })).toBeInTheDocument();
       });
 
-      // 슬롯 선택 버튼 클릭
-      const slotButton = screen.getByRole('button', { name: '슬롯 선택' });
-      await user.click(slotButton);
+      // 슬롯 선택 버튼 클릭 (첫 번째 버튼 선택)
+      const slotButtons = screen.getAllByRole('button', { name: '슬롯 선택' });
+      await user.click(slotButtons[0]);
 
       // 슬롯이 선택되면 예약하기 버튼이 활성화됨
       await waitFor(() => {
@@ -348,9 +393,10 @@ describe('EventDetail', () => {
       renderAuthenticated(<EventDetail />);
 
       await waitFor(() => {
-        expect(screen.getByText('React 멘토링')).toBeInTheDocument();
-        expect(screen.getByText('Vue 멘토링')).toBeInTheDocument();
-        expect(screen.getByText('Angular 멘토링')).toBeInTheDocument();
+        // 모바일/데스크톱 동시 렌더링으로 여러 요소가 있을 수 있음
+        expect(screen.getAllByText('React 멘토링').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Vue 멘토링').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('Angular 멘토링').length).toBeGreaterThanOrEqual(1);
       });
     });
   });

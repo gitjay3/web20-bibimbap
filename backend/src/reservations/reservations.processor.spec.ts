@@ -22,6 +22,7 @@ const createRedisMock = () => ({
   decrementStock: jest.fn().mockResolvedValue(true),
   initStock: jest.fn().mockResolvedValue(undefined),
   getStock: jest.fn().mockResolvedValue(10),
+  invalidateReserversCache: jest.fn().mockResolvedValue(undefined),
 });
 
 const createMetricsMock = () => ({
@@ -72,10 +73,12 @@ describe('ReservationsProcessor', () => {
     const slotId = 1;
     const maxCapacity = 10;
     const reservationId = 1;
+    const eventId = 1;
     const baseJobData: ReservationJobData = {
       reservationId,
       userId,
       slotId,
+      eventId,
       maxCapacity,
       stockDeducted: true,
       groupNumber: null,

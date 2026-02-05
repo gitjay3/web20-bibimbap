@@ -48,7 +48,7 @@ export default function ConfirmModal({
         }}
       />
 
-      <div className="relative z-10 w-96 rounded-lg bg-white p-6 shadow-xl">
+      <div className="relative z-10 mx-4 w-full max-w-96 rounded-lg bg-white p-6 shadow-xl sm:mx-0">
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-neutral-text-secondary mt-2">{message}</p>
 

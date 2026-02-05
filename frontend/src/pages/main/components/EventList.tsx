@@ -4,7 +4,7 @@ import type { Event } from '@/types/event';
 import Dropdown from '@/components/Dropdown';
 import { getEvents } from '@/api/event';
 import CategoryTabs from './CategoryTabs';
-import EventCard from './EventCard';
+import EventCards from './EventCards';
 
 type EventTrackFilter = 'ALL' | Event['track'];
 type EventStatusFilter = 'ALL' | Event['status'];
@@ -57,28 +57,30 @@ function EventList() {
 
   return (
     <>
-      <div className="border-neutral-border-default flex h-17 items-center justify-between border-b">
-        <CategoryTabs
-          items={categoryTabsItems}
+      <div className="border-neutral-border-default flex h-17 items-center justify-between gap-2 border-b">
+        {/* 모바일: 드롭다운 */}
+        <Dropdown
+          options={categoryTabsItems}
           value={selectedCategoryTab}
-          onChange={setSelectedCategoryTab}
+          setValue={setSelectedCategoryTab}
+          className="w-28 shrink-0 sm:hidden"
         />
+        {/* 데스크톱: 탭 */}
+        <div className="hidden sm:block">
+          <CategoryTabs
+            items={categoryTabsItems}
+            value={selectedCategoryTab}
+            onChange={setSelectedCategoryTab}
+          />
+        </div>
         <Dropdown
           options={statusOptions}
           value={selectedStatus}
           setValue={setSelectedStatus}
-          className="w-35"
+          className="w-35 shrink-0"
         />
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredEvents.map((item) => (
-          <EventCard
-            key={item.id}
-            event={item}
-            onDeleted={handleDeleted}
-          />
-        ))}
-      </div>
+      <EventCards events={filteredEvents} onDeleted={handleDeleted} />
     </>
   );
 }

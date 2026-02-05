@@ -1,6 +1,6 @@
 import type { Event, EventDetail } from '@/types/event';
 import calcStatus from '@/utils/calcStatus';
-import type { CreateEventRequest } from '@/types/BEapi';
+import type { CreateEventRequest, EventPollingStatusResponse } from '@/types/BEapi';
 import api from './api';
 
 export async function getEvents(organizationId?: string): Promise<Event[]> {
@@ -58,4 +58,13 @@ export async function updateEvent(
 
 export async function deleteEvent(id: number): Promise<void> {
   await api.delete(`/events/${id}`);
+}
+
+export async function getEventPollingStatus(
+  eventId: number,
+): Promise<EventPollingStatusResponse> {
+  const { data } = await api.get<EventPollingStatusResponse>(
+    `/events/${eventId}/polling-status`,
+  );
+  return data;
 }

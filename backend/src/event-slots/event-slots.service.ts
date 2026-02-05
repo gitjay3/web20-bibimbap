@@ -5,20 +5,17 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { UpdateEventSlotDto } from './dto/update-event-slot.dto';
 import { CreateEventSlotDto } from './dto/create-event-slot.dto';
-
-interface ReservationUser {
-  user: {
-    name: string | null;
-    username: string;
-    avatarUrl: string | null;
-  };
-}
+import { ReservationUser } from '../common/types/reservation.types';
 
 @Injectable()
 export class EventSlotsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
   async findByEventWithAvailability(eventId: number) {
     const event = await this.prisma.event.findUnique({
@@ -51,34 +48,38 @@ export class EventSlotsService {
   }
 
   async getAvailabilityByEvent(eventId: number) {
+    const cached = await this.redisService.getReserversCache(eventId);
+    if (cached) {
+      return this.enrichWithLiveStock(JSON.parse(cached));
+    }
+
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { applicationUnit: true, organizationId: true },
+      select: {
+        applicationUnit: true,
+        organizationId: true,
+        slots: {
+          orderBy: { id: 'asc' },
+          include: {
+            reservations: {
+              where: { status: 'CONFIRMED' },
+              select: {
+                groupNumber: true,
+                user: {
+                  select: { name: true, username: true, avatarUrl: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!event) {
       throw new NotFoundException('이벤트를 찾을 수 없습니다');
     }
 
-    const slots = await this.prisma.eventSlot.findMany({
-      where: { eventId },
-      include: {
-        reservations: {
-          where: { status: 'CONFIRMED' },
-          select: {
-            groupNumber: true,
-            user: {
-              select: {
-                name: true,
-                username: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { id: 'asc' },
-    });
+    const slots = event.slots;
 
     if (slots.length === 0) {
       throw new NotFoundException('해당 이벤트의 슬롯을 찾을 수 없습니다');
@@ -129,13 +130,12 @@ export class EventSlotsService {
       }
     }
 
-    return {
+    // 캐시용 데이터 구성
+    const cacheData = {
       applicationUnit: event.applicationUnit,
       slots: slots.map((slot) => ({
         slotId: slot.id,
-        currentCount: slot.currentCount,
-        remainingSeats: Math.max(0, slot.maxCapacity - slot.currentCount),
-        isAvailable: slot.currentCount < slot.maxCapacity,
+        maxCapacity: slot.maxCapacity,
         reservations: slot.reservations.map((r) => ({
           name: r.user.name || r.user.username,
           username: r.user.username,
@@ -147,6 +147,42 @@ export class EventSlotsService {
               : undefined,
         })),
       })),
+    };
+
+    // Redis에 캐시 저장
+    await this.redisService.setReserversCache(
+      eventId,
+      JSON.stringify(cacheData),
+    );
+
+    return this.enrichWithLiveStock(cacheData);
+  }
+
+  private async enrichWithLiveStock(cacheData: {
+    applicationUnit: string;
+    slots: Array<{
+      slotId: number;
+      maxCapacity: number;
+      reservations: unknown[];
+    }>;
+  }) {
+    const stocks = await Promise.all(
+      cacheData.slots.map((slot) => this.redisService.getStock(slot.slotId)),
+    );
+
+    return {
+      applicationUnit: cacheData.applicationUnit,
+      slots: cacheData.slots.map((slot, i) => {
+        const remainingSeats = Math.max(0, stocks[i]);
+        const currentCount = Math.max(0, slot.maxCapacity - stocks[i]);
+        return {
+          slotId: slot.slotId,
+          currentCount,
+          remainingSeats,
+          isAvailable: remainingSeats > 0,
+          reservations: slot.reservations,
+        };
+      }),
       timestamp: new Date().toISOString(),
     };
   }
@@ -205,7 +241,7 @@ export class EventSlotsService {
       );
     }
 
-    return this.prisma.eventSlot.update({
+    const updatedSlot = await this.prisma.eventSlot.update({
       where: { id },
       data: {
         ...(dto.maxCapacity !== undefined && { maxCapacity: dto.maxCapacity }),
@@ -214,6 +250,20 @@ export class EventSlotsService {
         }),
       },
     });
+
+    // maxCapacity 변경 시 Redis 재고 동기화
+    if (dto.maxCapacity !== undefined) {
+      await this.redisService.initStock(
+        id,
+        updatedSlot.maxCapacity,
+        updatedSlot.currentCount,
+      );
+    }
+
+    // 슬롯 정보 변경 시 캐시 무효화
+    await this.redisService.invalidateReserversCache(slot.eventId);
+
+    return updatedSlot;
   }
 
   async delete(id: number) {
@@ -230,7 +280,12 @@ export class EventSlotsService {
       throw new BadRequestException('예약이 있는 슬롯은 삭제할 수 없습니다.');
     }
 
-    return this.prisma.eventSlot.delete({ where: { id } });
+    const deleted = await this.prisma.eventSlot.delete({ where: { id } });
+
+    // 슬롯 삭제 시 캐시 무효화
+    await this.redisService.invalidateReserversCache(slot.eventId);
+
+    return deleted;
   }
 
   async create(dto: CreateEventSlotDto) {
@@ -242,7 +297,7 @@ export class EventSlotsService {
       throw new NotFoundException('이벤트를 찾을 수 없습니다.');
     }
 
-    return this.prisma.eventSlot.create({
+    const slot = await this.prisma.eventSlot.create({
       data: {
         eventId: dto.eventId,
         maxCapacity: dto.maxCapacity,
@@ -250,5 +305,13 @@ export class EventSlotsService {
         extraInfo: dto.extraInfo as Prisma.InputJsonValue,
       },
     });
+
+    // Redis 재고 초기화
+    await this.redisService.initStock(slot.id, slot.maxCapacity, 0);
+
+    // 슬롯 추가 시 캐시 무효화
+    await this.redisService.invalidateReserversCache(dto.eventId);
+
+    return slot;
   }
 }

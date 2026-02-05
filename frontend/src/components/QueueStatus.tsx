@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { toast } from 'sonner';
 
 interface QueueStatusProps {
@@ -87,4 +87,4 @@ function QueueStatus({
   return null;
 }
 
-export default QueueStatus;
+export default memo(QueueStatus);

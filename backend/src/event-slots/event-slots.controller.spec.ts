@@ -50,7 +50,8 @@ describe('EventSlotsController', () => {
       ];
       serviceMock.getAvailability.mockResolvedValue(mockAvailability);
 
-      const result = await controller.getAvailability(undefined, '1,2');
+      // Pipe가 문자열을 숫자 배열로 변환한 후의 값을 전달
+      const result = await controller.getAvailability(undefined, [1, 2]);
 
       expect(result).toEqual(mockAvailability);
       expect(serviceMock.getAvailability).toHaveBeenCalledWith([1, 2]);
@@ -60,18 +61,6 @@ describe('EventSlotsController', () => {
       await expect(controller.getAvailability()).rejects.toThrow(
         BadRequestException,
       );
-    });
-
-    it('빈 slotIds면 예외를 던진다', async () => {
-      await expect(controller.getAvailability(undefined, '')).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('유효하지 않은 slotIds 형식이면 예외를 던진다', async () => {
-      await expect(
-        controller.getAvailability(undefined, '1,abc,3'),
-      ).rejects.toThrow(BadRequestException);
     });
   });
 

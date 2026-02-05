@@ -20,6 +20,7 @@ const createRedisMock = () => ({
   initStock: jest.fn().mockResolvedValue(undefined),
   decrementStock: jest.fn().mockResolvedValue(true),
   incrementStock: jest.fn().mockResolvedValue(undefined),
+  invalidateReserversCache: jest.fn().mockResolvedValue(undefined),
 });
 
 const createQueueMock = () => ({
@@ -158,7 +159,7 @@ describe('ReservationsService', () => {
     it('예약을 성공적으로 취소한다', async () => {
       const txMock = createTxMock();
       const reservationId = 1;
-      const mockSlot = { id: 1, maxCapacity: 10, version: 1 };
+      const mockSlot = { id: 1, eventId: 1, maxCapacity: 10, version: 1 };
       const mockReservation = {
         id: reservationId,
         userId,

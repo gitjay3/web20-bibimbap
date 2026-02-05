@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 
 const createAuthServiceMock = () => ({
   validateInternalUser: jest.fn(),
@@ -49,13 +50,15 @@ describe('AuthController', () => {
                 id: 'user-123',
                 role: 'USER',
                 name: 'Test User',
-                organizations: [],
               }),
             },
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(CustomThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
   });
@@ -151,11 +154,7 @@ describe('AuthController', () => {
         id: 'user-123',
         role: 'USER',
         name: 'Test User',
-        organizations: [],
       };
-
-      // prisma mock 수정 필요
-      // PrismaService mock이 user.findUnique를 반환하도록 설정되어야 함
 
       const result = await controller.getMe(mockUser as any); // await 추가
 

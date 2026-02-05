@@ -29,9 +29,9 @@ function Layout() {
   const navItems = role === 'USER' ? camperNav : adminNav;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <Header navItems={navItems} />
-      <main className="px-8 py-10">
+      <main className="px-4 py-6 sm:px-8 sm:py-10">
         <Outlet />
       </main>
     </div>

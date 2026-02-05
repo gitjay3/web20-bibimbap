@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { GithubAuthGuard } from './guards/github-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CustomThrottlerGuard } from 'src/common/guards/custom-throttler.guard';
 import type { User } from '@prisma/client';
 import { AuthService } from './auth.service';
 import type { Response } from 'express';
@@ -20,6 +21,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { JwtUser } from 'src/auth/types/jwt-user.type';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ThrottleLogin } from './decorators/throttle-login.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,6 +34,8 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @UseGuards(CustomThrottlerGuard)
+  @ThrottleLogin()
   @ApiOperation({
     summary: '내부 계정 로그인',
     description: '아이디/비밀번호로 로그인하고 쿠키에 토큰을 저장합니다.',
@@ -125,12 +129,10 @@ export class AuthController {
   async getMe(@CurrentUser() user: JwtUser) {
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
-      include: {
-        organizations: {
-          include: {
-            organization: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        role: true,
       },
     });
 

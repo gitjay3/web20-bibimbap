@@ -47,7 +47,10 @@ run_with_env() {
     log_info "DEBUG run_with_env: ENV_FILE=$ENV_FILE"
     log_info "DEBUG run_with_env: dotenvx 존재=$(command -v dotenvx || echo 'not found')"
     log_info "DEBUG run_with_env: ENV_FILE 존재=$([ -f "$ENV_FILE" ] && echo 'yes' || echo 'no')"
-    log_info "DEBUG run_with_env: DOTENV_PRIVATE_KEY_PRODUCTION=$([ -n "$DOTENV_PRIVATE_KEY_PRODUCTION" ] && echo "set (${#DOTENV_PRIVATE_KEY_PRODUCTION} chars)" || echo "not set")"
+    # 환경에 맞는 키 확인 (unbound variable 방지)
+    local key_name="DOTENV_PRIVATE_KEY_${ENVIRONMENT^^}"
+    local key_value="${!key_name:-}"
+    log_info "DEBUG run_with_env: $key_name=$([ -n "$key_value" ] && echo "set (${#key_value} chars)" || echo "not set")"
 
     if command -v dotenvx &> /dev/null && [ -f "$ENV_FILE" ]; then
         log_info "DEBUG run_with_env: dotenvx 사용"
@@ -67,9 +70,11 @@ setup_environment() {
     PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
     COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 
-    # 환경 이름 매핑 (prod -> production)
+    # 환경 이름 매핑 (prod -> production, staging -> staging)
     if [ "$environment" = "prod" ]; then
         ENVIRONMENT="production"
+    elif [ "$environment" = "staging" ]; then
+        ENVIRONMENT="staging"
     else
         ENVIRONMENT="$environment"
     fi

@@ -1,23 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { Track, Event, EventSlot } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { toPrismaJson } from 'src/common/utils/to-json';
 import { isUserEligibleForTrack } from '../../common/utils/track.util';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { throwIfNotFound } from '../common/utils/assert.util';
+import { ReservationUser } from '../common/types/reservation.types';
 
 type EventWithSlots = Event & { slots: EventSlot[] };
-
-interface ReservationUser {
-  user: {
-    name: string | null;
-    username: string;
-    avatarUrl: string | null;
-  };
-}
 
 interface SlotWithReservations extends EventSlot {
   reservations: ReservationUser[];
@@ -25,9 +18,7 @@ interface SlotWithReservations extends EventSlot {
 
 interface EventWithSlotsAndReservations extends Event {
   slots: SlotWithReservations[];
-  organization: {
-    slackBotToken: string | null;
-  };
+  notifications?: { notificationTime: number }[] | false;
 }
 
 @Injectable()
@@ -87,10 +78,7 @@ export class EventsService {
 
   async update(id: number, dto: UpdateEventDto) {
     const event = await this.prisma.event.findUnique({ where: { id } });
-
-    if (!event) {
-      throw new NotFoundException('이벤트를 찾을 수 없습니다.');
-    }
+    throwIfNotFound(event, '이벤트를 찾을 수 없습니다.');
 
     return this.prisma.event.update({
       where: { id },
@@ -124,9 +112,7 @@ export class EventsService {
       },
     });
 
-    if (!event) {
-      throw new NotFoundException('이벤트를 찾을 수 없습니다.');
-    }
+    throwIfNotFound(event, '이벤트를 찾을 수 없습니다.');
 
     // 확정된 예약이 있는 슬롯이 있으면 삭제 불가
     const hasConfirmedReservations = event.slots.some(
@@ -143,7 +129,7 @@ export class EventsService {
     return this.prisma.event.delete({ where: { id } });
   }
 
-  async findAll(track?: string, organizationId?: string) {
+  async findAll(track?: string, userId?: string, organizationId?: string) {
     const parsedTrack = this.parseTrack(track);
 
     const events = await this.prisma.event.findMany({
@@ -164,30 +150,36 @@ export class EventsService {
         applicationUnit: true,
         startTime: true,
         endTime: true,
-        organization: {
-          select: {
-            slackBotToken: true,
-          },
-        },
+        notifications: userId
+          ? {
+              where: { userId },
+              select: { notificationTime: true },
+            }
+          : false,
       },
     });
 
-    return events.map((event) => ({
-      ...event,
-      isSlackEnabled: !!event.organization.slackBotToken,
-      organization: undefined,
-    }));
+    return events.map((event) => {
+      const { notifications, ...rest } = event;
+      return {
+        ...rest,
+        myNotification: Array.isArray(notifications)
+          ? (notifications[0] ?? null)
+          : null,
+      };
+    });
   }
 
   async findOne(id: number, userId?: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },
       include: {
-        organization: {
-          select: {
-            slackBotToken: true,
-          },
-        },
+        notifications: userId
+          ? {
+              where: { userId },
+              select: { notificationTime: true },
+            }
+          : false,
         slots: {
           include: {
             reservations: {
@@ -208,7 +200,7 @@ export class EventsService {
       },
     });
 
-    if (!event) throw new NotFoundException('존재하지 않는 이벤트입니다.');
+    throwIfNotFound(event, '존재하지 않는 이벤트입니다.');
 
     // 데이터 구조 평탄화: 이름이 없으면 username을 대신 사용
     const eventWithSlots = event as unknown as EventWithSlotsAndReservations;
@@ -237,7 +229,9 @@ export class EventsService {
       ...eventWithSlots,
       slots: flattenedSlots,
       canReserveByTrack,
-      isSlackEnabled: !!eventWithSlots.organization.slackBotToken,
+      myNotification: Array.isArray(eventWithSlots.notifications)
+        ? (eventWithSlots.notifications[0] ?? null)
+        : null,
     };
   }
 

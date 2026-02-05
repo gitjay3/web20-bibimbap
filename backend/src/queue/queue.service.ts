@@ -3,28 +3,48 @@ import { RedisService } from '../redis/redis.service';
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { CleanupJobData, QUEUE_CLEANUP_QUEUE } from './queue.constants';
+import {
+  CleanupJobData,
+  QUEUE_CLEANUP_QUEUE,
+  ACTIVE_EVENTS_KEY,
+} from './queue.constants';
 import { MetricsService } from '../metrics/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForbiddenTrackException } from '../../common/exceptions/api.exception';
 import { isUserEligibleForTrack } from '../../common/utils/track.util';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class QueueService {
+  private readonly HEARTBEAT_TTL: number;
+  private readonly USER_STATUS_TTL: number;
+  private readonly TOKEN_TTL: number;
+  private readonly BATCH_SIZE: number;
+  private readonly MAX_TOKEN_RETRY: number;
+
   constructor(
     private readonly redisService: RedisService,
     private readonly metricsService: MetricsService,
     private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
     @InjectQueue(QUEUE_CLEANUP_QUEUE)
     private cleanupQueue: Queue<CleanupJobData>,
-  ) {}
-
-  // TTL (seconds)
-  private readonly HEARTBEAT_TTL = 60;
-  private readonly USER_STATUS_TTL = 60;
-  private readonly TOKEN_TTL = 300; // 토큰 유효
-  private readonly BATCH_SIZE = 100; // 동시 처리 가능 인원
-  private readonly MAX_TOKEN_RETRY = 3; // 토큰 발급 최대 재시도 횟수
+  ) {
+    this.HEARTBEAT_TTL = this.configService.get<number>(
+      'queue.heartbeatTtl',
+      60,
+    );
+    this.USER_STATUS_TTL = this.configService.get<number>(
+      'queue.userStatusTtl',
+      60,
+    );
+    this.TOKEN_TTL = this.configService.get<number>('queue.tokenTtl', 300);
+    this.BATCH_SIZE = this.configService.get<number>('queue.batchSize', 100);
+    this.MAX_TOKEN_RETRY = this.configService.get<number>(
+      'queue.maxTokenRetry',
+      3,
+    );
+  }
 
   private getQueueKey(eventId: number): string {
     return `event:${eventId}:queue`;
@@ -42,12 +62,22 @@ export class QueueService {
     return `event:${eventId}:user:${userId}:token`;
   }
 
+  private getActiveTokensKey(eventId: number): string {
+    return `event:${eventId}:active_tokens`;
+  }
+
   // 대기열 진입
   async enterQueue(
     eventId: number,
     userId: string,
     sessionId: string,
-  ): Promise<{ position: number; isNew: boolean }> {
+  ): Promise<{
+    position: number | null;
+    isNew: boolean;
+    totalWaiting: number;
+    hasToken: boolean;
+    tokenExpiresAt?: number;
+  }> {
     // 트랙 검증
     await this.validateTrackOrThrow(eventId, userId);
 
@@ -62,37 +92,54 @@ export class QueueService {
     const existingSessionId = await client.hget(statusKey, 'sessionId');
 
     if (existingSessionId) {
-      // TODO: 단일 세션 정책
-      // - existingSessionId !== sessionId 인 경우
+      const pipeline = client.pipeline();
+      pipeline.hset(statusKey, 'sessionId', sessionId);
+      pipeline.expire(statusKey, this.USER_STATUS_TTL);
+      pipeline.zadd(heartbeatKey, now, userId);
+      await pipeline.exec();
 
-      // 이미 있음 - 세션 교체, 순번 유지
-      await client.hset(statusKey, 'sessionId', sessionId);
-      await client.expire(statusKey, this.USER_STATUS_TTL);
-
-      // heartbeat 갱신
-      await client.zadd(heartbeatKey, now, userId);
-
+      // 대기열에서 제거된 경우 다시 추가
       const position = await client.zrank(queueKey, userId);
+      if (position === null) {
+        await client.zadd(queueKey, now, userId);
+        const newPosition = await client.zrank(queueKey, userId);
+
+        // 메트릭: 재진입
+        this.metricsService.recordQueueEntry(eventId, false);
+
+        const totalWaiting = await client.zcard(queueKey);
+        return this.buildEnterQueueResponse(
+          eventId,
+          userId,
+          newPosition ?? 0,
+          false,
+          totalWaiting,
+        );
+      }
 
       // 메트릭: 기존 사용자 재진입
       this.metricsService.recordQueueEntry(eventId, false);
 
-      return {
-        position: position ?? 0,
-        isNew: false,
-      };
+      const totalWaiting = await client.zcard(queueKey);
+      return this.buildEnterQueueResponse(
+        eventId,
+        userId,
+        position ?? 0,
+        false,
+        totalWaiting,
+      );
     }
 
-    // 신규 진입
-    await client.zadd(queueKey, now, userId);
+    const pipeline = client.pipeline();
+    pipeline.zadd(queueKey, now, userId);
+    pipeline.hset(statusKey, 'sessionId', sessionId);
+    pipeline.hset(statusKey, 'enteredAt', String(now));
+    pipeline.expire(statusKey, this.USER_STATUS_TTL);
+    pipeline.zadd(heartbeatKey, now, userId);
+    await pipeline.exec();
 
-    // 상태 저장 + TTL
-    await client.hset(statusKey, 'sessionId', sessionId);
-    await client.hset(statusKey, 'enteredAt', String(now));
-    await client.expire(statusKey, this.USER_STATUS_TTL);
-
-    // heartbeat 기록
-    await client.zadd(heartbeatKey, now, userId);
+    // 활성 이벤트 등록
+    await this.registerActiveEvent(eventId);
 
     const position = await client.zrank(queueKey, userId);
 
@@ -103,13 +150,59 @@ export class QueueService {
     const totalWaiting = await client.zcard(queueKey);
     this.metricsService.updateQueueStatus(eventId, totalWaiting);
 
+    return this.buildEnterQueueResponse(
+      eventId,
+      userId,
+      position ?? 0,
+      true,
+      totalWaiting,
+    );
+  }
+
+  private async buildEnterQueueResponse(
+    eventId: number,
+    userId: string,
+    position: number,
+    isNew: boolean,
+    totalWaiting: number,
+  ): Promise<{
+    position: number | null;
+    isNew: boolean;
+    totalWaiting: number;
+    hasToken: boolean;
+    tokenExpiresAt?: number;
+  }> {
+    const activeTokenCount = await this.getActiveTokenCount(eventId);
+    if (activeTokenCount < this.BATCH_SIZE) {
+      await this.issueToken(eventId, userId);
+      return {
+        position: null,
+        isNew,
+        totalWaiting,
+        hasToken: true,
+        tokenExpiresAt: Date.now() + this.TOKEN_TTL * 1000,
+      };
+    }
+
     return {
-      position: position ?? 0,
-      isNew: true,
+      position,
+      isNew,
+      totalWaiting,
+      hasToken: false,
     };
   }
 
-  // 대기열 상태 조회: 토큰 확인 → 순번 확인 → heartbeat 갱신 → batch 이내면 토큰 발급
+  // 활성 토큰 수 조회
+  async getActiveTokenCount(eventId: number): Promise<number> {
+    const client = this.redisService.getClient();
+    const activeTokensKey = this.getActiveTokensKey(eventId);
+    const now = Date.now();
+
+    await client.zremrangebyscore(activeTokensKey, 0, now);
+    return client.zcard(activeTokensKey);
+  }
+
+  // 대기열 상태 조회: 토큰 확인 → 순번 확인 → heartbeat 갱신 → 활성 토큰 수 제한 내에서 토큰 발급
   async getQueueStatus(
     eventId: number,
     userId: string,
@@ -150,8 +243,9 @@ export class QueueService {
     // heartbeat 갱신
     await client.zadd(heartbeatKey, Date.now(), userId);
 
-    // 순번이 batch 이내면 토큰 발급
-    if (position < this.BATCH_SIZE) {
+    // 활성 토큰 수 확인 후 제한 내에서만 토큰 발급
+    const activeTokenCount = await this.getActiveTokenCount(eventId);
+    if (activeTokenCount < this.BATCH_SIZE) {
       await this.issueToken(eventId, userId);
       return {
         position: null,
@@ -174,6 +268,7 @@ export class QueueService {
     const tokenKey = this.getTokenKey(eventId, userId);
     const queueKey = this.getQueueKey(eventId);
     const heartbeatKey = this.getHeartbeatKey(eventId);
+    const activeTokensKey = this.getActiveTokensKey(eventId);
 
     // 새 토큰 생성
     const token = randomUUID();
@@ -188,9 +283,13 @@ export class QueueService {
     );
 
     if (setResult === 'OK') {
-      // 최초 발급 성공 → 대기열에서 제거
-      await client.zrem(queueKey, userId);
-      await client.zrem(heartbeatKey, userId);
+      // 최초 발급 성공 → 대기열에서 제거 + 활성 토큰 목록에 추가
+      const expiresAt = Date.now() + this.TOKEN_TTL * 1000;
+      const pipeline = client.pipeline();
+      pipeline.zrem(queueKey, userId);
+      pipeline.zrem(heartbeatKey, userId);
+      pipeline.zadd(activeTokensKey, expiresAt, userId);
+      await pipeline.exec();
 
       this.metricsService.recordTokenIssued(eventId);
       const totalWaiting = await client.zcard(queueKey);
@@ -220,11 +319,14 @@ export class QueueService {
     return (await client.get(tokenKey)) !== null;
   }
 
-  // TODO: 토큰 무효화 (예약 성공 후)
+  // 토큰 무효화 (예약 성공 후)
   async invalidateToken(eventId: number, userId: string): Promise<void> {
     const client = this.redisService.getClient();
     const tokenKey = this.getTokenKey(eventId, userId);
+    const activeTokensKey = this.getActiveTokensKey(eventId);
+
     await client.del(tokenKey);
+    await client.zrem(activeTokensKey, userId);
   }
 
   // 만료된 유저 정리 (heartbeat 기준)
@@ -256,7 +358,30 @@ export class QueueService {
     }
 
     await pipeline.exec();
+
+    // 대기열이 비었으면 활성 이벤트에서 제거
+    const remainingUsers = await client.zcard(queueKey);
+    if (remainingUsers === 0) {
+      await this.unregisterActiveEvent(eventId);
+    }
+
     return expiredUserIds.length;
+  }
+
+  async registerActiveEvent(eventId: number): Promise<void> {
+    const client = this.redisService.getClient();
+    await client.sadd(ACTIVE_EVENTS_KEY, String(eventId));
+  }
+
+  async unregisterActiveEvent(eventId: number): Promise<void> {
+    const client = this.redisService.getClient();
+    await client.srem(ACTIVE_EVENTS_KEY, String(eventId));
+  }
+
+  async getActiveEventIds(): Promise<number[]> {
+    const client = this.redisService.getClient();
+    const eventIds = await client.smembers(ACTIVE_EVENTS_KEY);
+    return eventIds.map((id) => parseInt(id, 10));
   }
 
   // 트랙 검증: COMMON이 아닌 이벤트는 해당 트랙 캠퍼만 진입 가능
