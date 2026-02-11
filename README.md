@@ -74,14 +74,40 @@
 <br><br>
 
 ## 데모
+### 캠퍼 기능
+#### 개인 이벤트 예약
+https://github.com/user-attachments/assets/7cb8cab8-2549-4aeb-8344-6a8c5143350f
 
-<!-- 스크린샷이나 GIF를 추가하세요 -->
+<br>
 
-| 기능            | 스크린샷                           |
-| --------------- | ---------------------------------- |
-| 예약 화면       | <!-- ![예약 화면](이미지 경로) --> |
-| 대기열 진입     | <!-- ![대기열](이미지 경로) -->    |
-| 관리자 대시보드 | <!-- ![관리자](이미지 경로) -->    |
+#### 단체 이벤트 예약
+https://github.com/user-attachments/assets/745b7a3c-27a3-484b-a385-aefcf131b9bc
+
+<br>
+
+#### 예약 취소
+https://github.com/user-attachments/assets/86f1309b-a76a-4229-8af6-4ee8391b5108
+
+<br>
+
+### 운영진 기능
+#### 개인 이벤트 확인
+https://github.com/user-attachments/assets/aa52d154-ed56-4897-a903-8331625c2761
+
+<br>
+
+#### 단체 이벤트 확인
+https://github.com/user-attachments/assets/eb924f97-e24f-481b-ac0f-b9882bc1f0aa
+
+<br>
+
+#### 이벤트 생성
+https://github.com/user-attachments/assets/a993114d-2c3b-4101-be31-cf37138773a1
+
+<br>
+
+#### 나머지 모달 기능
+https://github.com/user-attachments/assets/ea233148-8f6b-4db8-baeb-48f639a44641
 
 <br>
 
