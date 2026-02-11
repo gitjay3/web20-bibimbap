@@ -59,10 +59,11 @@
 ### 시스템 구조
 
 <p align="center">
-  <img width="800" alt="Bookstcamp 아키텍처" src="https://github.com/user-attachments/assets/d2a81194-1cf2-4c5c-96e0-bb067b98d5fe" />
+  <img width="800" alt="Bookstcamp 아키텍처4" src="https://github.com/user-attachments/assets/7c1cf1f9-c92b-4ac3-972c-ac698d47ebfe" />
 </p>
 
 ### ERD
+
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/wiki/boostcampwm2025/web20-bibimbap/diagrams/erd-v4.svg" width="900">
