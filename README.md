@@ -71,13 +71,24 @@
   <img src="https://raw.githubusercontent.com/wiki/boostcampwm2025/web20-bibimbap/diagrams/erd-v4.svg" width="1000">
 </p>
 
-**예약 도메인** — `Event`는 멘토링·특강 등 예약 가능한 이벤트를 트랙(WEB/IOS/ANDROID/COMMON)과 신청 단위(개인/팀)로 관리합니다. 각 이벤트는 여러 `EventSlot`을 가지며, 슬롯마다 정원과 현재 인원을 추적하고 동시 예약 충돌 방지를 위해 낙관적 락(version)을 사용합니다. 슬롯의 시작 시간, 장소 등 상세 정보는 `extraInfo` JSON으로 유연하게 저장합니다. `Reservation`은 캠퍼의 예약 기록으로 PENDING/CONFIRMED/CANCELLED 상태로 관리됩니다.
+**예약 도메인**  
+- `Event`는 멘토링·특강 등 예약 가능한 이벤트를 트랙(WEB/IOS/ANDROID/COMMON)과 신청 단위(개인/팀)로 관리합니다.
+- 각 이벤트는 여러 `EventSlot`을 가지며, 슬롯마다 정원과 현재 인원을 추적하고 동시 예약 충돌 방지를 위해 낙관적 락(version)을 사용합니다.
+- 슬롯의 시작 시간, 장소 등 상세 정보는 `extraInfo` JSON으로 유연하게 저장합니다.
+- `Reservation`은 캠퍼의 예약 기록으로 PENDING/CONFIRMED/CANCELLED 상태로 관리됩니다.
 
-**사용자/인증** — `User`는 GitHub OAuth로 가입한 사용자이며 USER/ADMIN 역할로 구분됩니다. `AuthAccount`는 인증 제공자(GitHub OAuth, Internal 비밀번호)를 연결합니다. `AdminInvitation`으로 GitHub username 기반의 운영진 권한 초대를 관리합니다.
+**사용자/인증** 
+- `User`는 GitHub OAuth로 가입한 사용자이며 USER/ADMIN 역할로 구분됩니다.
+- `AuthAccount`는 인증 제공자(GitHub OAuth, Internal 비밀번호)를 연결합니다.
+- `AdminInvitation`으로 GitHub username 기반의 운영진 권한 초대를 관리합니다.
 
-**조직/캠퍼 관리** — `Organization`은 부스트캠프 등 조직 단위로 Slack 봇 토큰과 워크스페이스를 연동합니다. `CamperOrganization`은 사용자-조직 매핑(캠퍼 ID, Slack 멤버 ID, 그룹 번호)이고, `CamperPreRegistration`은 엑셀로 업로드한 사전 등록 명단으로 GitHub username 기반 자동 매칭됩니다.
+**조직/캠퍼 관리** 
+- `Organization`은 부스트캠프 등 조직 단위로 Slack 봇 토큰과 워크스페이스를 연동합니다.
+- `CamperOrganization`은 사용자-조직 매핑(캠퍼 ID, Slack 멤버 ID, 그룹 번호)이고, `CamperPreRegistration`은 엑셀로 업로드한 사전 등록 명단으로 GitHub username 기반 자동 매칭됩니다.
 
-**운영 지원** — `Template`은 운영진이 이벤트를 빠르게 생성하기 위한 슬롯 스키마 템플릿입니다. `EventNotification`은 이벤트 시작 전(5/10/30/60분) Slack DM 알림을 예약 발송합니다.
+**운영 지원** 
+- `Template`은 운영진이 이벤트를 빠르게 생성하기 위한 슬롯 스키마 템플릿입니다.
+- `EventNotification`은 이벤트 시작 전(5/10/30/60분) Slack DM 알림을 예약 발송합니다.
 
 <br><br>
 
